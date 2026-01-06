@@ -102,7 +102,7 @@ export default function UsersPage() {
     try {
       const data = await getUsers();
       setUsers(data);
-    } catch (error) {
+    } catch {
       toast.error('Помилка завантаження користувачів');
     } finally {
       setLoading(false);
@@ -114,7 +114,7 @@ export default function UsersPage() {
       await updateUserRole(userId, role);
       toast.success('Роль змінено');
       fetchUsers();
-    } catch (error) {
+    } catch {
       toast.error('Помилка зміни ролі');
     }
   };
@@ -133,7 +133,7 @@ export default function UsersPage() {
       toast.success('Права збережено');
       setPermissionsDialogOpen(false);
       fetchUsers();
-    } catch (error) {
+    } catch {
       toast.error('Помилка збереження прав');
     }
   };
@@ -152,7 +152,7 @@ export default function UsersPage() {
       setDeactivateDialogOpen(false);
       setUserToDeactivate(null);
       fetchUsers();
-    } catch (error) {
+    } catch {
       toast.error('Помилка');
     }
   };
@@ -250,7 +250,7 @@ export default function UsersPage() {
                 >
                   <div className="flex items-center gap-4">
                     <Avatar className="h-10 w-10">
-                      <AvatarImage src={user.photoURL} />
+                      <AvatarImage src={user.photoURL || undefined} />
                       <AvatarFallback className="bg-amber-500/10 text-amber-500">
                         {user.displayName?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>

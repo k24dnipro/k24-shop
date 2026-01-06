@@ -1,24 +1,43 @@
+'use client';
+
 import {
-  doc,
-  getDoc,
-} from 'firebase/firestore';
-import { db } from '@/firebase';
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+import { auth } from '@/firebase';
 
-export const revalidate = 3600; // ISR
+export default function Home() {
+  const router = useRouter();
+  const [checking, setChecking] = useState(true);
+  const didRedirectRef = useRef(false);
 
-export default async function Home({ params }: { params: { id: string } }) {
-  const snap = await getDoc(doc(db, "products", "abc123"));
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      // Guard against StrictMode double-invocation causing overlapping navigations (AbortError in dev).
+      if (didRedirectRef.current) return;
+      didRedirectRef.current = true;
+      if (user) {
+        router.replace('/admin');
+      } else {
+        router.replace('/login');
+      }
+      setChecking(false);
+    });
 
-  if (!snap.exists()) {
-    return <h1>Product not found</h1>;
-  }
+    return () => unsubscribe();
+  }, [router]);
 
-  const product = snap.data();
+  if (!checking) return null;
 
   return (
-    <main>
-      <h1>{product.title}</h1>
-      <p>{product.price} $</p>
-    </main>
+    <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+        <p className="text-sm text-zinc-500">Завантаження...</p>
+      </div>
+    </div>
   );
 }

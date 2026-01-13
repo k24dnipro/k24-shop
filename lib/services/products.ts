@@ -98,10 +98,8 @@ export async function searchProducts(searchTerm: string) {
     .map(convertToProduct)
     .filter(
       (product) =>
-        product.name.toLowerCase().includes(normalizedSearch) ||
-        product.sku.toLowerCase().includes(normalizedSearch) ||
-        product.partNumber.toLowerCase().includes(normalizedSearch) ||
-        product.id.toLowerCase().includes(normalizedSearch)
+        (product.name?.toLowerCase() || '').includes(normalizedSearch) ||
+        (product.sku?.toLowerCase() || '').includes(normalizedSearch)
     );
 
   return products;

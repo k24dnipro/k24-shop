@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useMemo,
   useState,
 } from 'react';
 import { formatDistanceToNow } from 'date-fns';
@@ -30,7 +29,11 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCategories } from '@/lib/hooks/useCategories';
 import { useProducts } from '@/lib/hooks/useProducts';
-import { PRODUCT_STATUSES } from '@/lib/types';
+import { searchProducts } from '@/lib/services/products';
+import {
+  Product,
+  PRODUCT_STATUSES,
+} from '@/lib/types';
 
 const statusColors: Record<string, string> = {
   in_stock: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -41,14 +44,17 @@ const statusColors: Record<string, string> = {
 
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState(''); // Збережений пошуковий запит для відображення результатів
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const {
     products,
     loading,
     hasMore,
     loadMore,
-    search,
     refresh,
   } = useProducts({
     pageSize: 12,
@@ -56,22 +62,44 @@ export default function Home() {
   });
   const { categories, loading: categoriesLoading } = useCategories();
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (searchTerm.trim()) {
-        search(searchTerm);
-      } else {
-        refresh();
+  const handleSearch = async () => {
+    if (searchTerm.trim()) {
+      setSearchLoading(true);
+      setIsSearchActive(true);
+      setActiveSearchTerm(searchTerm.trim()); // Зберігаємо пошуковий запит
+      try {
+        const results = await searchProducts(
+          searchTerm.trim(),
+          selectedCategory !== 'all' ? selectedCategory : undefined
+        );
+        console.log('Результати пошуку:', {
+          searchTerm: searchTerm.trim(),
+          categoryId: selectedCategory !== 'all' ? selectedCategory : undefined,
+          resultsCount: results.length,
+          results: results.map(p => ({ id: p.id, name: p.name, sku: p.sku, brand: p.brand }))
+        });
+        setSearchResults(results);
+      } catch (error) {
+        console.error('Помилка пошуку:', error);
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
       }
-    }, 300);
+    } else {
+      setIsSearchActive(false);
+      setActiveSearchTerm('');
+      setSearchResults([]);
+      refresh();
+    }
+  };
 
-    return () => clearTimeout(timer);
-  }, [searchTerm, search, refresh]);
-
-  const displayedProducts = useMemo(() => {
-    if (selectedCategory === 'all') return products;
-    return products.filter((product) => product.categoryId === selectedCategory);
-  }, [products, selectedCategory]);
+  // Скидання пошуку при зміні категорії
+  useEffect(() => {
+    setSearchTerm('');
+    setActiveSearchTerm('');
+    setIsSearchActive(false);
+    setSearchResults([]);
+  }, [selectedCategory]);
 
   const getStatusLabel = (status: string) => {
     return PRODUCT_STATUSES.find((s) => s.value === status)?.label || status;
@@ -117,13 +145,30 @@ export default function Home() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Пошук по назві, SKU або бренду..."
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSearch();
+                  }}
                   className="pl-9 bg-zinc-950 border-zinc-800 text-white placeholder:text-zinc-500"
                 />
               </div>
               <Button
+                className="bg-amber-500 hover:bg-amber-600 text-black px-5"
+                onClick={handleSearch}
+              >
+                <Search className="mr-2 h-4 w-4" />
+                Пошук
+              </Button>
+              <Button
                 variant="outline"
                 className="bg-zinc-950 border-zinc-800 text-zinc-200 hover:border-amber-500 hover:text-white"
-                onClick={() => setSelectedCategory('all')}
+                onClick={() => {
+                  setSelectedCategory('all');
+                  setSearchTerm('');
+                  setActiveSearchTerm('');
+                  setIsSearchActive(false);
+                  setSearchResults([]);
+                  refresh();
+                }}
               >
                 <Filter className="mr-2 h-4 w-4" />
                 Скинути фільтри
@@ -157,6 +202,112 @@ export default function Home() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Search Results */}
+        {isSearchActive && activeSearchTerm && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-amber-400 flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  Результати пошуку
+                </p>
+                <h2 className="text-xl font-semibold mt-1">
+                  Знайдено за запитом &quot;{activeSearchTerm}&quot;
+                </h2>
+              </div>
+              {searchLoading && (
+                <Badge variant="outline" className="border-zinc-800 text-zinc-400">
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  Пошук...
+                </Badge>
+              )}
+            </div>
+
+            {searchLoading && searchResults.length === 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <Skeleton key={idx} className="h-64 bg-zinc-900/60" />
+                ))}
+              </div>
+            ) : searchResults.length > 0 ? (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {searchResults.map((product) => {
+                  const firstImage = product.images?.[0]?.url;
+                  const statusClass = statusColors[product.status] || statusColors.discontinued;
+                  return (
+                    <Card key={product.id} className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col">
+                      <div className="relative aspect-[4/3] bg-zinc-950">
+                        {firstImage ? (
+                          <Image
+                            src={firstImage}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center text-zinc-600 text-sm">
+                            Немає фото
+                          </div>
+                        )}
+                        <div className="absolute top-3 left-3">
+                          <Badge variant="outline" className={statusClass}>
+                            {getStatusLabel(product.status)}
+                          </Badge>
+                        </div>
+                      </div>
+                      <CardContent className="p-4 flex-1 flex flex-col gap-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <h3 className="text-lg font-semibold leading-tight">{product.name}</h3>
+                            <p className="text-xs text-zinc-500">
+                              Артикул: {product.partNumber || product.sku}
+                            </p>
+                            <p className="text-xs text-zinc-500">
+                              Бренд: {product.brand || '—'}
+                            </p>
+                          </div>
+                          <span className="text-amber-400 font-semibold">
+                            {product.price.toLocaleString()} ₴
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-zinc-500 mt-auto">
+                          <span>Переглядів: {product.views || 0}</span>
+                          <span>
+                            {formatDistanceToNow(product.createdAt, { addSuffix: true, locale: uk })}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <Card className="bg-zinc-900/60 border-zinc-800">
+                <CardContent className="p-8 text-center space-y-3">
+                  <p className="text-white font-medium">Нічого не знайдено</p>
+                  <p className="text-zinc-500 text-sm">
+                    За запитом &quot;{activeSearchTerm}&quot; не знайдено жодного товару.
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="border-zinc-800 text-zinc-200 hover:border-amber-500 hover:text-white"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setActiveSearchTerm('');
+                      setIsSearchActive(false);
+                      setSearchResults([]);
+                      refresh();
+                    }}
+                  >
+                    <Search className="mr-2 h-4 w-4" />
+                    Скинути пошук
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
 
         {/* Categories */}
         <div className="space-y-3">
@@ -216,6 +367,7 @@ export default function Home() {
         </div>
 
         {/* Products */}
+        {!isSearchActive && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
@@ -233,7 +385,7 @@ export default function Home() {
             )}
           </div>
 
-          {loading && displayedProducts.length === 0 ? (
+          {loading && products.length === 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, idx) => (
                 <Skeleton key={idx} className="h-64 bg-zinc-900/60" />
@@ -241,7 +393,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {displayedProducts.map((product) => {
+              {products.map((product) => {
                 const firstImage = product.images?.[0]?.url;
                 const statusClass = statusColors[product.status] || statusColors.discontinued;
                 return (
@@ -293,7 +445,7 @@ export default function Home() {
             </div>
           )}
 
-          {!loading && displayedProducts.length === 0 && (
+          {!loading && products.length === 0 && (
             <Card className="bg-zinc-900/60 border-zinc-800">
               <CardContent className="p-8 text-center space-y-3">
                 <p className="text-white font-medium">Нічого не знайдено</p>
@@ -305,7 +457,10 @@ export default function Home() {
                   className="border-zinc-800 text-zinc-200 hover:border-amber-500 hover:text-white"
                   onClick={() => {
                     setSearchTerm('');
+                    setActiveSearchTerm('');
                     setSelectedCategory('all');
+                    setIsSearchActive(false);
+                    setSearchResults([]);
                     refresh();
                   }}
                 >
@@ -327,6 +482,7 @@ export default function Home() {
             </div>
           )}
         </div>
+        )}
       </div>
     </div>
   );

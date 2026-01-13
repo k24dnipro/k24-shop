@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   useCallback,
@@ -65,7 +65,7 @@ interface ProductFormData {
   partNumber: string;
   oem: string;
   compatibility: string;
-  condition: 'new' | 'used' | 'refurbished';
+  condition: "new" | "used" | "refurbished";
   year: string;
   carBrand: string;
   carModel: string;
@@ -77,7 +77,12 @@ interface ProductFormData {
 
 interface ProductFormProps {
   product?: Product;
-  onSubmit: (data: Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'views' | 'inquiries'>) => Promise<string | void>;
+  onSubmit: (
+    data: Omit<
+      Product,
+      "id" | "createdAt" | "updatedAt" | "views" | "inquiries"
+    >
+  ) => Promise<string | void>;
   loading?: boolean;
 }
 
@@ -95,114 +100,147 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
     formState: { errors },
   } = useForm<ProductFormData>({
     defaultValues: {
-      sku: product?.sku || '',
-      name: product?.name || '',
-      description: product?.description || '',
+      sku: product?.sku || "",
+      name: product?.name || "",
+      description: product?.description || "",
       price: product?.price || 0,
       originalPrice: product?.originalPrice,
-      categoryId: product?.categoryId || '',
-      subcategoryId: product?.subcategoryId || '',
-      status: product?.status || 'in_stock',
-      brand: product?.brand || '',
-      partNumber: product?.partNumber || '',
-      oem: product?.oem?.join(', ') || '',
-      compatibility: product?.compatibility?.join(', ') || '',
-      condition: product?.condition || 'used',
-      year: product?.year || '',
-      carBrand: product?.carBrand || '',
-      carModel: product?.carModel || '',
-      metaTitle: product?.seo?.metaTitle || '',
-      metaDescription: product?.seo?.metaDescription || '',
-      metaKeywords: product?.seo?.metaKeywords?.join(', ') || '',
-      slug: product?.seo?.slug || '',
+      categoryId: product?.categoryId || "",
+      subcategoryId: product?.subcategoryId || "",
+      status: product?.status || "in_stock",
+      brand: product?.brand || "",
+      partNumber: product?.partNumber || "",
+      oem: product?.oem?.join(", ") || "",
+      compatibility: product?.compatibility?.join(", ") || "",
+      condition: product?.condition || "used",
+      year: product?.year || "",
+      carBrand: product?.carBrand || "",
+      carModel: product?.carModel || "",
+      metaTitle: product?.seo?.metaTitle || "",
+      metaDescription: product?.seo?.metaDescription || "",
+      metaKeywords: product?.seo?.metaKeywords?.join(", ") || "",
+      slug: product?.seo?.slug || "",
     },
   });
 
-  const watchCategoryId = watch('categoryId');
-  const watchMetaTitle = watch('metaTitle');
-  const watchMetaDescription = watch('metaDescription');
+  const watchCategoryId = watch("categoryId");
+  const watchMetaTitle = watch("metaTitle");
+  const watchMetaDescription = watch("metaDescription");
 
   const selectedCategory = categories.find((c) => c.id === watchCategoryId);
-  const subcategories = categories.filter((c) => c.parentId === selectedCategory?.id);
 
-  const handleImageUpload = useCallback(async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+  const subcategories = categories.filter(
+    (c) => c.parentId === selectedCategory?.id
+  );
 
-    setUploading(true);
-    try {
-      const productId = product?.id || 'temp_' + Date.now();
+  const handleImageUpload = useCallback(
+    async (files: FileList | null) => {
+      if (!files || files.length === 0) return;
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+      setUploading(true);
+      try {
+        const productId = product?.id || "temp_" + Date.now();
 
-        if (!file.type.startsWith('image/')) {
-          toast.error(`${file.name} не є зображенням`);
-          continue;
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+
+          if (!file.type.startsWith("image/")) {
+            toast.error(`${file.name} не є зображенням`);
+            continue;
+          }
+
+          if (file.size > 5 * 1024 * 1024) {
+            toast.error(`${file.name} занадто великий (макс. 5MB)`);
+            continue;
+          }
+
+          const newImage = await uploadProductImage(
+            productId,
+            file,
+            images.length + i
+          );
+          setImages((prev) => [...prev, newImage]);
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-          toast.error(`${file.name} занадто великий (макс. 5MB)`);
-          continue;
-        }
+        toast.success("Фото завантажено");
+      } catch {
+        toast.error("Помилка завантаження фото");
+      } finally {
+        setUploading(false);
+      }
+    },
+    [images.length, product?.id]
+  );
 
-        const newImage = await uploadProductImage(productId, file, images.length + i);
-        setImages((prev) => [...prev, newImage]);
+  const handleImageDelete = useCallback(
+    async (imageId: string) => {
+      if (!product?.id) {
+        setImages((prev) => prev.filter((img) => img.id !== imageId));
+        return;
       }
 
-      toast.success('Фото завантажено');
-    } catch {
-      toast.error('Помилка завантаження фото');
-    } finally {
-      setUploading(false);
-    }
-  }, [images.length, product?.id]);
-
-  const handleImageDelete = useCallback(async (imageId: string) => {
-    if (!product?.id) {
-      setImages((prev) => prev.filter((img) => img.id !== imageId));
-      return;
-    }
-
-    try {
-      await deleteProductImage(product.id, imageId);
-      setImages((prev) => prev.filter((img) => img.id !== imageId));
-      toast.success('Фото видалено');
-    } catch {
-      toast.error('Помилка видалення фото');
-    }
-  }, [product?.id]);
+      try {
+        await deleteProductImage(product.id, imageId);
+        setImages((prev) => prev.filter((img) => img.id !== imageId));
+        toast.success("Фото видалено");
+      } catch {
+        toast.error("Помилка видалення фото");
+      }
+    },
+    [product?.id]
+  );
 
   const onFormSubmit = async (data: ProductFormData) => {
-    const submitData: Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'views' | 'inquiries'> = {
+    const submitData = {
       sku: data.sku,
       name: data.name,
       description: data.description,
       price: data.price,
-      originalPrice: data.originalPrice,
+      originalPrice: data.originalPrice || null,
       categoryId: data.categoryId,
-      subcategoryId: data.subcategoryId || undefined,
+      subcategoryId: data.subcategoryId || null,
       status: data.status,
       brand: data.brand,
       partNumber: data.partNumber,
-      oem: data.oem ? data.oem.split(',').map((s) => s.trim()).filter(Boolean) : [],
-      compatibility: data.compatibility ? data.compatibility.split(',').map((s) => s.trim()).filter(Boolean) : [],
+      oem: data.oem
+        ? data.oem
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
+      compatibility: data.compatibility
+        ? data.compatibility
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
       condition: data.condition,
-      year: data.year || undefined,
-      carBrand: data.carBrand || undefined,
-      carModel: data.carModel || undefined,
+      year: data.year || null,
+      carBrand: data.carBrand || null,
+      carModel: data.carModel || null,
       images,
       seo: {
         metaTitle: data.metaTitle || data.name,
-        metaDescription: data.metaDescription || data.description?.substring(0, 160) || '',
-        metaKeywords: data.metaKeywords ? data.metaKeywords.split(',').map((s) => s.trim()).filter(Boolean) : [],
+        metaDescription:
+          data.metaDescription || data.description?.substring(0, 160) || "",
+        metaKeywords: data.metaKeywords
+          ? data.metaKeywords
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : [],
         ogTitle: data.metaTitle || data.name,
-        ogDescription: data.metaDescription || data.description?.substring(0, 160) || '',
-        ogImage: images[0]?.url || '',
-        canonicalUrl: '',
-        slug: data.slug || data.sku.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+        ogDescription:
+          data.metaDescription || data.description?.substring(0, 160) || "",
+        ogImage: images[0]?.url || "",
+        canonicalUrl: "",
+        slug: data.slug || data.sku.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
       },
-      createdBy: product?.createdBy || '',
-    };
+      createdBy: product?.createdBy || "",
+    } as Omit<
+      Product,
+      "id" | "createdAt" | "updatedAt" | "views" | "inquiries"
+    >;
 
     await onSubmit(submitData);
   };
@@ -211,13 +249,22 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
     <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
       <Tabs defaultValue="general" className="w-full">
         <TabsList className="bg-zinc-900/50 border border-zinc-800">
-          <TabsTrigger value="general" className="data-[state=active]:bg-zinc-800">
+          <TabsTrigger
+            value="general"
+            className="data-[state=active]:bg-zinc-800"
+          >
             Загальне
           </TabsTrigger>
-          <TabsTrigger value="details" className="data-[state=active]:bg-zinc-800">
+          <TabsTrigger
+            value="details"
+            className="data-[state=active]:bg-zinc-800"
+          >
             Деталі
           </TabsTrigger>
-          <TabsTrigger value="images" className="data-[state=active]:bg-zinc-800">
+          <TabsTrigger
+            value="images"
+            className="data-[state=active]:bg-zinc-800"
+          >
             Фото
           </TabsTrigger>
           <TabsTrigger value="seo" className="data-[state=active]:bg-zinc-800">
@@ -230,33 +277,41 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
           <div className="grid gap-6 lg:grid-cols-2">
             <Card className="bg-zinc-900/50 border-zinc-800">
               <CardHeader>
-                <CardTitle className="text-white text-lg">Основна інформація</CardTitle>
+                <CardTitle className="text-white text-lg">
+                  Основна інформація
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label className="text-zinc-400">SKU *</Label>
                   <Input
-                    {...register('sku', { required: "SKU обов'язковий" })}
+                    {...register("sku", { required: "SKU обов'язковий" })}
                     className="bg-zinc-800 border-zinc-700 text-white"
                     placeholder="Унікальний код товару"
                   />
-                  {errors.sku && <p className="text-sm text-red-500">{errors.sku.message}</p>}
+                  {errors.sku && (
+                    <p className="text-sm text-red-500">{errors.sku.message}</p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-zinc-400">Назва *</Label>
                   <Input
-                    {...register('name', { required: "Назва обов'язкова" })}
+                    {...register("name", { required: "Назва обов'язкова" })}
                     className="bg-zinc-800 border-zinc-700 text-white"
                     placeholder="Назва товару"
                   />
-                  {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+                  {errors.name && (
+                    <p className="text-sm text-red-500">
+                      {errors.name.message}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-zinc-400">Опис</Label>
                   <Textarea
-                    {...register('description')}
+                    {...register("description")}
                     className="bg-zinc-800 border-zinc-700 text-white min-h-32"
                     placeholder="Детальний опис товару"
                   />
@@ -266,7 +321,9 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
 
             <Card className="bg-zinc-900/50 border-zinc-800">
               <CardHeader>
-                <CardTitle className="text-white text-lg">Ціна та статус</CardTitle>
+                <CardTitle className="text-white text-lg">
+                  Ціна та статус
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -274,21 +331,25 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                     <Label className="text-zinc-400">Ціна (₴) *</Label>
                     <Input
                       type="number"
-                      {...register('price', { 
+                      {...register("price", {
                         required: "Ціна обов'язкова",
-                        min: { value: 0, message: 'Ціна має бути >= 0' },
+                        min: { value: 0, message: "Ціна має бути >= 0" },
                         valueAsNumber: true,
                       })}
                       className="bg-zinc-800 border-zinc-700 text-white"
                     />
-                    {errors.price && <p className="text-sm text-red-500">{errors.price.message}</p>}
+                    {errors.price && (
+                      <p className="text-sm text-red-500">
+                        {errors.price.message}
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label className="text-zinc-400">Стара ціна (₴)</Label>
                     <Input
                       type="number"
-                      {...register('originalPrice', { valueAsNumber: true })}
+                      {...register("originalPrice", { valueAsNumber: true })}
                       className="bg-zinc-800 border-zinc-700 text-white"
                     />
                   </div>
@@ -300,7 +361,10 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                     name="status"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
                           <SelectValue placeholder="Оберіть статус" />
                         </SelectTrigger>
@@ -327,7 +391,10 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                     control={control}
                     rules={{ required: "Категорія обов'язкова" }}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
                           <SelectValue placeholder="Оберіть категорію" />
                         </SelectTrigger>
@@ -347,7 +414,11 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                       </Select>
                     )}
                   />
-                  {errors.categoryId && <p className="text-sm text-red-500">{errors.categoryId.message}</p>}
+                  {errors.categoryId && (
+                    <p className="text-sm text-red-500">
+                      {errors.categoryId.message}
+                    </p>
+                  )}
                 </div>
 
                 {subcategories.length > 0 && (
@@ -357,7 +428,10 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                       name="subcategoryId"
                       control={control}
                       render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
                           <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
                             <SelectValue placeholder="Оберіть підкатегорію" />
                           </SelectTrigger>
@@ -386,14 +460,16 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
         <TabsContent value="details" className="space-y-6 mt-6">
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardHeader>
-              <CardTitle className="text-white text-lg">Характеристики</CardTitle>
+              <CardTitle className="text-white text-lg">
+                Характеристики
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label className="text-zinc-400">Бренд</Label>
                   <Input
-                    {...register('brand')}
+                    {...register("brand")}
                     className="bg-zinc-800 border-zinc-700 text-white"
                     placeholder="Виробник"
                   />
@@ -402,7 +478,7 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                 <div className="space-y-2">
                   <Label className="text-zinc-400">Номер запчастини</Label>
                   <Input
-                    {...register('partNumber')}
+                    {...register("partNumber")}
                     className="bg-zinc-800 border-zinc-700 text-white"
                     placeholder="Part Number"
                   />
@@ -414,7 +490,10 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                     name="condition"
                     control={control}
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
                           <SelectValue placeholder="Оберіть стан" />
                         </SelectTrigger>
@@ -437,7 +516,7 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                 <div className="space-y-2">
                   <Label className="text-zinc-400">Рік</Label>
                   <Input
-                    {...register('year')}
+                    {...register("year")}
                     className="bg-zinc-800 border-zinc-700 text-white"
                     placeholder="2020"
                   />
@@ -446,7 +525,7 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                 <div className="space-y-2">
                   <Label className="text-zinc-400">Марка авто</Label>
                   <Input
-                    {...register('carBrand')}
+                    {...register("carBrand")}
                     className="bg-zinc-800 border-zinc-700 text-white"
                     placeholder="BMW, Audi..."
                   />
@@ -455,7 +534,7 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                 <div className="space-y-2">
                   <Label className="text-zinc-400">Модель авто</Label>
                   <Input
-                    {...register('carModel')}
+                    {...register("carModel")}
                     className="bg-zinc-800 border-zinc-700 text-white"
                     placeholder="X5, A4..."
                   />
@@ -465,21 +544,25 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
               <div className="space-y-2">
                 <Label className="text-zinc-400">OEM номери</Label>
                 <Input
-                  {...register('oem')}
+                  {...register("oem")}
                   className="bg-zinc-800 border-zinc-700 text-white"
                   placeholder="Через кому: 123456, 789012"
                 />
-                <p className="text-xs text-zinc-500">Оригінальні номери запчастини (через кому)</p>
+                <p className="text-xs text-zinc-500">
+                  Оригінальні номери запчастини (через кому)
+                </p>
               </div>
 
               <div className="space-y-2">
                 <Label className="text-zinc-400">Сумісність</Label>
                 <Textarea
-                  {...register('compatibility')}
+                  {...register("compatibility")}
                   className="bg-zinc-800 border-zinc-700 text-white"
                   placeholder="BMW X5 2018-2022, BMW X6 2019-2022"
                 />
-                <p className="text-xs text-zinc-500">Список сумісних авто (через кому)</p>
+                <p className="text-xs text-zinc-500">
+                  Список сумісних авто (через кому)
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -502,8 +585,12 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                   ) : (
                     <>
                       <Upload className="h-8 w-8 text-zinc-500 mb-2" />
-                      <span className="text-sm text-zinc-500">Натисніть або перетягніть фото</span>
-                      <span className="text-xs text-zinc-600 mt-1">PNG, JPG до 5MB</span>
+                      <span className="text-sm text-zinc-500">
+                        Натисніть або перетягніть фото
+                      </span>
+                      <span className="text-xs text-zinc-600 mt-1">
+                        PNG, JPG до 5MB
+                      </span>
                     </>
                   )}
                 </label>
@@ -525,7 +612,12 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                       key={image.id}
                       className="relative group aspect-square rounded-lg overflow-hidden bg-zinc-800"
                     >
-                      <Image src={image.url} alt={image.alt} fill className="object-cover" />
+                      <Image
+                        src={image.url}
+                        alt={image.alt}
+                        fill
+                        className="object-cover"
+                      />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         <Button
                           type="button"
@@ -554,13 +646,15 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
         <TabsContent value="seo" className="space-y-6 mt-6">
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardHeader>
-              <CardTitle className="text-white text-lg">SEO налаштування</CardTitle>
+              <CardTitle className="text-white text-lg">
+                SEO налаштування
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-zinc-400">URL (slug)</Label>
                 <Input
-                  {...register('slug')}
+                  {...register("slug")}
                   className="bg-zinc-800 border-zinc-700 text-white"
                   placeholder="product_name"
                 />
@@ -572,33 +666,39 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
               <div className="space-y-2">
                 <Label className="text-zinc-400">Meta Title</Label>
                 <Input
-                  {...register('metaTitle')}
+                  {...register("metaTitle")}
                   className="bg-zinc-800 border-zinc-700 text-white"
                   placeholder="SEO заголовок (50-60 символів)"
                   maxLength={60}
                 />
-                <p className="text-xs text-zinc-500">{watchMetaTitle.length}/60 символів</p>
+                <p className="text-xs text-zinc-500">
+                  {watchMetaTitle.length}/60 символів
+                </p>
               </div>
 
               <div className="space-y-2">
                 <Label className="text-zinc-400">Meta Description</Label>
                 <Textarea
-                  {...register('metaDescription')}
+                  {...register("metaDescription")}
                   className="bg-zinc-800 border-zinc-700 text-white"
                   placeholder="SEO опис (150-160 символів)"
                   maxLength={160}
                 />
-                <p className="text-xs text-zinc-500">{watchMetaDescription.length}/160 символів</p>
+                <p className="text-xs text-zinc-500">
+                  {watchMetaDescription.length}/160 символів
+                </p>
               </div>
 
               <div className="space-y-2">
                 <Label className="text-zinc-400">Meta Keywords</Label>
                 <Input
-                  {...register('metaKeywords')}
+                  {...register("metaKeywords")}
                   className="bg-zinc-800 border-zinc-700 text-white"
                   placeholder="ключові, слова, через, кому"
                 />
-                <p className="text-xs text-zinc-500">Ключові слова для пошукових систем (через кому)</p>
+                <p className="text-xs text-zinc-500">
+                  Ключові слова для пошукових систем (через кому)
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -626,13 +726,12 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
               Збереження...
             </>
           ) : product ? (
-            'Зберегти зміни'
+            "Зберегти зміни"
           ) : (
-            'Створити товар'
+            "Створити товар"
           )}
         </Button>
       </div>
     </form>
   );
 }
-

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   useEffect,
@@ -20,9 +20,9 @@ export default function Home() {
       if (didRedirectRef.current) return;
       didRedirectRef.current = true;
       if (user) {
-        router.replace('/admin');
+        router.replace("/admin");
       } else {
-        router.replace('/login');
+        router.replace("/login");
       }
       setChecking(false);
     });

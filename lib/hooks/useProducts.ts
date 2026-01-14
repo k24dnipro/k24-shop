@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   useCallback,
@@ -30,65 +30,74 @@ interface UseProductsOptions {
 
 export function useProducts(options: UseProductsOptions = {}) {
   const { pageSize = 20, categoryId, status, autoFetch = true } = options;
-
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lastDocRef = useRef<DocumentSnapshot | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
-  const fetchProducts = useCallback(async (reset = false) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await getProducts({
-        pageSize,
-        categoryId,
-        status,
-        lastDoc: reset ? undefined : lastDocRef.current || undefined,
-      });
+  const fetchProducts = useCallback(
+    async (reset = false) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await getProducts({
+          pageSize,
+          categoryId,
+          status,
+          lastDoc: reset ? undefined : lastDocRef.current || undefined,
+        });
 
-      if (reset) {
-        setProducts(result.products);
-      } else {
-        setProducts((prev) => [...prev, ...result.products]);
+        if (reset) {
+          setProducts(result.products);
+        } else {
+          setProducts((prev) => [...prev, ...result.products]);
+        }
+
+        lastDocRef.current = result.lastVisible;
+        setHasMore(result.hasMore);
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Помилка завантаження товарів";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [pageSize, categoryId, status]
+  );
+
+  const search = useCallback(
+    async (searchTerm: string) => {
+      if (!searchTerm.trim()) {
+        lastDocRef.current = null;
+        fetchProducts(true);
+        return;
       }
 
-      lastDocRef.current = result.lastVisible;
-      setHasMore(result.hasMore);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка завантаження товарів';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [pageSize, categoryId, status]);
-
-  const search = useCallback(async (searchTerm: string) => {
-    if (!searchTerm.trim()) {
-      lastDocRef.current = null;
-      fetchProducts(true);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const results = await searchProducts(searchTerm, { categoryId, status });
-      setProducts(results);
-      setHasMore(false);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка пошуку';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }, [categoryId, status]);
+      setLoading(true);
+      setError(null);
+      try {
+        const results = await searchProducts(searchTerm, {
+          categoryId,
+          status,
+        });
+        setProducts(results);
+        setHasMore(false);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Помилка пошуку";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [categoryId, status]
+  );
 
   const refresh = useCallback(() => {
     lastDocRef.current = null;
     setHasMore(true);
-    search('');
+    search("");
   }, [search]);
 
   const loadMore = useCallback(() => {
@@ -100,12 +109,16 @@ export function useProducts(options: UseProductsOptions = {}) {
   useEffect(() => {
     if (autoFetch) {
       // Use search which handles filters client-side
-      search('');
+      search("");
     }
   }, [categoryId, status]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const filteredProducts = products.filter((product) =>
+    categoryId ? product.categoryId === categoryId : true
+  );
+
   return {
-    products,
+    products: filteredProducts,
     loading,
     error,
     hasMore,
@@ -133,7 +146,8 @@ export function useProduct(id: string | null) {
       const data = await getProductById(id);
       setProduct(data);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка завантаження товару';
+      const message =
+        err instanceof Error ? err.message : "Помилка завантаження товару";
       setError(message);
     } finally {
       setLoading(false);
@@ -144,22 +158,26 @@ export function useProduct(id: string | null) {
     fetchProduct();
   }, [fetchProduct]);
 
-  const update = useCallback(async (updates: Partial<Product>) => {
-    if (!id) return;
+  const update = useCallback(
+    async (updates: Partial<Product>) => {
+      if (!id) return;
 
-    setLoading(true);
-    setError(null);
-    try {
-      await updateProduct(id, updates);
-      await fetchProduct();
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка оновлення товару';
-      setError(message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [id, fetchProduct]);
+      setLoading(true);
+      setError(null);
+      try {
+        await updateProduct(id, updates);
+        await fetchProduct();
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Помилка оновлення товару";
+        setError(message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [id, fetchProduct]
+  );
 
   const remove = useCallback(async () => {
     if (!id) return;
@@ -170,7 +188,8 @@ export function useProduct(id: string | null) {
       await deleteProduct(id);
       setProduct(null);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка видалення товару';
+      const message =
+        err instanceof Error ? err.message : "Помилка видалення товару";
       setError(message);
       throw err;
     } finally {
@@ -192,22 +211,29 @@ export function useProductMutations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const create = useCallback(async (
-    productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'views' | 'inquiries'>
-  ) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const id = await createProduct(productData);
-      return id;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка створення товару';
-      setError(message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const create = useCallback(
+    async (
+      productData: Omit<
+        Product,
+        "id" | "createdAt" | "updatedAt" | "views" | "inquiries"
+      >
+    ) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const id = await createProduct(productData);
+        return id;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Помилка створення товару";
+        setError(message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   const update = useCallback(async (id: string, updates: Partial<Product>) => {
     setLoading(true);
@@ -215,7 +241,8 @@ export function useProductMutations() {
     try {
       await updateProduct(id, updates);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка оновлення товару';
+      const message =
+        err instanceof Error ? err.message : "Помилка оновлення товару";
       setError(message);
       throw err;
     } finally {
@@ -229,7 +256,8 @@ export function useProductMutations() {
     try {
       await deleteProduct(id);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка видалення товару';
+      const message =
+        err instanceof Error ? err.message : "Помилка видалення товару";
       setError(message);
       throw err;
     } finally {
@@ -243,7 +271,8 @@ export function useProductMutations() {
     try {
       await deleteProducts(ids);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка видалення товарів';
+      const message =
+        err instanceof Error ? err.message : "Помилка видалення товарів";
       setError(message);
       throw err;
     } finally {
@@ -260,4 +289,3 @@ export function useProductMutations() {
     removeMany,
   };
 }
-

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   useEffect,
@@ -61,22 +61,23 @@ import { ColumnDef } from '@tanstack/react-table';
 export default function ProductsPage() {
   const router = useRouter();
   const { hasPermission } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-  const { products, loading, search, refresh } = useProducts({
-    categoryId: categoryFilter !== 'all' ? categoryFilter : undefined,
-    status: statusFilter !== 'all' ? (statusFilter as ProductStatus) : undefined,
+  const { products, search, refresh } = useProducts({
+    categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
+    status:
+      statusFilter !== "all" ? (statusFilter as ProductStatus) : undefined,
   });
   const { categories } = useCategories();
   const { remove, loading: mutationLoading } = useProductMutations();
 
-  const canEdit = hasPermission('canEditProducts');
-  const canDelete = hasPermission('canDeleteProducts');
-  const canCreate = hasPermission('canCreateProducts');
+  const canEdit = hasPermission("canEditProducts");
+  const canDelete = hasPermission("canDeleteProducts");
+  const canCreate = hasPermission("canCreateProducts");
 
   // Search and filter with debounce
   useEffect(() => {
@@ -93,10 +94,10 @@ export default function ProductsPage() {
 
     try {
       await remove(productToDelete.id);
-      toast.success('Товар видалено');
+      toast.success("Товар видалено");
       refresh();
     } catch (error) {
-      toast.error('Помилка видалення товару');
+      toast.error("Помилка видалення товару");
     } finally {
       setDeleteDialogOpen(false);
       setProductToDelete(null);
@@ -105,10 +106,10 @@ export default function ProductsPage() {
 
   const getStatusBadge = (status: ProductStatus) => {
     const statusConfig = {
-      in_stock: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
-      on_order: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-      out_of_stock: 'bg-red-500/10 text-red-500 border-red-500/20',
-      discontinued: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20',
+      in_stock: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+      on_order: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+      out_of_stock: "bg-red-500/10 text-red-500 border-red-500/20",
+      discontinued: "bg-zinc-500/10 text-zinc-500 border-zinc-500/20",
     };
 
     return (
@@ -119,13 +120,13 @@ export default function ProductsPage() {
   };
 
   const getCategoryName = (categoryId: string) => {
-    return categories.find((c) => c.id === categoryId)?.name || '-';
+    return categories.find((c) => c.id === categoryId)?.name || "-";
   };
 
   const columns: ColumnDef<Product>[] = [
     {
-      accessorKey: 'images',
-      header: '',
+      accessorKey: "images",
+      header: "",
       cell: ({ row }) => {
         const images = row.original.images;
         const firstImage = images?.[0]?.url;
@@ -147,32 +148,38 @@ export default function ProductsPage() {
       },
     },
     {
-      accessorKey: 'sku',
-      header: 'SKU',
+      accessorKey: "sku",
+      header: "SKU",
       cell: ({ row }) => (
-        <span className="font-mono text-xs text-zinc-400">{row.original.sku}</span>
+        <span className="font-mono text-xs text-zinc-400">
+          {row.original.sku}
+        </span>
       ),
     },
     {
-      accessorKey: 'name',
-      header: 'Назва',
+      accessorKey: "name",
+      header: "Назва",
       cell: ({ row }) => (
         <div className="flex flex-col">
           <span className="font-medium text-white">{row.original.name}</span>
-          <span className="text-xs text-zinc-500">{row.original.partNumber}</span>
+          <span className="text-xs text-zinc-500">
+            {row.original.partNumber}
+          </span>
         </div>
       ),
     },
     {
-      accessorKey: 'categoryId',
-      header: 'Категорія',
+      accessorKey: "categoryId",
+      header: "Категорія",
       cell: ({ row }) => (
-        <span className="text-zinc-400">{getCategoryName(row.original.categoryId)}</span>
+        <span className="text-zinc-400">
+          {getCategoryName(row.original.categoryId)}
+        </span>
       ),
     },
     {
-      accessorKey: 'price',
-      header: 'Ціна',
+      accessorKey: "price",
+      header: "Ціна",
       cell: ({ row }) => (
         <span className="font-medium text-amber-500">
           {row.original.price.toLocaleString()} ₴
@@ -180,27 +187,34 @@ export default function ProductsPage() {
       ),
     },
     {
-      accessorKey: 'status',
-      header: 'Статус',
+      accessorKey: "status",
+      header: "Статус",
       cell: ({ row }) => getStatusBadge(row.original.status),
     },
     {
-      accessorKey: 'views',
-      header: 'Перегляди',
+      accessorKey: "views",
+      header: "Перегляди",
       cell: ({ row }) => (
         <span className="text-zinc-400">{row.original.views || 0}</span>
       ),
     },
     {
-      id: 'actions',
+      id: "actions",
       cell: ({ row }) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-white">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-zinc-400 hover:text-white"
+            >
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800">
+          <DropdownMenuContent
+            align="end"
+            className="bg-zinc-950 border-zinc-800"
+          >
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
@@ -264,7 +278,7 @@ export default function ProductsPage() {
                   variant="ghost"
                   size="icon"
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 text-zinc-500 hover:text-white"
-                  onClick={() => setSearchTerm('')}
+                  onClick={() => setSearchTerm("")}
                 >
                   <X className="h-3 w-3" />
                 </Button>
@@ -278,7 +292,10 @@ export default function ProductsPage() {
                 <SelectValue placeholder="Категорія" />
               </SelectTrigger>
               <SelectContent className="bg-zinc-950 border-zinc-800">
-                <SelectItem value="all" className="text-zinc-400 focus:text-white focus:bg-zinc-900">
+                <SelectItem
+                  value="all"
+                  className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                >
                   Всі категорії
                 </SelectItem>
                 {categories.map((cat) => (
@@ -299,7 +316,10 @@ export default function ProductsPage() {
                 <SelectValue placeholder="Статус" />
               </SelectTrigger>
               <SelectContent className="bg-zinc-950 border-zinc-800">
-                <SelectItem value="all" className="text-zinc-400 focus:text-white focus:bg-zinc-900">
+                <SelectItem
+                  value="all"
+                  className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                >
                   Всі статуси
                 </SelectItem>
                 {PRODUCT_STATUSES.map((status) => (
@@ -318,7 +338,7 @@ export default function ProductsPage() {
           {/* Add button */}
           {canCreate && (
             <Button
-              onClick={() => router.push('/admin/products/new')}
+              onClick={() => router.push("/admin/products/new")}
               className="bg-amber-500 hover:bg-amber-600 text-black w-full sm:w-auto"
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -339,10 +359,12 @@ export default function ProductsPage() {
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent className="bg-zinc-950 border-zinc-800">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Видалити товар?</AlertDialogTitle>
+            <AlertDialogTitle className="text-white">
+              Видалити товар?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400">
-              Ви впевнені, що хочете видалити товар &quot;{productToDelete?.name}&quot;? 
-              Цю дію неможливо скасувати.
+              Ви впевнені, що хочете видалити товар &quot;
+              {productToDelete?.name}&quot;? Цю дію неможливо скасувати.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -354,7 +376,7 @@ export default function ProductsPage() {
               disabled={mutationLoading}
               className="bg-red-500 hover:bg-red-600 text-white"
             >
-              {mutationLoading ? 'Видалення...' : 'Видалити'}
+              {mutationLoading ? "Видалення..." : "Видалити"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -362,4 +384,3 @@ export default function ProductsPage() {
     </div>
   );
 }
-

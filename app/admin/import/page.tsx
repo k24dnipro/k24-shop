@@ -77,6 +77,79 @@ const RUSSIAN_HEADER_MAP: Record<string, string> = {
   "URL Slug": "slug",
 };
 
+// Map status values to valid ProductStatus
+function normalizeStatus(status: string | undefined): string {
+  if (!status) return "in_stock";
+  
+  const s = status.toLowerCase().trim();
+  
+  // In stock / available statuses
+  if (
+    s === "in_stock" ||
+    s === "in stock" ||
+    s === "instock" ||
+    s === "on" ||
+    s === "available" ||
+    s === "да" ||
+    s === "є" ||
+    s === "в наявності" ||
+    s === "в наличии" ||
+    s === "есть" ||
+    s === "1" ||
+    s === "discounted" ||
+    s === "discount" ||
+    s === "sale" ||
+    s === "акція" ||
+    s === "акция" ||
+    s === "знижка"
+  ) {
+    return "in_stock";
+  }
+  
+  // On order statuses
+  if (
+    s === "on_order" ||
+    s === "on order" ||
+    s === "order" ||
+    s === "під замовлення" ||
+    s === "под заказ" ||
+    s === "замовлення" ||
+    s === "заказ"
+  ) {
+    return "on_order";
+  }
+  
+  // Out of stock statuses
+  if (
+    s === "out_of_stock" ||
+    s === "out of stock" ||
+    s === "outofstock" ||
+    s === "off" ||
+    s === "unavailable" ||
+    s === "нет" ||
+    s === "немає" ||
+    s === "нема" ||
+    s === "відсутній" ||
+    s === "0"
+  ) {
+    return "out_of_stock";
+  }
+  
+  // Discontinued statuses
+  if (
+    s === "discontinued" ||
+    s === "знято" ||
+    s === "знято з виробництва" ||
+    s === "снято" ||
+    s === "снято с производства"
+  ) {
+    return "discontinued";
+  }
+  
+  // Default to in_stock if not recognized
+  return "in_stock";
+}
+
 // Convert Russian CSV row to English format
 function mapRussianCSVRow(row: Record<string, string>): CSVProductRow {
   const mapped: Partial<CSVProductRow> & { isUsed?: string | number } = {};
@@ -86,6 +159,9 @@ function mapRussianCSVRow(row: Record<string, string>): CSVProductRow {
     const englishKey = RUSSIAN_HEADER_MAP[key] || key.toLowerCase();
     (mapped as Record<string, string | null>)[englishKey] = row[key];
   });
+  
+  // Normalize status value
+  mapped.status = normalizeStatus(mapped.status as string | undefined);
 
   // Handle isUsed -> condition conversion
   if (mapped.isUsed !== undefined) {
@@ -187,10 +263,13 @@ export default function ImportPage() {
               (field) => RUSSIAN_HEADER_MAP[field] !== undefined
             );
 
-            // Map rows if Russian headers detected
+            // Map rows if Russian headers detected, otherwise just normalize status
             const mappedData = hasRussianHeaders
               ? results.data.map(mapRussianCSVRow)
-              : (results.data as unknown as CSVProductRow[]);
+              : (results.data as unknown as CSVProductRow[]).map((row) => ({
+                  ...row,
+                  status: normalizeStatus(row.status),
+                }));
 
             const errors = validateRows(mappedData);
             setParseErrors(errors);
@@ -211,7 +290,12 @@ export default function ImportPage() {
       } else if (selectedFile.name.endsWith(".xlsx")) {
         // Parse Excel
         try {
-          const rows = await parseExcelProductImport(selectedFile);
+          const rawRows = await parseExcelProductImport(selectedFile);
+          // Normalize status values
+          const rows = rawRows.map((row) => ({
+            ...row,
+            status: normalizeStatus(row.status),
+          }));
           const errors = validateRows(rows);
           setParseErrors(errors);
           setParsedData(rows);
@@ -487,17 +571,25 @@ export default function ImportPage() {
                                 </span>
                                 <span className="text-white">{row.name}</span>
                               </div>
-                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-4">
                                 <span className="text-zinc-400">
                                   {row.price} ₴
                                 </span>
-                                {row.status === "in_stock" ? (
+                                {row.status === "in_stock" || row.status === "on_order" ? (
                                   <span className="text-emerald-500 text-xs">
-                                    В наявності
+                                    {row.status === "in_stock" ? "В наявності" : "Під замовлення"}
+                                  </span>
+                                ) : row.status === "discontinued" ? (
+                                  <span className="text-amber-500 text-xs">
+                                    Знято з виробництва
+                                  </span>
+                                ) : row.status === "out_of_stock" ? (
+                                  <span className="text-red-500 text-xs">
+                                    Немає в наявності
                                   </span>
                                 ) : (
-                                  <span className="text-red-500 text-xs">
-                                    Немає
+                                  <span className="text-zinc-400 text-xs">
+                                    {row.status || "—"}
                                   </span>
                                 )}
                               </div>
@@ -594,8 +686,8 @@ export default function ImportPage() {
                   </p>
                   <p className="text-sm text-zinc-400 mt-1">Створено</p>
                 </div>
-                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-center">
-                  <p className="text-3xl font-bold text-red-500">
+                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-blue-500">
                     {importResult.updated}
                   </p>
                   <p className="text-sm text-zinc-400 mt-1">Оновлено</p>

@@ -12,6 +12,7 @@ import {
   Settings,
   Shield,
   ShieldOff,
+  Trash2,
   Users,
   XCircle,
 } from 'lucide-react';
@@ -65,6 +66,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import {
   activateUser,
   deactivateUser,
+  deleteUser,
   getUsers,
   updateUserPermissions,
   updateUserRole,
@@ -82,6 +84,17 @@ const ROLES: { value: UserRole; label: string; description: string }[] = [
   { value: 'viewer', label: 'Переглядач', description: 'Тільки перегляд статистики' },
 ];
 
+const PERMISSION_LABELS: Record<keyof UserPermissions, string> = {
+  canCreateProducts: 'Створювати товари',
+  canEditProducts: 'Редагувати товари',
+  canDeleteProducts: 'Видаляти товари',
+  canManageCategories: 'Керувати категоріями',
+  canManageUsers: 'Керувати користувачами',
+  canExportData: 'Експортувати дані',
+  canImportData: 'Імпортувати дані',
+  canViewStats: 'Переглядати статистику',
+};
+
 export default function UsersPage() {
   const { user: currentUser, hasPermission } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
@@ -91,6 +104,8 @@ export default function UsersPage() {
   const [editedPermissions, setEditedPermissions] = useState<UserPermissions | null>(null);
   const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const canManageUsers = hasPermission('canManageUsers');
 
@@ -157,9 +172,23 @@ export default function UsersPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!userToDelete) return;
+
+    try {
+      await deleteUser(userToDelete.id);
+      toast.success('Користувача видалено');
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+      fetchUsers();
+    } catch {
+      toast.error('Помилка видалення користувача');
+    }
+  };
+
   const getRoleBadge = (role: UserRole) => {
     const config: Record<UserRole, string> = {
-      admin: 'bg-red-500/10 text-red-500 border-red-500/20',
+      admin: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
       manager: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
       viewer: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
     };
@@ -352,6 +381,16 @@ export default function UsersPage() {
                               </>
                             )}
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setUserToDelete(user);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-red-400 focus:text-red-400 focus:bg-red-500/10"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Видалити
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -382,11 +421,8 @@ export default function UsersPage() {
             <div className="space-y-4 py-4">
               {Object.entries(editedPermissions).map(([key, value]) => (
                 <div key={key} className="flex items-center justify-between">
-                  <Label className="text-zinc-400 capitalize">
-                    {key
-                      .replace('can', '')
-                      .replace(/([A-Z])/g, ' $1')
-                      .trim()}
+                  <Label className="text-zinc-400">
+                    {PERMISSION_LABELS[key as keyof UserPermissions]}
                   </Label>
                   <Switch
                     checked={value}
@@ -459,6 +495,30 @@ export default function UsersPage() {
               }
             >
               {userToDeactivate?.isActive ? 'Деактивувати' : 'Активувати'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-zinc-950 border-zinc-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">Видалити користувача?</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              Ви впевнені, що хочете видалити користувача &quot;{userToDelete?.displayName}&quot; ({userToDelete?.email})? 
+              Цю дію неможливо скасувати.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800">
+              Скасувати
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              Видалити
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

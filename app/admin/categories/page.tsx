@@ -134,13 +134,13 @@ export default function CategoriesPage() {
         await update(editingCategory.id, categoryData);
         toast.success('Категорію оновлено');
       } else {
-        await create(categoryData as any);
+        await create(categoryData);
         toast.success('Категорію створено');
       }
 
       setDialogOpen(false);
       refresh();
-    } catch (error) {
+    } catch {
       toast.error('Помилка збереження категорії');
     }
   };
@@ -154,7 +154,7 @@ export default function CategoriesPage() {
       setDeleteDialogOpen(false);
       setCategoryToDelete(null);
       refresh();
-    } catch (error) {
+    } catch {
       toast.error('Помилка видалення категорії');
     }
   };
@@ -411,12 +411,17 @@ export default function CategoriesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Видалити категорію?</AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400">
-              Ви впевнені, що хочете видалити категорію "{categoryToDelete?.name}"?
-              {categoryToDelete && (categoryToDelete as any).children?.length > 0 && (
+              Ви впевнені, що хочете видалити категорію &quot;{categoryToDelete?.name}&quot;?
+              {categoryToDelete && (() => {
+                const categoryWithChildren = categoriesTree.find(
+                  (cat): cat is Category & { children: Category[] } => cat.id === categoryToDelete.id
+                );
+                return categoryWithChildren?.children && categoryWithChildren.children.length > 0;
+              })() ? (
                 <span className="block mt-2 text-red-400">
                   Увага: всі підкатегорії також будуть видалені!
                 </span>
-              )}
+              ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

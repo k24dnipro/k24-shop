@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
 import {
@@ -52,32 +52,32 @@ function getAuthErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     const code = (error as { code?: string }).code;
     switch (code) {
-      case 'auth/invalid-api-key':
-        return 'Невалідний API ключ Firebase. Перевірте .env.local';
-      case 'auth/invalid-credential':
-        return 'Невірний email або пароль';
-      case 'auth/user-not-found':
-        return 'Користувача не знайдено';
-      case 'auth/too-many-requests':
-        return 'Забагато спроб. Спробуйте пізніше';
-      case 'auth/email-already-in-use':
-        return 'Цей email вже використовується';
-      case 'auth/invalid-email':
-        return 'Невірний формат email';
-      case 'auth/weak-password':
-        return 'Слабкий пароль';
-      case 'auth/user-disabled':
-        return 'Акаунт деактивовано';
-      case 'auth/network-request-failed':
-        return 'Помилка мережі. Перевірте підключення';
+      case "auth/invalid-api-key":
+        return "Невалідний API ключ Firebase. Перевірте .env.local";
+      case "auth/invalid-credential":
+        return "Невірний email або пароль";
+      case "auth/user-not-found":
+        return "Користувача не знайдено";
+      case "auth/too-many-requests":
+        return "Забагато спроб. Спробуйте пізніше";
+      case "auth/email-already-in-use":
+        return "Цей email вже використовується";
+      case "auth/invalid-email":
+        return "Невірний формат email";
+      case "auth/weak-password":
+        return "Слабкий пароль";
+      case "auth/user-disabled":
+        return "Акаунт деактивовано";
+      case "auth/network-request-failed":
+        return "Помилка мережі. Перевірте підключення";
       default:
-        if (error.name === 'AbortError') {
-          return 'Запит скасовано. Перевірте налаштування Firebase.';
+        if (error.name === "AbortError") {
+          return "Запит скасовано. Перевірте налаштування Firebase.";
         }
-        return error.message || 'Помилка';
+        return error.message || "Помилка";
     }
   }
-  return 'Невідома помилка';
+  return "Невідома помилка";
 }
 
 export default function LoginPage() {
@@ -86,25 +86,25 @@ export default function LoginPage() {
   const [resetSent, setResetSent] = useState(false);
 
   const loginForm = useForm<LoginFormData>({
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: "", password: "" },
   });
 
   const registerForm = useForm<RegisterFormData>({
-    defaultValues: { name: '', email: '', password: '', confirmPassword: '' },
+    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   });
 
   const resetForm = useForm<ResetFormData>({
-    defaultValues: { email: '' },
+    defaultValues: { email: "" },
   });
 
   const onLogin = async (data: LoginFormData) => {
     setLoading(true);
     try {
       await signIn(data.email, data.password);
-      toast.success('Вхід успішний');
-      router.replace('/admin');
+      toast.success("Вхід успішний");
+      router.replace("/admin");
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       toast.error(getAuthErrorMessage(error));
     } finally {
       setLoading(false);
@@ -113,22 +113,22 @@ export default function LoginPage() {
 
   const onRegister = async (data: RegisterFormData) => {
     if (data.password !== data.confirmPassword) {
-      toast.error('Паролі не співпадають');
+      toast.error("Паролі не співпадають");
       return;
     }
 
     if (data.password.length < 6) {
-      toast.error('Пароль має бути не менше 6 символів');
+      toast.error("Пароль має бути не менше 6 символів");
       return;
     }
 
     setLoading(true);
     try {
       await signUp(data.email, data.password, data.name);
-      toast.success('Реєстрація успішна');
-      router.replace('/admin');
+      toast.success("Реєстрація успішна");
+      router.replace("/admin");
     } catch (error) {
-      console.error('Register error:', error);
+      console.error("Register error:", error);
       toast.error(getAuthErrorMessage(error));
     } finally {
       setLoading(false);
@@ -142,9 +142,11 @@ export default function LoginPage() {
       const continueUrl = `${window.location.origin}/login?mode=resetPassword`;
       await resetPassword(data.email, continueUrl);
       setResetSent(true);
-      toast.success('Інструкції надіслано на email. Перевірте папку "Спам", якщо не знайдете листа.');
+      toast.success(
+        'Інструкції надіслано на email. Перевірте папку "Спам", якщо не знайдете листа.'
+      );
     } catch (error) {
-      console.error('Password reset error:', error);
+      console.error("Password reset error:", error);
       toast.error(getAuthErrorMessage(error));
     } finally {
       setLoading(false);
@@ -163,7 +165,9 @@ export default function LoginPage() {
               <Car className="h-7 w-7 text-amber-500" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-white">K24 Shop</CardTitle>
+          <CardTitle className="text-2xl font-bold text-white">
+            K24 Shop
+          </CardTitle>
           <CardDescription className="text-zinc-500">
             Адмін-панель магазину автозапчастин
           </CardDescription>
@@ -172,17 +176,26 @@ export default function LoginPage() {
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-zinc-800">
-              <TabsTrigger value="login" className="data-[state=active]:bg-zinc-700">
+              <TabsTrigger
+                value="login"
+                className="data-[state=active]:bg-zinc-700"
+              >
                 Вхід
               </TabsTrigger>
-              <TabsTrigger value="register" className="data-[state=active]:bg-zinc-700">
+              <TabsTrigger
+                value="register"
+                className="data-[state=active]:bg-zinc-700"
+              >
                 Реєстрація
               </TabsTrigger>
             </TabsList>
 
             {/* Login Tab */}
             <TabsContent value="login" className="space-y-4 mt-6">
-              <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
+              <form
+                onSubmit={loginForm.handleSubmit(onLogin)}
+                className="space-y-4"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="login_email" className="text-zinc-400">
                     Email
@@ -191,7 +204,7 @@ export default function LoginPage() {
                     id="login_email"
                     type="email"
                     placeholder="email@example.com"
-                    {...loginForm.register('email', { required: true })}
+                    {...loginForm.register("email", { required: true })}
                     className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600"
                     disabled={loading}
                   />
@@ -205,7 +218,7 @@ export default function LoginPage() {
                     id="login_password"
                     type="password"
                     placeholder="••••••••"
-                    {...loginForm.register('password', { required: true })}
+                    {...loginForm.register("password", { required: true })}
                     className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600"
                     disabled={loading}
                   />
@@ -222,14 +235,17 @@ export default function LoginPage() {
                       Вхід...
                     </>
                   ) : (
-                    'Увійти'
+                    "Увійти"
                   )}
                 </Button>
               </form>
 
               {/* Forgot password */}
               <div className="pt-4 border-t border-zinc-800">
-                <form onSubmit={resetForm.handleSubmit(onReset)} className="space-y-4">
+                <form
+                  onSubmit={resetForm.handleSubmit(onReset)}
+                  className="space-y-4"
+                >
                   {!resetSent ? (
                     <div className="space-y-2">
                       <Label htmlFor="reset_email" className="text-zinc-400">
@@ -240,7 +256,7 @@ export default function LoginPage() {
                           id="reset_email"
                           type="email"
                           placeholder="email@example.com"
-                          {...resetForm.register('email', { required: true })}
+                          {...resetForm.register("email", { required: true })}
                           className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600"
                           disabled={loading}
                         />
@@ -260,7 +276,7 @@ export default function LoginPage() {
                     </div>
                   ) : (
                     <div className="text-center text-sm text-emerald-500">
-                      ✓ Інструкції надіслано на {resetForm.getValues('email')}
+                      ✓ Інструкції надіслано на {resetForm.getValues("email")}
                     </div>
                   )}
                 </form>
@@ -269,7 +285,10 @@ export default function LoginPage() {
 
             {/* Register Tab */}
             <TabsContent value="register" className="space-y-4 mt-6">
-              <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">
+              <form
+                onSubmit={registerForm.handleSubmit(onRegister)}
+                className="space-y-4"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="register_name" className="text-zinc-400">
                     Ім&apos;я
@@ -278,7 +297,7 @@ export default function LoginPage() {
                     id="register_name"
                     type="text"
                     placeholder="Ваше ім'я"
-                    {...registerForm.register('name', { required: true })}
+                    {...registerForm.register("name", { required: true })}
                     className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600"
                     disabled={loading}
                   />
@@ -292,7 +311,7 @@ export default function LoginPage() {
                     id="register_email"
                     type="email"
                     placeholder="email@example.com"
-                    {...registerForm.register('email', { required: true })}
+                    {...registerForm.register("email", { required: true })}
                     className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600"
                     disabled={loading}
                   />
@@ -306,7 +325,10 @@ export default function LoginPage() {
                     id="register_password"
                     type="password"
                     placeholder="Мінімум 6 символів"
-                    {...registerForm.register('password', { required: true, minLength: 6 })}
+                    {...registerForm.register("password", {
+                      required: true,
+                      minLength: 6,
+                    })}
                     className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600"
                     disabled={loading}
                   />
@@ -320,7 +342,9 @@ export default function LoginPage() {
                     id="register_confirm"
                     type="password"
                     placeholder="Повторіть пароль"
-                    {...registerForm.register('confirmPassword', { required: true })}
+                    {...registerForm.register("confirmPassword", {
+                      required: true,
+                    })}
                     className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600"
                     disabled={loading}
                   />
@@ -337,7 +361,7 @@ export default function LoginPage() {
                       Реєстрація...
                     </>
                   ) : (
-                    'Зареєструватися'
+                    "Зареєструватися"
                   )}
                 </Button>
 

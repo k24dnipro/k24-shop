@@ -594,8 +594,8 @@ export default function ImportPage() {
                   </p>
                   <p className="text-sm text-zinc-400 mt-1">Створено</p>
                 </div>
-                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg text-center">
-                  <p className="text-3xl font-bold text-blue-500">
+                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-center">
+                  <p className="text-3xl font-bold text-red-500">
                     {importResult.updated}
                   </p>
                   <p className="text-sm text-zinc-400 mt-1">Оновлено</p>

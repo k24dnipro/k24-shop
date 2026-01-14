@@ -212,8 +212,15 @@ export async function logOut(): Promise<void> {
 }
 
 // Reset password
-export async function resetPassword(email: string): Promise<void> {
-  await sendPasswordResetEmail(auth, email);
+export async function resetPassword(email: string, continueUrl?: string): Promise<void> {
+  const actionCodeSettings = continueUrl
+    ? {
+        url: continueUrl,
+        handleCodeInApp: false,
+      }
+    : undefined;
+
+  await sendPasswordResetEmail(auth, email, actionCodeSettings);
 }
 
 // Get current auth user

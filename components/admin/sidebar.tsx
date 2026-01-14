@@ -18,8 +18,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { UserPermissions } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const navigation = [
@@ -75,11 +75,11 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, hasPermission } = useAuth();
+  const { hasPermission } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
   const filteredNavigation = navigation.filter(
-    (item) => !item.permission || hasPermission(item.permission as any)
+    (item) => !item.permission || hasPermission(item.permission as keyof UserPermissions)
   );
 
   return (
@@ -133,24 +133,6 @@ export function Sidebar() {
           })}
         </nav>
       </ScrollArea>
-
-      {/* User info */}
-      {user && !collapsed && (
-        <>
-          <Separator className="bg-zinc-800" />
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-800 text-sm font-medium text-white">
-                {user.displayName?.charAt(0).toUpperCase() || 'U'}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-white">{user.displayName}</span>
-                <span className="text-xs text-zinc-500 capitalize">{user.role}</span>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
 
       {/* Collapse button */}
       <Button

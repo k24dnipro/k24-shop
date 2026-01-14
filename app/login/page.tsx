@@ -66,6 +66,10 @@ function getAuthErrorMessage(error: unknown): string {
         return 'Невірний формат email';
       case 'auth/weak-password':
         return 'Слабкий пароль';
+      case 'auth/user-disabled':
+        return 'Акаунт деактивовано';
+      case 'auth/network-request-failed':
+        return 'Помилка мережі. Перевірте підключення';
       default:
         if (error.name === 'AbortError') {
           return 'Запит скасовано. Перевірте налаштування Firebase.';
@@ -134,10 +138,13 @@ export default function LoginPage() {
   const onReset = async (data: ResetFormData) => {
     setLoading(true);
     try {
-      await resetPassword(data.email);
+      // Use window.location.origin to get the current domain
+      const continueUrl = `${window.location.origin}/login?mode=resetPassword`;
+      await resetPassword(data.email, continueUrl);
       setResetSent(true);
-      toast.success('Інструкції надіслано на email');
+      toast.success('Інструкції надіслано на email. Перевірте папку "Спам", якщо не знайдете листа.');
     } catch (error) {
+      console.error('Password reset error:', error);
       toast.error(getAuthErrorMessage(error));
     } finally {
       setLoading(false);

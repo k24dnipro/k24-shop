@@ -70,7 +70,7 @@ export default function Home() {
       try {
         const results = await searchProducts(
           searchTerm.trim(),
-          selectedCategory !== 'all' ? selectedCategory : undefined
+          selectedCategory !== 'all' ? { categoryId: selectedCategory } : undefined
         );
         console.log('Результати пошуку:', {
           searchTerm: searchTerm.trim(),

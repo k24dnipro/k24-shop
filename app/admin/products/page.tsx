@@ -78,18 +78,15 @@ export default function ProductsPage() {
   const canDelete = hasPermission('canDeleteProducts');
   const canCreate = hasPermission('canCreateProducts');
 
-  // Search with debounce
+  // Search and filter with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchTerm) {
-        search(searchTerm);
-      } else {
-        refresh();
-      }
+      // Always use search which now handles both search term and filters
+      search(searchTerm);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchTerm, categoryFilter, statusFilter, search]);
 
   const handleDelete = async () => {
     if (!productToDelete) return;
@@ -257,7 +254,7 @@ export default function ProductsPage() {
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
               <Input
-                placeholder="Пошук по ID, SKU, назві..."
+                placeholder="Пошук по SKU або назві..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-500"
@@ -344,7 +341,7 @@ export default function ProductsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white">Видалити товар?</AlertDialogTitle>
             <AlertDialogDescription className="text-zinc-400">
-              Ви впевнені, що хочете видалити товар "{productToDelete?.name}"? 
+              Ви впевнені, що хочете видалити товар &quot;{productToDelete?.name}&quot;? 
               Цю дію неможливо скасувати.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -57,18 +57,18 @@ interface ProductFormData {
   name: string;
   description: string;
   price: number;
-  originalPrice?: number;
+  originalPrice: number | null;
   categoryId: string;
-  subcategoryId?: string;
+  subcategoryId: string | null;
   status: ProductStatus;
   brand: string;
   partNumber: string;
   oem: string;
   compatibility: string;
   condition: "new" | "used" | "refurbished";
-  year: string;
-  carBrand: string;
-  carModel: string;
+  year: string | null;
+  carBrand: string | null;
+  carModel: string | null;
   metaTitle: string;
   metaDescription: string;
   metaKeywords: string;
@@ -104,18 +104,18 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
       name: product?.name || "",
       description: product?.description || "",
       price: product?.price || 0,
-      originalPrice: product?.originalPrice,
+      originalPrice: product?.originalPrice ?? null,
       categoryId: product?.categoryId || "",
-      subcategoryId: product?.subcategoryId || "",
+      subcategoryId: product?.subcategoryId ?? null,
       status: product?.status || "in_stock",
       brand: product?.brand || "",
       partNumber: product?.partNumber || "",
       oem: product?.oem?.join(", ") || "",
       compatibility: product?.compatibility?.join(", ") || "",
       condition: product?.condition || "used",
-      year: product?.year || "",
-      carBrand: product?.carBrand || "",
-      carModel: product?.carModel || "",
+      year: product?.year ?? null,
+      carBrand: product?.carBrand ?? null,
+      carModel: product?.carModel ?? null,
       metaTitle: product?.seo?.metaTitle || "",
       metaDescription: product?.seo?.metaDescription || "",
       metaKeywords: product?.seo?.metaKeywords?.join(", ") || "",
@@ -196,9 +196,9 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
       name: data.name,
       description: data.description,
       price: data.price,
-      originalPrice: data.originalPrice || null,
+      originalPrice: data.originalPrice ?? null,
       categoryId: data.categoryId,
-      subcategoryId: data.subcategoryId || null,
+      subcategoryId: data.subcategoryId ?? null,
       status: data.status,
       brand: data.brand,
       partNumber: data.partNumber,
@@ -215,9 +215,9 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
             .filter(Boolean)
         : [],
       condition: data.condition,
-      year: data.year || null,
-      carBrand: data.carBrand || null,
-      carModel: data.carModel || null,
+      year: data.year ?? null,
+      carBrand: data.carBrand ?? null,
+      carModel: data.carModel ?? null,
       images,
       seo: {
         metaTitle: data.metaTitle || data.name,
@@ -429,8 +429,8 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                       control={control}
                       render={({ field }) => (
                         <Select
-                          value={field.value}
-                          onValueChange={field.onChange}
+                          value={field.value ?? undefined}
+                          onValueChange={(value) => field.onChange(value || null)}
                         >
                           <SelectTrigger className="bg-zinc-800 border-zinc-700 text-white">
                             <SelectValue placeholder="Оберіть підкатегорію" />

@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   useCallback,
@@ -27,77 +27,223 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useCategories } from '@/lib/hooks/useCategories';
 import { importProductsFromCSV } from '@/lib/services/products';
 import {
   CSVProductRow,
   ImportResult,
 } from '@/lib/types';
+import { parseExcelProductImport } from '@/lib/utils/excel';
 
 // Sample CSV template
 const CSV_TEMPLATE = `sku,name,description,price,originalPrice,categoryId,status,brand,partNumber,oem,compatibility,condition,year,carBrand,carModel,metaTitle,metaDescription,metaKeywords,slug
 SKU001,Фара передня ліва,Оригінальна фара для BMW X5,5000,6000,cat_001,in_stock,BMW,63117442647,"123456,789012","BMW X5 2018-2022,BMW X6 2019-2022",used,2020,BMW,X5,Фара BMW X5 купити,Оригінальна фара для BMW X5 в наявності,фара bmw x5 купити київ,fara-bmw-x5`;
 
+// Map Russian CSV headers to English field names
+const RUSSIAN_HEADER_MAP: Record<string, string> = {
+  "Код запчасти": "sku",
+  Производитель: "brand",
+  "Марка авто": "carBrand",
+  "Описание запчасти": "name",
+  Количество: "quantity",
+  "Б/у": "isUsed",
+  Цена: "price",
+  "Старая цена": "originalPrice",
+  "Категория ID": "categoryId",
+  Статус: "status",
+  "Номер запчасти": "partNumber",
+  "Модель авто": "carModel",
+  "OEM номера": "oem",
+  Совместимость: "compatibility",
+  Состояние: "condition",
+  Год: "year",
+  Описание: "description",
+  "Meta Title": "metaTitle",
+  "Meta Description": "metaDescription",
+  "Meta Keywords": "metaKeywords",
+  "URL Slug": "slug",
+};
+
+// Convert Russian CSV row to English format
+function mapRussianCSVRow(row: Record<string, string>): CSVProductRow {
+  const mapped: Partial<CSVProductRow> & { isUsed?: string | number } = {};
+
+  // Map headers from Russian to English
+  Object.keys(row).forEach((key) => {
+    const englishKey = RUSSIAN_HEADER_MAP[key] || key.toLowerCase();
+    (mapped as Record<string, string | null>)[englishKey] = row[key];
+  });
+
+  // Handle isUsed -> condition conversion
+  if (mapped.isUsed !== undefined) {
+    mapped.condition =
+      mapped.isUsed === "1" || mapped.isUsed === "true" || mapped.isUsed === 1
+        ? "used"
+        : "new";
+    delete mapped.isUsed;
+  }
+
+  // If condition is not set, use Состояние if available
+  if (!mapped.condition && row["Состояние"]) {
+    const conditionValue = row["Состояние"].toLowerCase();
+    if (
+      conditionValue === "used" ||
+      conditionValue === "б/у" ||
+      conditionValue === "бy"
+    ) {
+      mapped.condition = "used";
+    } else if (
+      conditionValue === "new" ||
+      conditionValue === "новый" ||
+      conditionValue === "новий"
+    ) {
+      mapped.condition = "new";
+    } else {
+      mapped.condition = conditionValue as "new" | "used" | "refurbished";
+    }
+  }
+
+  // Ensure condition has a default value
+  if (!mapped.condition) {
+    mapped.condition = "used";
+  }
+
+  // Convert empty strings to null for optional fields
+  const optionalFields: (keyof CSVProductRow)[] = [
+    "originalPrice",
+    "subcategoryId",
+    "oem",
+    "compatibility",
+    "year",
+    "carBrand",
+    "carModel",
+    "metaTitle",
+    "metaDescription",
+    "metaKeywords",
+    "slug",
+  ];
+  optionalFields.forEach((field) => {
+    if (mapped[field] === "") {
+      (mapped as Record<string, string | null>)[field] = null;
+    }
+  });
+
+  return mapped as CSVProductRow;
+}
+
 export default function ImportPage() {
   const { user, hasPermission } = useAuth();
+  const { categories } = useCategories();
   const [file, setFile] = useState<File | null>(null);
   const [parsedData, setParsedData] = useState<CSVProductRow[]>([]);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
+  const [defaultCategory, setDefaultCategory] = useState<string>("");
 
-  const canImport = hasPermission('canImportData');
+  const canImport = hasPermission("canImportData");
 
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
-    if (!selectedFile.name.endsWith('.csv')) {
-      toast.error('Будь ласка, оберіть файл CSV');
-      return;
-    }
-
-    setFile(selectedFile);
-    setImportResult(null);
-    setParseErrors([]);
-
-    // Parse CSV
-    Papa.parse<CSVProductRow>(selectedFile, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const errors: string[] = [];
-        
-        // Validate required fields
-        results.data.forEach((row, index) => {
-          if (!row.sku) errors.push(`Рядок ${index + 2}: Відсутній SKU`);
-          if (!row.name) errors.push(`Рядок ${index + 2}: Відсутня назва`);
-          if (!row.price) errors.push(`Рядок ${index + 2}: Відсутня ціна`);
-        });
-
-        setParseErrors(errors);
-        setParsedData(results.data);
-
-        if (errors.length === 0) {
-          toast.success(`Знайдено ${results.data.length} товарів`);
-        } else {
-          toast.warning(`Знайдено ${results.data.length} товарів з ${errors.length} помилками`);
-        }
-      },
-      error: (error) => {
-        toast.error(`Помилка парсингу: ${error.message}`);
-      },
+  const validateRows = (rows: CSVProductRow[]) => {
+    const errors: string[] = [];
+    rows.forEach((row, index) => {
+      if (!row.sku) errors.push(`Рядок ${index + 2}: Відсутній SKU`);
+      if (!row.name) errors.push(`Рядок ${index + 2}: Відсутня назва`);
+      if (!row.price) errors.push(`Рядок ${index + 2}: Відсутня ціна`);
     });
-  }, []);
+    return errors;
+  };
+
+  const handleFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = e.target.files?.[0];
+      if (!selectedFile) return;
+
+      setFile(selectedFile);
+      setImportResult(null);
+      setParseErrors([]);
+
+      if (selectedFile.name.endsWith(".csv")) {
+        // Parse CSV
+        Papa.parse<Record<string, string>>(selectedFile, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (results) => {
+            // Check if headers are in Russian
+            const hasRussianHeaders = results.meta.fields?.some(
+              (field) => RUSSIAN_HEADER_MAP[field] !== undefined
+            );
+
+            // Map rows if Russian headers detected
+            const mappedData = hasRussianHeaders
+              ? results.data.map(mapRussianCSVRow)
+              : (results.data as unknown as CSVProductRow[]);
+
+            const errors = validateRows(mappedData);
+            setParseErrors(errors);
+            setParsedData(mappedData);
+
+            if (errors.length === 0) {
+              toast.success(`Знайдено ${mappedData.length} товарів`);
+            } else {
+              toast.warning(
+                `Знайдено ${mappedData.length} товарів з ${errors.length} помилками`
+              );
+            }
+          },
+          error: (error) => {
+            toast.error(`Помилка парсингу: ${error.message}`);
+          },
+        });
+      } else if (selectedFile.name.endsWith(".xlsx")) {
+        // Parse Excel
+        try {
+          const rows = await parseExcelProductImport(selectedFile);
+          const errors = validateRows(rows);
+          setParseErrors(errors);
+          setParsedData(rows);
+
+          if (errors.length === 0) {
+            toast.success(`Знайдено ${rows.length} товарів`);
+          } else {
+            toast.warning(
+              `Знайдено ${rows.length} товарів з ${errors.length} помилками`
+            );
+          }
+        } catch (error) {
+          toast.error("Помилка читання Excel файлу");
+          console.error(error);
+        }
+      } else {
+        toast.error("Будь ласка, оберіть файл CSV або XLSX");
+        setFile(null);
+      }
+    },
+    []
+  );
 
   const handleImport = async () => {
     if (!user || parsedData.length === 0) return;
+
+    if (!defaultCategory && parsedData.some((row) => !row.categoryId)) {
+      toast.error(
+        "Будь ласка, оберіть категорію за замовчуванням для товарів без категорії"
+      );
+      return;
+    }
 
     setImporting(true);
     setProgress(0);
@@ -108,29 +254,40 @@ export default function ImportPage() {
         setProgress((prev) => Math.min(prev + 10, 90));
       }, 500);
 
-      const result = await importProductsFromCSV(parsedData, user.id);
-      
+      // Apply default category to rows that don't have one
+      const dataToImport = parsedData.map((row) => ({
+        ...row,
+        categoryId: row.categoryId || defaultCategory,
+      }));
+
+      const result = await importProductsFromCSV(dataToImport, user.id);
+
       clearInterval(progressInterval);
       setProgress(100);
       setImportResult(result);
 
       if (result.failed === 0) {
-        toast.success(`Імпортовано ${result.success} нових, оновлено ${result.updated} товарів`);
+        toast.success(
+          `Імпортовано ${result.success} нових, оновлено ${result.updated}`
+        );
       } else {
-        toast.warning(`Імпортовано ${result.success}, оновлено ${result.updated}, помилок: ${result.failed}`);
+        toast.warning(
+          `Імпортовано ${result.success}, оновлено ${result.updated}, помилок: ${result.failed}`
+        );
       }
     } catch (error) {
-      toast.error('Помилка імпорту');
+      toast.error("Помилка імпорту");
+      console.error(error);
     } finally {
       setImporting(false);
     }
   };
 
   const handleDownloadTemplate = () => {
-    const blob = new Blob([CSV_TEMPLATE], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
+    const blob = new Blob([CSV_TEMPLATE], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = 'products_template.csv';
+    link.download = "products_template.csv";
     link.click();
   };
 
@@ -140,6 +297,7 @@ export default function ImportPage() {
     setImportResult(null);
     setParseErrors([]);
     setProgress(0);
+    setDefaultCategory("");
   };
 
   if (!canImport) {
@@ -150,7 +308,9 @@ export default function ImportPage() {
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <XCircle className="h-12 w-12 text-red-500 mb-4" />
-              <p className="text-zinc-400">У вас немає прав для імпорту даних</p>
+              <p className="text-zinc-400">
+                У вас немає прав для імпорту даних
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -178,8 +338,12 @@ export default function ImportPage() {
                   1
                 </div>
                 <div>
-                  <p className="font-medium text-white">Завантажте шаблон</p>
-                  <p className="text-sm text-zinc-500">Скачайте CSV шаблон та заповніть дані</p>
+                  <p className="font-medium text-white">
+                    Завантажте шаблон або Excel файл
+                  </p>
+                  <p className="text-sm text-zinc-500">
+                    Підтримуються формати CSV та XLSX
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -188,7 +352,9 @@ export default function ImportPage() {
                 </div>
                 <div>
                   <p className="font-medium text-white">Оберіть файл</p>
-                  <p className="text-sm text-zinc-500">Завантажте заповнений CSV файл</p>
+                  <p className="text-sm text-zinc-500">
+                    Завантажте файл з товарами
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
@@ -197,7 +363,9 @@ export default function ImportPage() {
                 </div>
                 <div>
                   <p className="font-medium text-white">Імпортуйте</p>
-                  <p className="text-sm text-zinc-500">Перевірте та імпортуйте товари</p>
+                  <p className="text-sm text-zinc-500">
+                    Перевірте та імпортуйте товари
+                  </p>
                 </div>
               </div>
             </div>
@@ -209,7 +377,7 @@ export default function ImportPage() {
                 className="border-zinc-800 text-zinc-400 hover:text-white"
               >
                 <Download className="mr-2 h-4 w-4" />
-                Завантажити шаблон
+                Завантажити CSV шаблон
               </Button>
             </div>
           </CardContent>
@@ -221,16 +389,20 @@ export default function ImportPage() {
             <CardContent className="pt-6">
               {!file ? (
                 <label
-                  htmlFor="csv-upload"
+                  htmlFor="file-upload"
                   className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-zinc-700 rounded-lg cursor-pointer hover:border-amber-500/50 transition-colors"
                 >
                   <Upload className="h-12 w-12 text-zinc-500 mb-4" />
-                  <span className="text-lg font-medium text-white">Оберіть CSV файл</span>
-                  <span className="text-sm text-zinc-500 mt-2">або перетягніть його сюди</span>
+                  <span className="text-lg font-medium text-white">
+                    Оберіть файл (CSV, XLSX)
+                  </span>
+                  <span className="text-sm text-zinc-500 mt-2">
+                    або перетягніть його сюди
+                  </span>
                   <input
-                    id="csv-upload"
+                    id="file-upload"
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.xlsx"
                     className="hidden"
                     onChange={handleFileSelect}
                   />
@@ -244,7 +416,8 @@ export default function ImportPage() {
                       <div>
                         <p className="font-medium text-white">{file.name}</p>
                         <p className="text-sm text-zinc-500">
-                          {(file.size / 1024).toFixed(2)} KB • {parsedData.length} товарів
+                          {(file.size / 1024).toFixed(2)} KB •{" "}
+                          {parsedData.length} товарів
                         </p>
                       </div>
                     </div>
@@ -257,13 +430,45 @@ export default function ImportPage() {
                     </Button>
                   </div>
 
+                  {/* Category Selection */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-zinc-400">
+                      Категорія за замовчуванням (для нових товарів)
+                    </label>
+                    <Select
+                      value={defaultCategory}
+                      onValueChange={setDefaultCategory}
+                    >
+                      <SelectTrigger className="w-full sm:w-80 bg-zinc-900 border-zinc-800 text-white">
+                        <SelectValue placeholder="Оберіть категорію" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-950 border-zinc-800">
+                        {categories.map((cat) => (
+                          <SelectItem
+                            key={cat.id}
+                            value={cat.id}
+                            className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                          >
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {/* Parse results */}
                   <Tabs defaultValue="preview" className="w-full">
                     <TabsList className="bg-zinc-800">
-                      <TabsTrigger value="preview" className="data-[state=active]:bg-zinc-700">
+                      <TabsTrigger
+                        value="preview"
+                        className="data-[state=active]:bg-zinc-700"
+                      >
                         Попередній перегляд ({parsedData.length})
                       </TabsTrigger>
-                      <TabsTrigger value="errors" className="data-[state=active]:bg-zinc-700">
+                      <TabsTrigger
+                        value="errors"
+                        className="data-[state=active]:bg-zinc-700"
+                      >
                         Помилки ({parseErrors.length})
                       </TabsTrigger>
                     </TabsList>
@@ -271,7 +476,7 @@ export default function ImportPage() {
                     <TabsContent value="preview" className="mt-4">
                       <ScrollArea className="h-64 rounded-lg border border-zinc-800">
                         <div className="p-4 space-y-2">
-                          {parsedData.slice(0, 10).map((row, index) => (
+                          {parsedData.map((row, index) => (
                             <div
                               key={index}
                               className="flex items-center justify-between p-3 bg-zinc-800/30 rounded"
@@ -282,14 +487,22 @@ export default function ImportPage() {
                                 </span>
                                 <span className="text-white">{row.name}</span>
                               </div>
-                              <span className="text-zinc-400">{row.price} ₴</span>
+                              <div className="flex items-center gap-4">
+                                <span className="text-zinc-400">
+                                  {row.price} ₴
+                                </span>
+                                {row.status === "in_stock" ? (
+                                  <span className="text-emerald-500 text-xs">
+                                    В наявності
+                                  </span>
+                                ) : (
+                                  <span className="text-red-500 text-xs">
+                                    Немає
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           ))}
-                          {parsedData.length > 10 && (
-                            <p className="text-center text-zinc-500 py-2">
-                              ...та ще {parsedData.length - 10} товарів
-                            </p>
-                          )}
                         </div>
                       </ScrollArea>
                     </TabsContent>
@@ -304,7 +517,9 @@ export default function ImportPage() {
                                 className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded"
                               >
                                 <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />
-                                <span className="text-red-400 text-sm">{error}</span>
+                                <span className="text-red-400 text-sm">
+                                  {error}
+                                </span>
                               </div>
                             ))
                           ) : (
@@ -372,24 +587,32 @@ export default function ImportPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 md:grid-cols-4">
                 <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-center">
-                  <p className="text-3xl font-bold text-emerald-500">{importResult.success}</p>
+                  <p className="text-3xl font-bold text-emerald-500">
+                    {importResult.success}
+                  </p>
                   <p className="text-sm text-zinc-400 mt-1">Створено</p>
                 </div>
                 <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg text-center">
-                  <p className="text-3xl font-bold text-blue-500">{importResult.updated}</p>
+                  <p className="text-3xl font-bold text-blue-500">
+                    {importResult.updated}
+                  </p>
                   <p className="text-sm text-zinc-400 mt-1">Оновлено</p>
                 </div>
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-center">
-                  <p className="text-3xl font-bold text-red-500">{importResult.failed}</p>
+                  <p className="text-3xl font-bold text-red-500">
+                    {importResult.failed}
+                  </p>
                   <p className="text-sm text-zinc-400 mt-1">Помилок</p>
                 </div>
               </div>
 
               {importResult.errors.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-zinc-400 mb-2">Помилки:</p>
+                  <p className="text-sm font-medium text-zinc-400 mb-2">
+                    Помилки:
+                  </p>
                   <ScrollArea className="h-32 rounded-lg border border-zinc-800">
                     <div className="p-4 space-y-2">
                       {importResult.errors.map((error, index) => (
@@ -419,4 +642,3 @@ export default function ImportPage() {
     </div>
   );
 }
-

@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  DocumentSnapshot,
   getDoc,
   getDocs,
   orderBy,
@@ -28,8 +29,9 @@ import { Category } from '../types';
 const CATEGORIES_COLLECTION = 'categories';
 
 // Convert Firestore document to Category
-const convertToCategory = (doc: any): Category => {
+const convertToCategory = (doc: DocumentSnapshot): Category => {
   const data = doc.data();
+  if (!data) throw new Error('Document not found');
   return {
     ...data,
     id: doc.id,
@@ -159,6 +161,9 @@ export async function reorderCategories(categories: { id: string; order: number 
 
 // Get categories tree (hierarchical)
 export async function getCategoriesTree(): Promise<(Category & { children: Category[] })[]> {
+  // Recalculate product counts to ensure they're accurate
+  await recalculateCategoryProductCounts();
+  
   const categories = await getCategories();
   
   const rootCategories = categories.filter(c => c.parentId === null);
@@ -181,5 +186,31 @@ export function generateSlug(name: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9\u0400-\u04FF]+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+// Recalculate product counts for all categories
+export async function recalculateCategoryProductCounts(): Promise<void> {
+  const categoriesSnapshot = await getDocs(collection(db, CATEGORIES_COLLECTION));
+  const productsSnapshot = await getDocs(collection(db, 'products'));
+  
+  // Count products per category
+  const counts: Record<string, number> = {};
+  productsSnapshot.docs.forEach((doc) => {
+    const categoryId = doc.data().categoryId;
+    if (categoryId) {
+      counts[categoryId] = (counts[categoryId] || 0) + 1;
+    }
+  });
+  
+  // Update each category with the correct count
+  const batch = writeBatch(db);
+  categoriesSnapshot.docs.forEach((categoryDoc) => {
+    const count = counts[categoryDoc.id] || 0;
+    batch.update(doc(db, CATEGORIES_COLLECTION, categoryDoc.id), {
+      productCount: count,
+    });
+  });
+  
+  await batch.commit();
 }
 

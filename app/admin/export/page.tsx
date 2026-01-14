@@ -34,26 +34,28 @@ import { exportProductsToCSV } from '@/lib/services/products';
 import { PRODUCT_STATUSES } from '@/lib/types';
 
 const EXPORT_COLUMNS = [
-  { key: 'sku', label: 'SKU', default: true },
-  { key: 'name', label: 'Назва', default: true },
-  { key: 'description', label: 'Опис', default: true },
-  { key: 'price', label: 'Ціна', default: true },
-  { key: 'originalPrice', label: 'Стара ціна', default: false },
-  { key: 'categoryId', label: 'Категорія ID', default: true },
-  { key: 'subcategoryId', label: 'Підкатегорія ID', default: false },
-  { key: 'status', label: 'Статус', default: true },
-  { key: 'brand', label: 'Бренд', default: true },
-  { key: 'partNumber', label: 'Номер запчастини', default: true },
-  { key: 'oem', label: 'OEM номери', default: false },
-  { key: 'compatibility', label: 'Сумісність', default: false },
-  { key: 'condition', label: 'Стан', default: true },
-  { key: 'year', label: 'Рік', default: false },
+  { key: 'sku', label: 'Код запчасти', default: true },
+  { key: 'brand', label: 'Производитель', default: true },
   { key: 'carBrand', label: 'Марка авто', default: true },
+  { key: 'name', label: 'Описание запчасти', default: true },
+  { key: 'quantity', label: 'Количество', default: true },
+  { key: 'isUsed', label: 'Б/у', default: true },
+  { key: 'price', label: 'Цена', default: true },
+  // Additional columns
+  { key: 'originalPrice', label: 'Старая цена', default: true },
+  { key: 'categoryId', label: 'Категория ID', default: true },
+  { key: 'status', label: 'Статус', default: true },
+  { key: 'partNumber', label: 'Номер запчасти', default: true },
   { key: 'carModel', label: 'Модель авто', default: true },
-  { key: 'metaTitle', label: 'Meta Title', default: false },
-  { key: 'metaDescription', label: 'Meta Description', default: false },
-  { key: 'metaKeywords', label: 'Meta Keywords', default: false },
-  { key: 'slug', label: 'URL Slug', default: false },
+  { key: 'oem', label: 'OEM номера', default: true },
+  { key: 'compatibility', label: 'Совместимость', default: true },
+  { key: 'condition', label: 'Состояние', default: true },
+  { key: 'year', label: 'Год', default: true },
+  { key: 'description', label: 'Описание', default: true },
+  { key: 'metaTitle', label: 'Meta Title', default: true },
+  { key: 'metaDescription', label: 'Meta Description', default: true },
+  { key: 'metaKeywords', label: 'Meta Keywords', default: true },
+  { key: 'slug', label: 'URL Slug', default: true },
 ];
 
 export default function ExportPage() {
@@ -108,11 +110,13 @@ export default function ExportPage() {
         filteredData = filteredData.filter((p) => p.status === statusFilter);
       }
 
-      // Select only specified columns
+      // Select only specified columns and use Russian/Ukrainian labels as headers
       const exportData = filteredData.map((row) => {
-        const filtered: Record<string, any> = {};
+        const filtered: Record<string, unknown> = {};
         selectedColumns.forEach((col) => {
-          filtered[col] = (row as any)[col];
+          const columnDef = EXPORT_COLUMNS.find((c) => c.key === col);
+          const label = columnDef?.label || col;
+          filtered[label] = (row as Record<string, unknown>)[col];
         });
         return filtered;
       });

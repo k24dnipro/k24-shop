@@ -91,8 +91,8 @@ export async function getProducts(options?: {
 function normalizeForSearch(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[-_.,;:!?'"()\[\]{}\/\\]/g, ' ')  // Replace special chars with space
-    .replace(/\s+/g, ' ')  // Normalize multiple spaces to single
+    .replace(/[-_.,;:!?'"()\[\]{}\/\\]/g, " ") // Replace special chars with space
+    .replace(/\s+/g, " ") // Normalize multiple spaces to single
     .trim();
 }
 
@@ -105,7 +105,7 @@ export async function searchProducts(
   // For production, consider using Algolia or Elasticsearch
   // Smart search: normalize both search term and product fields
   const normalizedSearch = normalizeForSearch(searchTerm);
-  const searchWords = normalizedSearch.split(' ').filter(Boolean);
+  const searchWords = normalizedSearch.split(" ").filter(Boolean);
   const { categoryId, status } = options || {};
 
   const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
@@ -114,17 +114,18 @@ export async function searchProducts(
   // Apply search filter
   if (searchTerm && searchWords.length > 0) {
     products = products.filter((product) => {
-      const normalizedName = normalizeForSearch(product.name || '');
-      const normalizedSku = normalizeForSearch(product.sku || '');
-      const normalizedPartNumber = normalizeForSearch(product.partNumber || '');
-      const normalizedBrand = normalizeForSearch(product.brand || '');
-      
+      const normalizedName = normalizeForSearch(product.name || "");
+      const normalizedSku = normalizeForSearch(product.sku || "");
+      const normalizedPartNumber = normalizeForSearch(product.partNumber || "");
+      const normalizedBrand = normalizeForSearch(product.brand || "");
+
       // Check if all search words are found in any of the fields
-      return searchWords.every(word => 
-        normalizedName.includes(word) ||
-        normalizedSku.includes(word) ||
-        normalizedPartNumber.includes(word) ||
-        normalizedBrand.includes(word)
+      return searchWords.every(
+        (word) =>
+          normalizedName.includes(word) ||
+          normalizedSku.includes(word) ||
+          normalizedPartNumber.includes(word) ||
+          normalizedBrand.includes(word)
       );
     });
   }
@@ -402,33 +403,46 @@ export async function importProductsFromCSV(
   return result;
 }
 
-// Export products to CSV format
-export async function exportProductsToCSV(): Promise<CSVProductRow[]> {
+// Export products to CSV format (matching import format)
+export async function exportProductsToCSV(): Promise<
+  Record<string, string | number | null>[]
+> {
   const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
 
   return snapshot.docs.map((doc) => {
     const product = convertToProduct(doc);
+
+    // Determine quantity based on status (in_stock = 1, otherwise 0)
+    const quantity =
+      product.status === "in_stock" || product.status === "on_order" ? 1 : 0;
+
+    // Determine if used (1 = used, 0 = new)
+    const isUsed = product.condition === "used" ? 1 : 0;
+
     return {
-      sku: product.sku,
-      name: product.name,
-      description: product.description,
-      price: product.price.toString(),
-      originalPrice: product.originalPrice?.toString() ?? null,
-      categoryId: product.categoryId,
-      subcategoryId: product.subcategoryId ?? null,
-      status: product.status,
-      brand: product.brand,
-      partNumber: product.partNumber,
-      oem: product.oem.join(","),
-      compatibility: product.compatibility.join(","),
-      condition: product.condition,
-      year: product.year ?? null,
-      carBrand: product.carBrand ?? null,
-      carModel: product.carModel ?? null,
-      metaTitle: product.seo.metaTitle,
-      metaDescription: product.seo.metaDescription,
-      metaKeywords: product.seo.metaKeywords.join(","),
-      slug: product.seo.slug,
+      // Primary columns (matching import format)
+      sku: product.sku || "",
+      brand: product.brand || "",
+      carBrand: product.carBrand || product.brand || "",
+      name: product.name || "",
+      quantity: quantity,
+      isUsed: isUsed,
+      price: product.price || 0,
+      // Additional columns
+      originalPrice: product.originalPrice ?? null,
+      categoryId: product.categoryId || "",
+      status: product.status || "in_stock",
+      partNumber: product.partNumber || "",
+      carModel: product.carModel ?? "",
+      oem: (product.oem || []).join(","),
+      compatibility: (product.compatibility || []).join(","),
+      condition: product.condition || "used",
+      year: product.year ?? "",
+      description: product.description || "",
+      metaTitle: product.seo?.metaTitle || "",
+      metaDescription: product.seo?.metaDescription || "",
+      metaKeywords: (product.seo?.metaKeywords || []).join(","),
+      slug: product.seo?.slug || "",
     };
   });
 }

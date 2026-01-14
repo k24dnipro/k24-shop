@@ -52,6 +52,98 @@ import { parseExcelProductImport } from '@/lib/utils/excel';
 const CSV_TEMPLATE = `sku,name,description,price,originalPrice,categoryId,status,brand,partNumber,oem,compatibility,condition,year,carBrand,carModel,metaTitle,metaDescription,metaKeywords,slug
 SKU001,Фара передня ліва,Оригінальна фара для BMW X5,5000,6000,cat_001,in_stock,BMW,63117442647,"123456,789012","BMW X5 2018-2022,BMW X6 2019-2022",used,2020,BMW,X5,Фара BMW X5 купити,Оригінальна фара для BMW X5 в наявності,фара bmw x5 купити київ,fara-bmw-x5`;
 
+// Map Russian CSV headers to English field names
+const RUSSIAN_HEADER_MAP: Record<string, string> = {
+  "Код запчасти": "sku",
+  Производитель: "brand",
+  "Марка авто": "carBrand",
+  "Описание запчасти": "name",
+  Количество: "quantity",
+  "Б/у": "isUsed",
+  Цена: "price",
+  "Старая цена": "originalPrice",
+  "Категория ID": "categoryId",
+  Статус: "status",
+  "Номер запчасти": "partNumber",
+  "Модель авто": "carModel",
+  "OEM номера": "oem",
+  Совместимость: "compatibility",
+  Состояние: "condition",
+  Год: "year",
+  Описание: "description",
+  "Meta Title": "metaTitle",
+  "Meta Description": "metaDescription",
+  "Meta Keywords": "metaKeywords",
+  "URL Slug": "slug",
+};
+
+// Convert Russian CSV row to English format
+function mapRussianCSVRow(row: Record<string, string>): CSVProductRow {
+  const mapped: Partial<CSVProductRow> & { isUsed?: string | number } = {};
+
+  // Map headers from Russian to English
+  Object.keys(row).forEach((key) => {
+    const englishKey = RUSSIAN_HEADER_MAP[key] || key.toLowerCase();
+    (mapped as Record<string, string | null>)[englishKey] = row[key];
+  });
+
+  // Handle isUsed -> condition conversion
+  if (mapped.isUsed !== undefined) {
+    mapped.condition =
+      mapped.isUsed === "1" || mapped.isUsed === "true" || mapped.isUsed === 1
+        ? "used"
+        : "new";
+    delete mapped.isUsed;
+  }
+
+  // If condition is not set, use Состояние if available
+  if (!mapped.condition && row["Состояние"]) {
+    const conditionValue = row["Состояние"].toLowerCase();
+    if (
+      conditionValue === "used" ||
+      conditionValue === "б/у" ||
+      conditionValue === "бy"
+    ) {
+      mapped.condition = "used";
+    } else if (
+      conditionValue === "new" ||
+      conditionValue === "новый" ||
+      conditionValue === "новий"
+    ) {
+      mapped.condition = "new";
+    } else {
+      mapped.condition = conditionValue as "new" | "used" | "refurbished";
+    }
+  }
+
+  // Ensure condition has a default value
+  if (!mapped.condition) {
+    mapped.condition = "used";
+  }
+
+  // Convert empty strings to null for optional fields
+  const optionalFields: (keyof CSVProductRow)[] = [
+    "originalPrice",
+    "subcategoryId",
+    "oem",
+    "compatibility",
+    "year",
+    "carBrand",
+    "carModel",
+    "metaTitle",
+    "metaDescription",
+    "metaKeywords",
+    "slug",
+  ];
+  optionalFields.forEach((field) => {
+    if (mapped[field] === "") {
+      (mapped as Record<string, string | null>)[field] = null;
+    }
+  });
+
+  return mapped as CSVProductRow;
+}
+
 export default function ImportPage() {
   const { user, hasPermission } = useAuth();
   const { categories } = useCategories();
@@ -86,19 +178,29 @@ export default function ImportPage() {
 
       if (selectedFile.name.endsWith(".csv")) {
         // Parse CSV
-        Papa.parse<CSVProductRow>(selectedFile, {
+        Papa.parse<Record<string, string>>(selectedFile, {
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
-            const errors = validateRows(results.data);
+            // Check if headers are in Russian
+            const hasRussianHeaders = results.meta.fields?.some(
+              (field) => RUSSIAN_HEADER_MAP[field] !== undefined
+            );
+
+            // Map rows if Russian headers detected
+            const mappedData = hasRussianHeaders
+              ? results.data.map(mapRussianCSVRow)
+              : (results.data as unknown as CSVProductRow[]);
+
+            const errors = validateRows(mappedData);
             setParseErrors(errors);
-            setParsedData(results.data);
+            setParsedData(mappedData);
 
             if (errors.length === 0) {
-              toast.success(`Знайдено ${results.data.length} товарів`);
+              toast.success(`Знайдено ${mappedData.length} товарів`);
             } else {
               toast.warning(
-                `Знайдено ${results.data.length} товарів з ${errors.length} помилками`
+                `Знайдено ${mappedData.length} товарів з ${errors.length} помилками`
               );
             }
           },
@@ -166,11 +268,11 @@ export default function ImportPage() {
 
       if (result.failed === 0) {
         toast.success(
-          `Імпортовано ${result.success} нових, оновлено ${result.updated}, без змін ${result.unchanged}`
+          `Імпортовано ${result.success} нових, оновлено ${result.updated}`
         );
       } else {
         toast.warning(
-          `Імпортовано ${result.success}, оновлено ${result.updated}, без змін ${result.unchanged}, помилок: ${result.failed}`
+          `Імпортовано ${result.success}, оновлено ${result.updated}, помилок: ${result.failed}`
         );
       }
     } catch (error) {

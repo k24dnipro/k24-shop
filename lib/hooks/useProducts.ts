@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import { DocumentSnapshot } from 'firebase/firestore';
@@ -33,7 +34,7 @@ export function useProducts(options: UseProductsOptions = {}) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [lastDoc, setLastDoc] = useState<DocumentSnapshot | null>(null);
+  const lastDocRef = useRef<DocumentSnapshot | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
   const fetchProducts = useCallback(async (reset = false) => {
@@ -44,7 +45,7 @@ export function useProducts(options: UseProductsOptions = {}) {
         pageSize,
         categoryId,
         status,
-        lastDoc: reset ? undefined : lastDoc || undefined,
+        lastDoc: reset ? undefined : lastDocRef.current || undefined,
       });
 
       if (reset) {
@@ -53,7 +54,7 @@ export function useProducts(options: UseProductsOptions = {}) {
         setProducts((prev) => [...prev, ...result.products]);
       }
 
-      setLastDoc(result.lastVisible);
+      lastDocRef.current = result.lastVisible;
       setHasMore(result.hasMore);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Помилка завантаження товарів';
@@ -61,9 +62,15 @@ export function useProducts(options: UseProductsOptions = {}) {
     } finally {
       setLoading(false);
     }
-  }, [pageSize, categoryId, status, lastDoc]);
+  }, [pageSize, categoryId, status]);
 
   const search = useCallback(async (searchTerm: string) => {
+    if (!searchTerm.trim()) {
+      lastDocRef.current = null;
+      fetchProducts(true);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -79,7 +86,7 @@ export function useProducts(options: UseProductsOptions = {}) {
   }, [categoryId, status]);
 
   const refresh = useCallback(() => {
-    setLastDoc(null);
+    lastDocRef.current = null;
     setHasMore(true);
     search('');
   }, [search]);

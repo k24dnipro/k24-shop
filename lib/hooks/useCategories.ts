@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   useCallback,
@@ -28,7 +28,8 @@ export function useCategories() {
       const data = await getCategories();
       setCategories(data);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка завантаження категорій';
+      const message =
+        err instanceof Error ? err.message : "Помилка завантаження категорій";
       setError(message);
     } finally {
       setLoading(false);
@@ -48,7 +49,9 @@ export function useCategories() {
 }
 
 export function useCategoriesTree() {
-  const [categoriesTree, setCategoriesTree] = useState<(Category & { children: Category[] })[]>([]);
+  const [categoriesTree, setCategoriesTree] = useState<
+    (Category & { children: Category[] })[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +62,8 @@ export function useCategoriesTree() {
       const data = await getCategoriesTree();
       setCategoriesTree(data);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка завантаження категорій';
+      const message =
+        err instanceof Error ? err.message : "Помилка завантаження категорій";
       setError(message);
     } finally {
       setLoading(false);
@@ -95,7 +99,8 @@ export function useCategory(id: string | null) {
       const data = await getCategoryById(id);
       setCategory(data);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка завантаження категорії';
+      const message =
+        err instanceof Error ? err.message : "Помилка завантаження категорії";
       setError(message);
     } finally {
       setLoading(false);
@@ -118,22 +123,29 @@ export function useCategoryMutations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const create = useCallback(async (
-    categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'productCount'>
-  ) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const id = await createCategory(categoryData);
-      return id;
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка створення категорії';
-      setError(message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const create = useCallback(
+    async (
+      categoryData: Omit<
+        Category,
+        "id" | "createdAt" | "updatedAt" | "productCount"
+      >
+    ) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const id = await createCategory(categoryData);
+        return id;
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Помилка створення категорії";
+        setError(message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   const update = useCallback(async (id: string, updates: Partial<Category>) => {
     setLoading(true);
@@ -141,7 +153,8 @@ export function useCategoryMutations() {
     try {
       await updateCategory(id, updates);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка оновлення категорії';
+      const message =
+        err instanceof Error ? err.message : "Помилка оновлення категорії";
       setError(message);
       throw err;
     } finally {
@@ -155,7 +168,8 @@ export function useCategoryMutations() {
     try {
       await deleteCategory(id);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка видалення категорії';
+      const message =
+        err instanceof Error ? err.message : "Помилка видалення категорії";
       setError(message);
       throw err;
     } finally {
@@ -163,19 +177,23 @@ export function useCategoryMutations() {
     }
   }, []);
 
-  const reorder = useCallback(async (items: { id: string; order: number }[]) => {
-    setLoading(true);
-    setError(null);
-    try {
-      await reorderCategories(items);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Помилка зміни порядку';
-      setError(message);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const reorder = useCallback(
+    async (items: { id: string; order: number }[]) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await reorderCategories(items);
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Помилка зміни порядку";
+        setError(message);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
 
   return {
     loading,
@@ -186,4 +204,3 @@ export function useCategoryMutations() {
     reorder,
   };
 }
-

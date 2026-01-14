@@ -64,15 +64,10 @@ export function useProducts(options: UseProductsOptions = {}) {
   }, [pageSize, categoryId, status, lastDoc]);
 
   const search = useCallback(async (searchTerm: string) => {
-    if (!searchTerm.trim()) {
-      fetchProducts(true);
-      return;
-    }
-
     setLoading(true);
     setError(null);
     try {
-      const results = await searchProducts(searchTerm);
+      const results = await searchProducts(searchTerm, { categoryId, status });
       setProducts(results);
       setHasMore(false);
     } catch (err: unknown) {
@@ -81,13 +76,13 @@ export function useProducts(options: UseProductsOptions = {}) {
     } finally {
       setLoading(false);
     }
-  }, [fetchProducts]);
+  }, [categoryId, status]);
 
   const refresh = useCallback(() => {
     setLastDoc(null);
     setHasMore(true);
-    fetchProducts(true);
-  }, [fetchProducts]);
+    search('');
+  }, [search]);
 
   const loadMore = useCallback(() => {
     if (hasMore && !loading) {
@@ -97,7 +92,8 @@ export function useProducts(options: UseProductsOptions = {}) {
 
   useEffect(() => {
     if (autoFetch) {
-      fetchProducts(true);
+      // Use search which handles filters client-side
+      search('');
     }
   }, [categoryId, status]); // eslint-disable-line react-hooks/exhaustive-deps
 

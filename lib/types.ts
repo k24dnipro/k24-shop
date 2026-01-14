@@ -25,9 +25,9 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  originalPrice?: number;
+  originalPrice?: number | null;
   categoryId: string;
-  subcategoryId?: string;
+  subcategoryId?: string | null;
   status: ProductStatus;
   images: ProductImage[];
   seo: ProductSEO;
@@ -37,9 +37,9 @@ export interface Product {
   oem: string[];
   compatibility: string[];
   condition: 'new' | 'used' | 'refurbished';
-  year?: string;
-  carBrand?: string;
-  carModel?: string;
+  year?: string | null;
+  carBrand?: string | null;
+  carModel?: string | null;
   // Stats
   views: number;
   inquiries: number;
@@ -115,23 +115,23 @@ export interface CSVProductRow {
   name: string;
   description: string;
   price: string;
-  originalPrice?: string;
+  originalPrice?: string | null;
   categoryId: string;
-  subcategoryId?: string;
+  subcategoryId?: string | null;
   status: string;
   brand: string;
   partNumber: string;
-  oem?: string;
-  compatibility?: string;
+  oem?: string | null;
+  compatibility?: string | null;
   condition: string;
-  year?: string;
-  carBrand?: string;
-  carModel?: string;
+  year?: string | null;
+  carBrand?: string | null;
+  carModel?: string | null;
   // SEO fields
-  metaTitle?: string;
-  metaDescription?: string;
-  metaKeywords?: string;
-  slug?: string;
+  metaTitle?: string | null;
+  metaDescription?: string | null;
+  metaKeywords?: string | null;
+  slug?: string | null;
 }
 
 export interface ImportResult {

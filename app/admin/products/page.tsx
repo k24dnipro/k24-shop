@@ -78,18 +78,15 @@ export default function ProductsPage() {
   const canDelete = hasPermission('canDeleteProducts');
   const canCreate = hasPermission('canCreateProducts');
 
-  // Search with debounce
+  // Search and filter with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchTerm) {
-        search(searchTerm);
-      } else {
-        refresh();
-      }
+      // Always use search which now handles both search term and filters
+      search(searchTerm);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchTerm, categoryFilter, statusFilter, search]);
 
   const handleDelete = async () => {
     if (!productToDelete) return;

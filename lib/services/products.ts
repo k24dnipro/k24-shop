@@ -35,14 +35,15 @@ import {
   ProductSEO,
   ProductStatus,
 } from '../types';
+import { recalculateCategoryProductCounts } from './categories';
 
-const PRODUCTS_COLLECTION = 'products';
+const PRODUCTS_COLLECTION = "products";
 
 // Convert Firestore document to Product
 const convertToProduct = (doc: DocumentSnapshot): Product => {
   const data = doc.data();
-  if (!data) throw new Error('Document not found');
-  
+  if (!data) throw new Error("Document not found");
+
   return {
     ...data,
     id: doc.id,
@@ -60,19 +61,19 @@ export async function getProducts(options?: {
   search?: string;
 }) {
   const { pageSize = 20, lastDoc, categoryId, status } = options || {};
-  
+
   let q = query(
     collection(db, PRODUCTS_COLLECTION),
-    orderBy('createdAt', 'desc'),
+    orderBy("createdAt", "desc"),
     limit(pageSize)
   );
 
   if (categoryId) {
-    q = query(q, where('categoryId', '==', categoryId));
+    q = query(q, where("categoryId", "==", categoryId));
   }
 
   if (status) {
-    q = query(q, where('status', '==', status));
+    q = query(q, where("status", "==", status));
   }
 
   if (lastDoc) {
@@ -86,21 +87,60 @@ export async function getProducts(options?: {
   return { products, lastVisible, hasMore: snapshot.docs.length === pageSize };
 }
 
-// Search products
-export async function searchProducts(searchTerm: string) {
+// Normalize text for smart search (removes special chars, normalizes spaces)
+function normalizeForSearch(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[-_.,;:!?'"()\[\]{}\/\\]/g, ' ')  // Replace special chars with space
+    .replace(/\s+/g, ' ')  // Normalize multiple spaces to single
+    .trim();
+}
+
+// Search products with optional filters
+export async function searchProducts(
+  searchTerm: string,
+  options?: { categoryId?: string; status?: ProductStatus }
+) {
   // Firestore doesn't support full-text search natively
   // For production, consider using Algolia or Elasticsearch
-  // This is a simple implementation using SKU and name prefix
-  const normalizedSearch = searchTerm.toLowerCase();
-  
+  // Smart search: normalize both search term and product fields
+  const normalizedSearch = normalizeForSearch(searchTerm);
+  const searchWords = normalizedSearch.split(' ').filter(Boolean);
+  const { categoryId, status } = options || {};
+
   const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
-  const products = snapshot.docs
-    .map(convertToProduct)
-    .filter(
-      (product) =>
-        (product.name?.toLowerCase() || '').includes(normalizedSearch) ||
-        (product.sku?.toLowerCase() || '').includes(normalizedSearch)
-    );
+  let products = snapshot.docs.map(convertToProduct);
+
+  // Apply search filter
+  if (searchTerm && searchWords.length > 0) {
+    products = products.filter((product) => {
+      const normalizedName = normalizeForSearch(product.name || '');
+      const normalizedSku = normalizeForSearch(product.sku || '');
+      const normalizedPartNumber = normalizeForSearch(product.partNumber || '');
+      const normalizedBrand = normalizeForSearch(product.brand || '');
+      
+      // Check if all search words are found in any of the fields
+      return searchWords.every(word => 
+        normalizedName.includes(word) ||
+        normalizedSku.includes(word) ||
+        normalizedPartNumber.includes(word) ||
+        normalizedBrand.includes(word)
+      );
+    });
+  }
+
+  // Apply category filter
+  if (categoryId) {
+    products = products.filter((product) => product.categoryId === categoryId);
+  }
+
+  // Apply status filter
+  if (status) {
+    products = products.filter((product) => product.status === status);
+  }
+
+  // Sort by createdAt desc
+  products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return products;
 }
@@ -109,26 +149,29 @@ export async function searchProducts(searchTerm: string) {
 export async function getProductById(id: string): Promise<Product | null> {
   const docRef = doc(db, PRODUCTS_COLLECTION, id);
   const docSnap = await getDoc(docRef);
-  
+
   if (!docSnap.exists()) return null;
   return convertToProduct(docSnap);
 }
 
 // Get product by SKU
 export async function getProductBySku(sku: string): Promise<Product | null> {
-  const q = query(collection(db, PRODUCTS_COLLECTION), where('sku', '==', sku));
+  const q = query(collection(db, PRODUCTS_COLLECTION), where("sku", "==", sku));
   const snapshot = await getDocs(q);
-  
+
   if (snapshot.empty) return null;
   return convertToProduct(snapshot.docs[0]);
 }
 
 // Create new product
 export async function createProduct(
-  productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'views' | 'inquiries'>
+  productData: Omit<
+    Product,
+    "id" | "createdAt" | "updatedAt" | "views" | "inquiries"
+  >
 ): Promise<string> {
   const now = Timestamp.now();
-  
+
   const docRef = await addDoc(collection(db, PRODUCTS_COLLECTION), {
     ...productData,
     views: 0,
@@ -139,7 +182,7 @@ export async function createProduct(
 
   // Update category product count
   if (productData.categoryId) {
-    const categoryRef = doc(db, 'categories', productData.categoryId);
+    const categoryRef = doc(db, "categories", productData.categoryId);
     await updateDoc(categoryRef, {
       productCount: increment(1),
     });
@@ -149,7 +192,10 @@ export async function createProduct(
 }
 
 // Update product
-export async function updateProduct(id: string, updates: Partial<Product>): Promise<void> {
+export async function updateProduct(
+  id: string,
+  updates: Partial<Product>
+): Promise<void> {
   const docRef = doc(db, PRODUCTS_COLLECTION, id);
   await updateDoc(docRef, {
     ...updates,
@@ -168,13 +214,13 @@ export async function deleteProduct(id: string): Promise<void> {
       const imageRef = ref(storage, `products/${id}/${image.id}`);
       await deleteObject(imageRef);
     } catch (error) {
-      console.error('Error deleting image:', error);
+      console.error("Error deleting image:", error);
     }
   }
 
   // Update category product count
   if (product.categoryId) {
-    const categoryRef = doc(db, 'categories', product.categoryId);
+    const categoryRef = doc(db, "categories", product.categoryId);
     await updateDoc(categoryRef, {
       productCount: increment(-1),
     });
@@ -186,7 +232,7 @@ export async function deleteProduct(id: string): Promise<void> {
 // Batch delete products
 export async function deleteProducts(ids: string[]): Promise<void> {
   const batch = writeBatch(db);
-  
+
   for (const id of ids) {
     batch.delete(doc(db, PRODUCTS_COLLECTION, id));
   }
@@ -201,9 +247,9 @@ export async function uploadProductImage(
   order: number
 ): Promise<ProductImage> {
   const imageId = uuidv4();
-  const extension = file.name.split('.').pop();
+  const extension = file.name.split(".").pop();
   const path = `products/${productId}/${imageId}.${extension}`;
-  
+
   const storageRef = ref(storage, path);
   await uploadBytes(storageRef, file);
   const url = await getDownloadURL(storageRef);
@@ -217,7 +263,10 @@ export async function uploadProductImage(
 }
 
 // Delete product image
-export async function deleteProductImage(productId: string, imageId: string): Promise<void> {
+export async function deleteProductImage(
+  productId: string,
+  imageId: string
+): Promise<void> {
   const storageRef = ref(storage, `products/${productId}/${imageId}`);
   await deleteObject(storageRef);
 }
@@ -239,7 +288,10 @@ export async function incrementProductInquiries(id: string): Promise<void> {
 }
 
 // Import products from CSV
-export async function importProductsFromCSV(rows: CSVProductRow[], userId: string): Promise<ImportResult> {
+export async function importProductsFromCSV(
+  rows: CSVProductRow[],
+  userId: string
+): Promise<ImportResult> {
   const result: ImportResult = {
     success: 0,
     updated: 0,
@@ -256,38 +308,55 @@ export async function importProductsFromCSV(rows: CSVProductRow[], userId: strin
     try {
       // Check if product exists by SKU
       const existingProduct = await getProductBySku(row.sku);
-      
+
       const productData = {
         sku: row.sku,
         name: row.name,
-        description: row.description || '',
+        description: row.description || "",
         price: parseFloat(row.price) || 0,
-        originalPrice: row.originalPrice ? parseFloat(row.originalPrice) : undefined,
+        originalPrice: row.originalPrice
+          ? parseFloat(row.originalPrice)
+          : undefined,
         categoryId: row.categoryId,
         subcategoryId: row.subcategoryId || undefined,
-        status: (row.status as ProductStatus) || 'in_stock',
-        brand: row.brand || '',
-        partNumber: row.partNumber || '',
-        oem: row.oem ? row.oem.split(',').map(s => s.trim()) : [],
-        compatibility: row.compatibility ? row.compatibility.split(',').map(s => s.trim()) : [],
-        condition: (row.condition as 'new' | 'used' | 'refurbished') || 'used',
+        status: (row.status as ProductStatus) || "in_stock",
+        brand: row.brand || "",
+        partNumber: row.partNumber || "",
+        oem: row.oem ? row.oem.split(",").map((s) => s.trim()) : [],
+        compatibility: row.compatibility
+          ? row.compatibility.split(",").map((s) => s.trim())
+          : [],
+        condition: (row.condition as "new" | "used" | "refurbished") || "used",
         year: row.year,
         carBrand: row.carBrand,
         carModel: row.carModel,
         seo: {
           metaTitle: row.metaTitle || row.name,
-          metaDescription: row.metaDescription || row.description?.substring(0, 160) || '',
-          metaKeywords: row.metaKeywords ? row.metaKeywords.split(',').map(s => s.trim()) : [],
+          metaDescription:
+            row.metaDescription || row.description?.substring(0, 160) || "",
+          metaKeywords: row.metaKeywords
+            ? row.metaKeywords.split(",").map((s) => s.trim())
+            : [],
           ogTitle: row.metaTitle || row.name,
-          ogDescription: row.metaDescription || row.description?.substring(0, 160) || '',
-          ogImage: '',
-          canonicalUrl: '',
-          slug: row.slug || row.sku.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+          ogDescription:
+            row.metaDescription || row.description?.substring(0, 160) || "",
+          ogImage: "",
+          canonicalUrl: "",
+          slug: row.slug || row.sku.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         } as ProductSEO,
         images: [],
         createdBy: userId,
         updatedAt: Timestamp.now(),
       };
+
+      // Convert undefined fields to null to prevent Firestore errors
+      Object.keys(productData).forEach((key) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if ((productData as any)[key] === undefined) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (productData as any)[key] = null;
+        }
+      });
 
       if (existingProduct) {
         // Update existing product
@@ -317,7 +386,7 @@ export async function importProductsFromCSV(rows: CSVProductRow[], userId: strin
       result.failed++;
       result.errors.push({
         row: i + 1,
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }
@@ -327,13 +396,16 @@ export async function importProductsFromCSV(rows: CSVProductRow[], userId: strin
     await batch.commit();
   }
 
+  // Recalculate category product counts after import
+  await recalculateCategoryProductCounts();
+
   return result;
 }
 
 // Export products to CSV format
 export async function exportProductsToCSV(): Promise<CSVProductRow[]> {
   const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
-  
+
   return snapshot.docs.map((doc) => {
     const product = convertToProduct(doc);
     return {
@@ -341,21 +413,21 @@ export async function exportProductsToCSV(): Promise<CSVProductRow[]> {
       name: product.name,
       description: product.description,
       price: product.price.toString(),
-      originalPrice: product.originalPrice?.toString(),
+      originalPrice: product.originalPrice?.toString() ?? null,
       categoryId: product.categoryId,
-      subcategoryId: product.subcategoryId,
+      subcategoryId: product.subcategoryId ?? null,
       status: product.status,
       brand: product.brand,
       partNumber: product.partNumber,
-      oem: product.oem.join(','),
-      compatibility: product.compatibility.join(','),
+      oem: product.oem.join(","),
+      compatibility: product.compatibility.join(","),
       condition: product.condition,
-      year: product.year,
-      carBrand: product.carBrand,
-      carModel: product.carModel,
+      year: product.year ?? null,
+      carBrand: product.carBrand ?? null,
+      carModel: product.carModel ?? null,
       metaTitle: product.seo.metaTitle,
       metaDescription: product.seo.metaDescription,
-      metaKeywords: product.seo.metaKeywords.join(','),
+      metaKeywords: product.seo.metaKeywords.join(","),
       slug: product.seo.slug,
     };
   });
@@ -368,9 +440,11 @@ export async function getProductsCount(): Promise<number> {
 }
 
 // Get products by status count
-export async function getProductsByStatusCount(): Promise<Record<ProductStatus, number>> {
+export async function getProductsByStatusCount(): Promise<
+  Record<ProductStatus, number>
+> {
   const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
-  
+
   const counts: Record<ProductStatus, number> = {
     in_stock: 0,
     on_order: 0,
@@ -387,4 +461,3 @@ export async function getProductsByStatusCount(): Promise<Record<ProductStatus, 
 
   return counts;
 }
-

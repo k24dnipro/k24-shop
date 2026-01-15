@@ -9,8 +9,10 @@ import {
   ShoppingCart,
 } from 'lucide-react';
 import Link from 'next/link';
+import { Cart } from '@/components/shop/cart';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useCart } from '@/lib/hooks/useCart';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -20,6 +22,8 @@ interface HeaderProps {
 
 export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: HeaderProps) {
   const [localSearch, setLocalSearch] = useState(searchValue);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const { getTotalItems } = useCart();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +34,7 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-950/80">
-      <div className="pl-[65px] pr-4">
+      <div className="pl-4 md:pl-[65px] pr-4">
         {/* Top bar */}
         <div className="flex h-16 items-center justify-between gap-4">
           {/* Logo */}
@@ -82,11 +86,14 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
               variant="ghost"
               size="icon"
               className="text-zinc-400 hover:text-white relative"
+              onClick={() => setIsCartOpen(true)}
             >
               <ShoppingCart className="h-5 w-5" />
-              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-black">
-                0
-              </span>
+              {getTotalItems() > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-black">
+                  {getTotalItems()}
+                </span>
+              )}
             </Button>
 
             {/* Mobile menu */}
@@ -114,7 +121,9 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
           </div>
         </form>
       </div>
+
+      {/* Cart Sheet */}
+      <Cart open={isCartOpen} onOpenChange={setIsCartOpen} />
     </header>
   );
 }
-

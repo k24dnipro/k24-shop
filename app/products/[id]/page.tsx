@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Package,
   Phone,
+  ShoppingCart,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -42,6 +43,7 @@ import {
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
+import { useCart } from '@/lib/hooks/useCart';
 import { useCategories } from '@/lib/hooks/useCategories';
 import {
   getProductById,
@@ -69,6 +71,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const { categories } = useCategories();
+  const { addItem } = useCart();
 
   // Form state
   const [name, setName] = useState('');
@@ -145,6 +148,13 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   const handleCategorySelect = (categoryId: string) => {
     setSelectedCategory(categoryId);
     // Could navigate to home with category selected
+  };
+
+  const handleAddToCart = () => {
+    if (product) {
+      addItem(product);
+      toast.success('Товар додано до корзини!');
+    }
   };
 
   if (loading) {
@@ -385,13 +395,23 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
                 <Separator className="bg-zinc-800" />
 
-                <Button
-                  onClick={() => setShowInquiryForm(!showInquiryForm)}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-                >
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  {showInquiryForm ? 'Сховати форму' : 'Зробити запит'}
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    onClick={handleAddToCart}
+                    className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" />
+                    Додати в корзину
+                  </Button>
+                  <Button
+                    onClick={() => setShowInquiryForm(!showInquiryForm)}
+                    variant="outline"
+                    className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    {showInquiryForm ? 'Сховати форму' : 'Зробити запит'}
+                  </Button>
+                </div>
 
                 <div className="flex gap-2 text-xs text-zinc-500">
                   <div className="flex items-center gap-1">

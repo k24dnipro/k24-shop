@@ -6,10 +6,12 @@ import { uk } from 'date-fns/locale';
 import {
   Loader2,
   Package,
+  ShoppingCart,
   Sparkles,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import { ShopHeader } from '@/components/shop/header';
 import { ShopSidebar } from '@/components/shop/sidebar';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +25,7 @@ import {
   SheetContent,
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useCart } from '@/lib/hooks/useCart';
 import { useCategories } from '@/lib/hooks/useCategories';
 import { useProducts } from '@/lib/hooks/useProducts';
 import { searchProducts } from '@/lib/services/products';
@@ -57,6 +60,14 @@ export default function Home() {
     categoryId: selectedCategory !== 'all' ? selectedCategory : undefined,
   });
   const { categories, loading: categoriesLoading } = useCategories();
+  const { addItem } = useCart();
+
+  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem(product);
+    toast.success('Товар додано до корзини!');
+  };
 
   const handleSearch = async (query?: string) => {
     const searchQuery = query !== undefined ? query : searchTerm;
@@ -224,7 +235,7 @@ export default function Home() {
                                 </Badge>
                               </div>
                             </div>
-                            <CardContent className="p-4 flex-1 flex flex-col gap-2">
+                            <CardContent className="p-4 flex-1 flex flex-col gap-3">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="space-y-1 flex-1">
                                   <h3 className="text-base font-semibold leading-tight text-white">{product.name}</h3>
@@ -239,7 +250,14 @@ export default function Home() {
                                   {product.price.toLocaleString()} ₴
                                 </span>
                               </div>
-                              <div className="flex items-center justify-between text-xs text-zinc-500 mt-auto pt-2 border-t border-zinc-800">
+                              <Button
+                                onClick={(e) => handleAddToCart(e, product)}
+                                className="w-full bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm h-9"
+                              >
+                                <ShoppingCart className="mr-2 h-4 w-4" />
+                                В корзину
+                              </Button>
+                              <div className="flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-800">
                                 <span>{product.views || 0} переглядів</span>
                                 <span>
                                   {formatDistanceToNow(product.createdAt, { addSuffix: true, locale: uk })}

@@ -313,7 +313,7 @@ export function useProductMutations() {
   };
 }
 
-// Hook for admin products (fetches all products with filters, client-side pagination)
+// Hook for admin products with server-side pagination
 interface UseProductsPaginatedOptions {
   pageSize?: number;
   categoryId?: string;
@@ -321,36 +321,171 @@ interface UseProductsPaginatedOptions {
 }
 
 export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) {
-  const { categoryId, status } = options;
+  const { pageSize = 20, categoryId, status } = options;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  // Store all search results for client-side pagination
+  const searchResultsRef = useRef<Product[]>([]);
+  const isSearchingRef = useRef(false);
+  
+  // Store document snapshots for each page to enable efficient navigation
+  const pageSnapshotsRef = useRef<Map<number, DocumentSnapshot>>(new Map());
+  const lastDocRef = useRef<DocumentSnapshot | null>(null);
 
-  // Fetch all products with filters
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // Fetch total count
+  const fetchCount = useCallback(async () => {
     try {
-      // Use searchProducts with empty string to get all products with filters
-      const results = await searchProducts("", { categoryId, status });
-      setProducts(results);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Помилка завантаження товарів";
-      setError(message);
-    } finally {
-      setLoading(false);
+      const count = await getProductsCount({
+        categoryId,
+        status,
+      });
+      setTotalCount(count);
+    } catch (err) {
+      console.error("Error fetching product count:", err);
     }
   }, [categoryId, status]);
+
+  // Fetch products for a specific page
+  const fetchProducts = useCallback(
+    async (page: number, reset = false) => {
+      // Don't fetch if currently searching
+      if (isSearchingRef.current) {
+        return;
+      }
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // If searching, paginate search results client-side
+        if (isSearching && searchTerm.trim()) {
+          const allResults = searchResultsRef.current;
+          const start = page * pageSize;
+          const end = start + pageSize;
+          const paginatedResults = allResults.slice(start, end);
+          
+          setProducts(paginatedResults);
+          setTotalCount(allResults.length);
+          setHasMore(end < allResults.length);
+          return;
+        }
+
+        // For server-side pagination, we need to navigate to the requested page
+        // If reset or going to page 0, start from beginning
+        let lastDoc: DocumentSnapshot | undefined = undefined;
+        
+        if (!reset && page > 0) {
+          // Check if we have a snapshot for the previous page
+          const prevPageSnapshot = pageSnapshotsRef.current.get(page - 1);
+          if (prevPageSnapshot) {
+            lastDoc = prevPageSnapshot;
+          } else {
+            // Find the closest cached snapshot before this page
+            let closestPage = -1;
+            let closestSnapshot: DocumentSnapshot | undefined = undefined;
+            
+            for (let i = page - 1; i >= 0; i--) {
+              const cached = pageSnapshotsRef.current.get(i);
+              if (cached) {
+                closestPage = i;
+                closestSnapshot = cached;
+                break;
+              }
+            }
+            
+            // Start from the closest cached page or from the beginning
+            let currentDoc = closestSnapshot;
+            const startPage = closestPage + 1;
+            
+            // Fetch pages from the closest cached point to the target page
+            for (let i = startPage; i < page; i++) {
+              const result = await getProducts({
+                pageSize,
+                categoryId,
+                status,
+                lastDoc: currentDoc,
+              });
+              if (result.products.length > 0 && result.lastVisible) {
+                currentDoc = result.lastVisible;
+                pageSnapshotsRef.current.set(i, currentDoc);
+              } else {
+                break;
+              }
+            }
+            
+            lastDoc = currentDoc;
+          }
+        }
+
+        const result = await getProducts({
+          pageSize,
+          categoryId,
+          status,
+          lastDoc,
+        });
+
+        setProducts(result.products);
+        setHasMore(result.hasMore);
+        
+        // Store snapshot for next page
+        if (result.lastVisible) {
+          pageSnapshotsRef.current.set(page, result.lastVisible);
+        }
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Помилка завантаження товарів";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [pageSize, categoryId, status, isSearching, searchTerm]
+  );
 
   // Search products
   const search = useCallback(
     async (term: string) => {
+      const trimmedTerm = term.trim();
+      const searching = trimmedTerm.length > 0;
+      
+      // Update search state immediately to prevent other effects from interfering
+      isSearchingRef.current = searching;
+      setIsSearching(searching);
+      setSearchTerm(term);
+      
+      if (!trimmedTerm) {
+        // Reset to page 0 when clearing search
+        setCurrentPage(0);
+        searchResultsRef.current = [];
+        pageSnapshotsRef.current.clear();
+        lastDocRef.current = null;
+        isSearchingRef.current = false;
+        setIsSearching(false);
+        await fetchCount();
+        await fetchProducts(0, true);
+        return;
+      }
+
       setLoading(true);
       setError(null);
+      setCurrentPage(0); // Reset to first page when searching
       try {
-        const results = await searchProducts(term, { categoryId, status });
-        setProducts(results);
+        const results = await searchProducts(trimmedTerm, { categoryId, status });
+        // Store all search results for client-side pagination
+        searchResultsRef.current = results;
+        
+        // Show first page of search results
+        const paginatedResults = results.slice(0, pageSize);
+        setProducts(paginatedResults);
+        setTotalCount(results.length);
+        setHasMore(results.length > pageSize);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Помилка пошуку";
         setError(message);
@@ -358,27 +493,76 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
         setLoading(false);
       }
     },
-    [categoryId, status]
+    [categoryId, status, pageSize, fetchCount, fetchProducts]
   );
 
-  // Initial fetch and when filters change
+  // Handle page change
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setCurrentPage(newPage);
+      
+      // If searching, paginate search results client-side
+      if (isSearchingRef.current && searchResultsRef.current.length > 0) {
+        const allResults = searchResultsRef.current;
+        const start = newPage * pageSize;
+        const end = start + pageSize;
+        const paginatedResults = allResults.slice(start, end);
+        
+        setProducts(paginatedResults);
+        setTotalCount(allResults.length);
+        setHasMore(end < allResults.length);
+        return;
+      }
+      
+      // Otherwise, fetch from server
+      fetchProducts(newPage, newPage === 0);
+    },
+    [fetchProducts, pageSize]
+  );
+
+  // Initial fetch and when filters change (but not when searching)
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    // Only reset if not currently searching
+    if (!isSearchingRef.current) {
+      // Reset pagination when filters change
+      setCurrentPage(0);
+      searchResultsRef.current = [];
+      pageSnapshotsRef.current.clear();
+      lastDocRef.current = null;
+      setIsSearching(false);
+      setSearchTerm("");
+      fetchCount();
+      fetchProducts(0, true);
+    }
+  }, [categoryId, status, fetchCount, fetchProducts]);
 
   // Refresh function
   const refresh = useCallback(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    if (isSearching && searchTerm.trim()) {
+      // Re-run search
+      search(searchTerm);
+    } else {
+      pageSnapshotsRef.current.clear();
+      lastDocRef.current = null;
+      fetchCount();
+      fetchProducts(currentPage, currentPage === 0);
+    }
+  }, [currentPage, fetchCount, fetchProducts, isSearching, searchTerm, search]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   return {
     products,
-    totalCount: products.length,
+    totalCount,
     loading,
     error,
     search,
     refresh,
-    handlePageChange: () => {}, // Not needed - client-side pagination
-    isSearching: false,
+    handlePageChange,
+    isSearching,
+    currentPage,
+    totalPages,
+    hasMore,
   };
 }

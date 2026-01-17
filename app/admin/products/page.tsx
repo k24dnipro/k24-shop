@@ -7,6 +7,7 @@ import {
 import {
   Eye,
   Filter,
+  Loader2,
   MoreHorizontal,
   Pencil,
   Plus,
@@ -67,7 +68,17 @@ export default function ProductsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-  const { products, totalCount, search, refresh } = useProductsPaginated({
+  const {
+    products,
+    totalCount,
+    loading: productsLoading,
+    search,
+    refresh,
+    handlePageChange,
+    currentPage,
+    totalPages,
+  } = useProductsPaginated({
+    pageSize: 20,
     categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
     status:
       statusFilter !== "all" ? (statusFilter as ProductStatus) : undefined,
@@ -79,15 +90,14 @@ export default function ProductsPage() {
   const canDelete = hasPermission("canDeleteProducts");
   const canCreate = hasPermission("canCreateProducts");
 
-  // Search and filter with debounce
+  // Search with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Always use search which now handles both search term and filters
       search(searchTerm);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, categoryFilter, statusFilter, search]);
+  }, [searchTerm, search]);
 
   const handleDelete = async () => {
     if (!productToDelete) return;
@@ -270,7 +280,10 @@ export default function ProductsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-500"
               />
-              {searchTerm && (
+              {productsLoading && (
+                <Loader2 className="absolute right-10 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500 animate-spin" />
+              )}
+              {searchTerm && !productsLoading && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -349,6 +362,14 @@ export default function ProductsPage() {
           columns={columns}
           data={products}
           onRowClick={(product) => router.push(`/admin/products/${product.id}`)}
+          serverSidePagination={{
+            currentPage,
+            totalPages,
+            onPageChange: handlePageChange,
+            totalCount,
+            pageSize: 20,
+          }}
+          loading={productsLoading}
         />
       </div>
 

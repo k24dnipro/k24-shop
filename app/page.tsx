@@ -85,8 +85,16 @@ export default function Home() {
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (product.status === 'discontinued' || product.status === 'on_order') {
+      toast.error('Цей товар недоступний для додавання до кошика. Будь ласка, зв\'яжіться з нами.');
+      return;
+    }
+
     addItem(product);
-    toast.success('Товар додано до корзини!');
+    toast.success('Товар додано до корзини!', {
+      description: product.name,
+    });
   };
 
   const handleSearch = async (query?: string) => {
@@ -400,13 +408,15 @@ export default function Home() {
                                   )}
                                 </div>
                               </div>
-                              <Button
-                                onClick={(e) => handleAddToCart(e, product)}
-                                className="w-full bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm h-9"
-                              >
-                                <ShoppingCart className="mr-2 h-4 w-4" />
-                                В корзину
-                              </Button>
+                              {product.status === 'in_stock' && (
+                                <Button
+                                  onClick={(e) => handleAddToCart(e, product)}
+                                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-medium text-sm h-9"
+                                >
+                                  <ShoppingCart className="mr-2 h-4 w-4" />
+                                  В корзину
+                                </Button>
+                              )}
                               <div className="flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-800">
                                 <span>{product.views || 0} переглядів</span>
                                 <span>

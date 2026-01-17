@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import {
+  Loader2,
   Minus,
   Plus,
   ShoppingBag,
   Trash2,
 } from 'lucide-react';
 import Image from 'next/image';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -19,6 +21,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 import { useCart } from '@/lib/hooks/useCart';
+import { sendTelegramOrder } from '@/lib/services/telegram';
 
 interface CartProps {
   open: boolean;
@@ -33,14 +36,52 @@ export function Cart({ open, onOpenChange }: CartProps) {
     email: '',
     comment: '',
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCheckout = () => {
-    // Тут буде логіка оформлення замовлення
-    console.log('Checkout:', { items, customerInfo });
-    alert('Дякуємо за замовлення! Ми зв\'яжемося з вами найближчим часом.');
-    clearCart();
-    setCustomerInfo({ name: '', phone: '', email: '', comment: '' });
-    onOpenChange(false);
+  const handleCheckout = async () => {
+    if (!customerInfo.name || !customerInfo.phone) {
+      toast.error('Будь ласка, заповніть обов\'язкові поля');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Prepare order data
+      const orderData = {
+        customerInfo,
+        items: items.map(item => ({
+          product: {
+            id: item.product.id,
+            name: item.product.name,
+            sku: item.product.sku,
+            price: item.product.price,
+            originalPrice: item.product.originalPrice,
+            brand: item.product.brand,
+          },
+          quantity: item.quantity,
+        })),
+        totalPrice: getTotalPrice(),
+        totalItems: getTotalItems(),
+      };
+
+      // Send to Telegram
+      const success = await sendTelegramOrder(orderData);
+
+      if (success) {
+        toast.success('Дякуємо за замовлення! Ми зв\'яжемося з вами найближчим часом.');
+        clearCart();
+        setCustomerInfo({ name: '', phone: '', email: '', comment: '' });
+        onOpenChange(false);
+      } else {
+        toast.error('Помилка при відправці замовлення. Спробуйте ще раз або зв\'яжіться з нами безпосередньо.');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast.error('Помилка при оформленні замовлення. Спробуйте ще раз.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -217,10 +258,17 @@ export function Cart({ open, onOpenChange }: CartProps) {
               <div className="space-y-2">
                 <Button
                   onClick={handleCheckout}
-                  disabled={!customerInfo.name || !customerInfo.phone}
+                  disabled={!customerInfo.name || !customerInfo.phone || isSubmitting}
                   className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
                 >
-                  Оформити замовлення
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Відправка...
+                    </>
+                  ) : (
+                    'Оформити замовлення'
+                  )}
                 </Button>
                 <Button
                   variant="outline"

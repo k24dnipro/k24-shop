@@ -52,6 +52,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [items, isLoaded]);
 
   const addItem = (product: Product, quantity = 1) => {
+    // Prevent adding products with discontinued or on_order status
+    if (product.status === 'discontinued' || product.status === 'on_order') {
+      return;
+    }
+
     setItems((prevItems) => {
       const existingItem = prevItems.find(
         (item) => item.product.id === product.id

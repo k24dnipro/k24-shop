@@ -59,15 +59,46 @@ export async function getProducts(options?: {
   categoryId?: string;
   status?: ProductStatus;
   search?: string;
+  sortBy?: 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
 }) {
-  const { pageSize = 20, lastDoc, categoryId, status } = options || {};
+  const { pageSize = 20, lastDoc, categoryId, status, sortBy = 'date_desc' } = options || {};
 
-  let q = query(
-    collection(db, PRODUCTS_COLLECTION),
-    orderBy("createdAt", "desc"),
-    limit(pageSize)
-  );
+  // Determine sort field and direction
+  let sortField: string;
+  let sortDirection: 'asc' | 'desc';
 
+  switch (sortBy) {
+    case 'price_asc':
+      sortField = 'price';
+      sortDirection = 'asc';
+      break;
+    case 'price_desc':
+      sortField = 'price';
+      sortDirection = 'desc';
+      break;
+    case 'date_asc':
+      sortField = 'createdAt';
+      sortDirection = 'asc';
+      break;
+    case 'date_desc':
+    default:
+      sortField = 'createdAt';
+      sortDirection = 'desc';
+      break;
+    case 'name_asc':
+      sortField = 'name';
+      sortDirection = 'asc';
+      break;
+    case 'name_desc':
+      sortField = 'name';
+      sortDirection = 'desc';
+      break;
+  }
+
+  // Build query with correct order: where filters first, then orderBy, then limit
+  let q = query(collection(db, PRODUCTS_COLLECTION));
+
+  // Apply where filters first
   if (categoryId) {
     q = query(q, where("categoryId", "==", categoryId));
   }
@@ -76,15 +107,80 @@ export async function getProducts(options?: {
     q = query(q, where("status", "==", status));
   }
 
+  // Then apply orderBy
+  q = query(q, orderBy(sortField, sortDirection));
+
+  // Then apply pagination
   if (lastDoc) {
     q = query(q, startAfter(lastDoc));
   }
 
-  const snapshot = await getDocs(q);
-  const products = snapshot.docs.map(convertToProduct);
-  const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+  q = query(q, limit(pageSize));
 
-  return { products, lastVisible, hasMore: snapshot.docs.length === pageSize };
+  try {
+    const snapshot = await getDocs(q);
+    const products = snapshot.docs.map(convertToProduct);
+    const lastVisible = snapshot.docs.length > 0 ? snapshot.docs[snapshot.docs.length - 1] : undefined;
+
+    // For name sorting, Firestore sorts lexicographically, so we need client-side sorting for proper locale-aware sorting
+    if (sortBy === 'name_asc' || sortBy === 'name_desc') {
+      products.sort((a, b) => {
+        return sortBy === 'name_asc'
+          ? a.name.localeCompare(b.name, 'uk')
+          : b.name.localeCompare(a.name, 'uk');
+      });
+    }
+
+    const hasMore = snapshot.docs.length === pageSize;
+    console.log('getProducts result:', {
+      requestedPageSize: pageSize,
+      receivedDocs: snapshot.docs.length,
+      productsCount: products.length,
+      hasMore,
+      status,
+      categoryId
+    });
+
+    return { products, lastVisible, hasMore };
+  } catch (error) {
+    // Log Firestore errors (e.g., missing index)
+    console.error('Firestore query error:', error);
+    // If it's an index error, try without status filter as fallback
+    if (error instanceof Error && error.message.includes('index')) {
+      console.warn('Firestore index missing, trying query without status filter');
+      // Retry without status filter
+      let fallbackQ = query(collection(db, PRODUCTS_COLLECTION));
+      if (categoryId) {
+        fallbackQ = query(fallbackQ, where("categoryId", "==", categoryId));
+      }
+      fallbackQ = query(fallbackQ, orderBy(sortField, sortDirection));
+      if (lastDoc) {
+        fallbackQ = query(fallbackQ, startAfter(lastDoc));
+      }
+      fallbackQ = query(fallbackQ, limit(pageSize));
+      const fallbackSnapshot = await getDocs(fallbackQ);
+      let fallbackProducts = fallbackSnapshot.docs.map(convertToProduct);
+      // Filter by status on client side as fallback
+      if (status) {
+        fallbackProducts = fallbackProducts.filter(p => p.status === status);
+      }
+      // For name sorting
+      if (sortBy === 'name_asc' || sortBy === 'name_desc') {
+        fallbackProducts.sort((a, b) => {
+          return sortBy === 'name_asc'
+            ? a.name.localeCompare(b.name, 'uk')
+            : b.name.localeCompare(a.name, 'uk');
+        });
+      }
+      const fallbackLastVisible = fallbackSnapshot.docs.length > 0 ? fallbackSnapshot.docs[fallbackSnapshot.docs.length - 1] : undefined;
+      // hasMore should be based on original snapshot, not filtered products
+      // If we got less than pageSize from Firestore, there's no more
+      // If we got pageSize but after filtering have less, we might still have more in Firestore
+      const hasMore = fallbackSnapshot.docs.length === pageSize;
+      return { products: fallbackProducts, lastVisible: fallbackLastVisible, hasMore };
+    }
+    throw error;
+  }
 }
 
 // Normalize text for smart search (removes special chars, normalizes spaces)
@@ -311,15 +407,15 @@ export async function importProductsFromCSV(
       const existingProduct = await getProductBySku(row.sku);
 
       const newPrice = parseFloat(row.price) || 0;
-      
+
       // Determine originalPrice based on price comparison with existing product
       let originalPrice: number | null | undefined = row.originalPrice
         ? parseFloat(row.originalPrice)
         : undefined;
-      
+
       if (existingProduct) {
         const oldPrice = existingProduct.price;
-        
+
         if (newPrice > oldPrice) {
           // New price is higher - clear originalPrice (no discount)
           originalPrice = null;
@@ -466,9 +562,24 @@ export async function exportProductsToCSV(): Promise<
   });
 }
 
-// Get products count
-export async function getProductsCount(): Promise<number> {
-  const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
+// Get products count with optional filters
+export async function getProductsCount(options?: {
+  categoryId?: string;
+  status?: ProductStatus;
+}): Promise<number> {
+  const { categoryId, status } = options || {};
+
+  let q = query(collection(db, PRODUCTS_COLLECTION));
+
+  if (categoryId) {
+    q = query(q, where("categoryId", "==", categoryId));
+  }
+
+  if (status) {
+    q = query(q, where("status", "==", status));
+  }
+
+  const snapshot = await getDocs(q);
   return snapshot.size;
 }
 

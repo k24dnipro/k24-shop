@@ -27,10 +27,11 @@ interface UseProductsOptions {
   categoryId?: string;
   status?: ProductStatus;
   autoFetch?: boolean;
+  sortBy?: 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
 }
 
 export function useProducts(options: UseProductsOptions = {}) {
-  const { pageSize = 20, categoryId, status, autoFetch = true } = options;
+  const { pageSize = 20, categoryId, status, autoFetch = true, sortBy } = options;
   const [products, setProducts] = useState<Product[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
@@ -38,15 +39,18 @@ export function useProducts(options: UseProductsOptions = {}) {
   const lastDocRef = useRef<DocumentSnapshot | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
-  // Fetch total count
+  // Fetch total count with filters
   const fetchCount = useCallback(async () => {
     try {
-      const count = await getProductsCount();
+      const count = await getProductsCount({
+        categoryId,
+        status,
+      });
       setTotalCount(count);
     } catch (err) {
       console.error("Error fetching product count:", err);
     }
-  }, []);
+  }, [categoryId, status]);
 
   const fetchProducts = useCallback(
     async (reset = false) => {
@@ -57,6 +61,7 @@ export function useProducts(options: UseProductsOptions = {}) {
           pageSize,
           categoryId,
           status,
+          sortBy,
           lastDoc: reset ? undefined : lastDocRef.current || undefined,
         });
 
@@ -66,7 +71,7 @@ export function useProducts(options: UseProductsOptions = {}) {
           setProducts((prev) => [...prev, ...result.products]);
         }
 
-        lastDocRef.current = result.lastVisible;
+        lastDocRef.current = result.lastVisible || null;
         setHasMore(result.hasMore);
       } catch (err: unknown) {
         const message =
@@ -76,7 +81,7 @@ export function useProducts(options: UseProductsOptions = {}) {
         setLoading(false);
       }
     },
-    [pageSize, categoryId, status]
+    [pageSize, categoryId, status, sortBy]
   );
 
   const search = useCallback(
@@ -121,11 +126,15 @@ export function useProducts(options: UseProductsOptions = {}) {
 
   useEffect(() => {
     if (autoFetch) {
+      // Reset pagination when filters or sort change
+      lastDocRef.current = null;
+      setHasMore(true);
       // Fetch count and products
       fetchCount();
-      search("");
+      fetchProducts(true);
     }
-  }, [categoryId, status]); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryId, status, sortBy, autoFetch]);
 
   const filteredProducts = products.filter((product) =>
     categoryId ? product.categoryId === categoryId : true

@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import {
+  ArrowUpDown,
+  Filter,
   Loader2,
   Package,
   ShoppingCart,
@@ -21,6 +23,13 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Sheet,
   SheetContent,
 } from '@/components/ui/sheet';
@@ -32,6 +41,7 @@ import { searchProducts } from '@/lib/services/products';
 import {
   Product,
   PRODUCT_STATUSES,
+  ProductStatus,
 } from '@/lib/types';
 
 const statusColors: Record<string, string> = {
@@ -41,10 +51,14 @@ const statusColors: Record<string, string> = {
   discontinued: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
 };
 
+type SortOption = 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
+
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSearchTerm, setActiveSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('date_desc');
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchResults, setSearchResults] = useState<Product[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -59,6 +73,8 @@ export default function Home() {
   } = useProducts({
     pageSize: 12,
     categoryId: selectedCategory !== 'all' ? selectedCategory : undefined,
+    status: statusFilter !== 'all' ? statusFilter as ProductStatus : undefined,
+    sortBy: sortBy,
   });
   const { categories, loading: categoriesLoading } = useCategories();
   const { addItem } = useCart();
@@ -80,7 +96,10 @@ export default function Home() {
       try {
         const results = await searchProducts(
           searchQuery.trim(),
-          selectedCategory !== 'all' ? { categoryId: selectedCategory } : undefined
+          {
+            categoryId: selectedCategory !== 'all' ? selectedCategory : undefined,
+            status: statusFilter !== 'all' ? statusFilter as ProductStatus : undefined,
+          }
         );
         setSearchResults(results);
       } catch (error) {
@@ -116,6 +135,34 @@ export default function Home() {
   const getStatusLabel = (status: string) => {
     return PRODUCT_STATUSES.find((s) => s.value === status)?.label || status;
   };
+
+  // Sort search results (products are sorted on server)
+  const sortSearchResults = (items: Product[]): Product[] => {
+    const sorted = [...items];
+    
+    sorted.sort((a, b) => {
+      switch (sortBy) {
+        case 'price_asc':
+          return a.price - b.price;
+        case 'price_desc':
+          return b.price - a.price;
+        case 'name_asc':
+          return a.name.localeCompare(b.name, 'uk');
+        case 'name_desc':
+          return b.name.localeCompare(a.name, 'uk');
+        case 'date_asc':
+          return a.createdAt.getTime() - b.createdAt.getTime();
+        case 'date_desc':
+        default:
+          return b.createdAt.getTime() - a.createdAt.getTime();
+      }
+    });
+
+    return sorted;
+  };
+
+  const displayProducts = products; // Already sorted on server
+  const displaySearchResults = sortSearchResults(searchResults); // Search results need client-side sorting
 
   return (
     <div className="flex h-screen flex-col bg-zinc-950">
@@ -157,50 +204,126 @@ export default function Home() {
                   <Package className="mr-2 h-3.5 w-3.5" />
                   {isSearchActive
                     ? `${searchResults.length} знайдено`
-                    : selectedCategory !== 'all'
-                    ? `${categories.find((c) => c.id === selectedCategory)?.productCount || 0} товарів`
                     : `${totalCount || 0} товарів`}
                 </Badge>
                 {!isSearchActive && products.length > 0 && (
                   <Badge variant="outline" className="bg-zinc-800/50 text-zinc-400 border-zinc-700">
-                    Показано {products.length} {selectedCategory !== 'all' 
-                      ? `з ${categories.find((c) => c.id === selectedCategory)?.productCount || 0}`
-                      : `з ${totalCount || 0}`}
+                    Показано {products.length} з {totalCount || 0}
                   </Badge>
                 )}
               </div>
             </div>
 
-            {/* Search/Filter actions */}
-            {(isSearchActive || selectedCategory !== 'all') && (
-              <div className="flex gap-2">
-                {isSearchActive && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-zinc-800 text-zinc-300 hover:border-amber-500 hover:text-white"
-                    onClick={() => {
-                      setSearchTerm('');
-                      setActiveSearchTerm('');
-                      setIsSearchActive(false);
-                      setSearchResults([]);
-                    }}
-                  >
-                    Скинути пошук
-                  </Button>
-                )}
-                {selectedCategory !== 'all' && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-zinc-800 text-zinc-300 hover:border-amber-500 hover:text-white"
-                    onClick={() => handleCategorySelect('all')}
-                  >
-                    Скинути категорію
-                  </Button>
-                )}
+            {/* Filters and Sort */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+              <div className="flex flex-wrap gap-3 w-full sm:w-auto">
+                {/* Status Filter */}
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full sm:w-48 bg-zinc-900/50 border-zinc-800 text-white">
+                    <Filter className="mr-2 h-4 w-4 text-zinc-500" />
+                    <SelectValue placeholder="Статус" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-950 border-zinc-800">
+                    <SelectItem
+                      value="all"
+                      className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                    >
+                      Всі статуси
+                    </SelectItem>
+                    {PRODUCT_STATUSES.map((status) => (
+                      <SelectItem
+                        key={status.value}
+                        value={status.value}
+                        className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                      >
+                        {status.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Sort */}
+                <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                  <SelectTrigger className="w-full sm:w-48 bg-zinc-900/50 border-zinc-800 text-white">
+                    <ArrowUpDown className="mr-2 h-4 w-4 text-zinc-500" />
+                    <SelectValue placeholder="Сортування" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-950 border-zinc-800">
+                    <SelectItem
+                      value="date_desc"
+                      className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                    >
+                      Новіші спочатку
+                    </SelectItem>
+                    <SelectItem
+                      value="date_asc"
+                      className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                    >
+                      Старіші спочатку
+                    </SelectItem>
+                    <SelectItem
+                      value="price_asc"
+                      className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                    >
+                      Ціна: від низької
+                    </SelectItem>
+                    <SelectItem
+                      value="price_desc"
+                      className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                    >
+                      Ціна: від високої
+                    </SelectItem>
+                    <SelectItem
+                      value="name_asc"
+                      className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                    >
+                      Назва: А-Я
+                    </SelectItem>
+                    <SelectItem
+                      value="name_desc"
+                      className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                    >
+                      Назва: Я-А
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
+
+              {/* Reset filters */}
+              {(isSearchActive || selectedCategory !== 'all' || statusFilter !== 'all' || sortBy !== 'date_desc') && (
+                <div className="flex gap-2">
+                  {isSearchActive && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-zinc-800 text-zinc-300 hover:border-amber-500 hover:text-white"
+                      onClick={() => {
+                        setSearchTerm('');
+                        setActiveSearchTerm('');
+                        setIsSearchActive(false);
+                        setSearchResults([]);
+                      }}
+                    >
+                      Скинути пошук
+                    </Button>
+                  )}
+                  {(selectedCategory !== 'all' || statusFilter !== 'all' || sortBy !== 'date_desc') && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-zinc-800 text-zinc-300 hover:border-amber-500 hover:text-white"
+                      onClick={() => {
+                        if (selectedCategory !== 'all') handleCategorySelect('all');
+                        setStatusFilter('all');
+                        setSortBy('date_desc');
+                      }}
+                    >
+                      Скинути фільтри
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Products Grid */}
             {isSearchActive && activeSearchTerm ? (
@@ -218,9 +341,9 @@ export default function Home() {
                       <Skeleton key={idx} className="h-64 bg-zinc-900/60" />
                     ))}
                   </div>
-                ) : searchResults.length > 0 ? (
+                ) : displaySearchResults.length > 0 ? (
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {searchResults.map((product) => {
+                    {displaySearchResults.map((product) => {
                       const firstImage = product.images?.[0]?.url;
                       const statusClass = statusColors[product.status] || statusColors.discontinued;
                       return (
@@ -305,10 +428,10 @@ export default function Home() {
                       <Skeleton key={idx} className="h-64 bg-zinc-900/60" />
                     ))}
                   </div>
-                ) : products.length > 0 ? (
+                ) : displayProducts.length > 0 ? (
                   <>
                     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                      {products.map((product) => {
+                      {displayProducts.map((product) => {
                         const firstImage = product.images?.[0]?.url;
                         const statusClass = statusColors[product.status] || statusColors.discontinued;
                         return (
@@ -370,9 +493,7 @@ export default function Home() {
                           Показати більше
                         </Button>
                         <span className="text-xs text-zinc-500">
-                          {selectedCategory !== 'all' 
-                            ? `Залишилось товарів: ${(categories.find((c) => c.id === selectedCategory)?.productCount || 0) - products.length}`
-                            : `Залишилось товарів: ${(totalCount || 0) - products.length}`}
+                          Залишилось товарів: {Math.max(0, (totalCount || 0) - displayProducts.length)}
                         </span>
                       </div>
                     )}

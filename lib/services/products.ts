@@ -300,7 +300,7 @@ export async function importProductsFromCSV(
     errors: [],
   };
 
-  const batch = writeBatch(db);
+  let batch = writeBatch(db);
   let batchCount = 0;
   const maxBatchSize = 500;
 
@@ -396,9 +396,10 @@ export async function importProductsFromCSV(
 
       batchCount++;
 
-      // Commit batch if it reaches max size
+      // Commit batch if it reaches max size and create a new one
       if (batchCount >= maxBatchSize) {
         await batch.commit();
+        batch = writeBatch(db);
         batchCount = 0;
       }
     } catch (error) {

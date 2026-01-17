@@ -13,6 +13,7 @@ import {
   deleteProducts,
   getProductById,
   getProducts,
+  getProductsCount,
   searchProducts,
   updateProduct,
 } from '../services/products';
@@ -31,10 +32,21 @@ interface UseProductsOptions {
 export function useProducts(options: UseProductsOptions = {}) {
   const { pageSize = 20, categoryId, status, autoFetch = true } = options;
   const [products, setProducts] = useState<Product[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const lastDocRef = useRef<DocumentSnapshot | null>(null);
   const [hasMore, setHasMore] = useState(true);
+
+  // Fetch total count
+  const fetchCount = useCallback(async () => {
+    try {
+      const count = await getProductsCount();
+      setTotalCount(count);
+    } catch (err) {
+      console.error("Error fetching product count:", err);
+    }
+  }, []);
 
   const fetchProducts = useCallback(
     async (reset = false) => {
@@ -91,14 +103,15 @@ export function useProducts(options: UseProductsOptions = {}) {
         setLoading(false);
       }
     },
-    [categoryId, status]
+    [categoryId, status, fetchProducts]
   );
 
   const refresh = useCallback(() => {
     lastDocRef.current = null;
     setHasMore(true);
+    fetchCount();
     search("");
-  }, [search]);
+  }, [search, fetchCount]);
 
   const loadMore = useCallback(() => {
     if (hasMore && !loading) {
@@ -108,7 +121,8 @@ export function useProducts(options: UseProductsOptions = {}) {
 
   useEffect(() => {
     if (autoFetch) {
-      // Use search which handles filters client-side
+      // Fetch count and products
+      fetchCount();
       search("");
     }
   }, [categoryId, status]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -119,6 +133,7 @@ export function useProducts(options: UseProductsOptions = {}) {
 
   return {
     products: filteredProducts,
+    totalCount,
     loading,
     error,
     hasMore,
@@ -287,5 +302,75 @@ export function useProductMutations() {
     update,
     remove,
     removeMany,
+  };
+}
+
+// Hook for admin products (fetches all products with filters, client-side pagination)
+interface UseProductsPaginatedOptions {
+  pageSize?: number;
+  categoryId?: string;
+  status?: ProductStatus;
+}
+
+export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) {
+  const { categoryId, status } = options;
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch all products with filters
+  const fetchProducts = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Use searchProducts with empty string to get all products with filters
+      const results = await searchProducts("", { categoryId, status });
+      setProducts(results);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Помилка завантаження товарів";
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, [categoryId, status]);
+
+  // Search products
+  const search = useCallback(
+    async (term: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const results = await searchProducts(term, { categoryId, status });
+        setProducts(results);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Помилка пошуку";
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [categoryId, status]
+  );
+
+  // Initial fetch and when filters change
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  // Refresh function
+  const refresh = useCallback(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  return {
+    products,
+    totalCount: products.length,
+    loading,
+    error,
+    search,
+    refresh,
+    handlePageChange: () => {}, // Not needed - client-side pagination
+    isSearching: false,
   };
 }

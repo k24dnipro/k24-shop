@@ -8,6 +8,7 @@ import {
   getDocs,
   orderBy,
   query,
+  setDoc,
   Timestamp,
   updateDoc,
   where,
@@ -27,6 +28,36 @@ import {
 import { Category } from '../types';
 
 const CATEGORIES_COLLECTION = 'categories';
+
+// Default uncategorized category constants
+export const UNCATEGORIZED_CATEGORY_ID = 'uncategorized';
+export const UNCATEGORIZED_CATEGORY_NAME = 'Без категорії';
+
+// Ensure the "Без категорії" category exists in Firestore
+export async function ensureUncategorizedCategoryExists(): Promise<void> {
+  const docRef = doc(db, CATEGORIES_COLLECTION, UNCATEGORIZED_CATEGORY_ID);
+  const docSnap = await getDoc(docRef);
+
+  if (!docSnap.exists()) {
+    const now = Timestamp.now();
+    await setDoc(docRef, {
+      name: UNCATEGORIZED_CATEGORY_NAME,
+      slug: 'bez-kategorii',
+      description: 'Товари без визначеної категорії',
+      parentId: null,
+      order: 9999, // Put at the end
+      isActive: true,
+      productCount: 0,
+      seo: {
+        metaTitle: UNCATEGORIZED_CATEGORY_NAME,
+        metaDescription: 'Товари без визначеної категорії',
+        metaKeywords: [],
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+}
 
 // Convert Firestore document to Category
 const convertToCategory = (doc: DocumentSnapshot): Category => {
@@ -73,7 +104,7 @@ export async function getSubcategories(parentId: string): Promise<Category[]> {
 export async function getCategoryById(id: string): Promise<Category | null> {
   const docRef = doc(db, CATEGORIES_COLLECTION, id);
   const docSnap = await getDoc(docRef);
-  
+
   if (!docSnap.exists()) return null;
   return convertToCategory(docSnap);
 }
@@ -82,7 +113,7 @@ export async function getCategoryById(id: string): Promise<Category | null> {
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
   const q = query(collection(db, CATEGORIES_COLLECTION), where('slug', '==', slug));
   const snapshot = await getDocs(q);
-  
+
   if (snapshot.empty) return null;
   return convertToCategory(snapshot.docs[0]);
 }
@@ -92,7 +123,7 @@ export async function createCategory(
   categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'productCount'>
 ): Promise<string> {
   const now = Timestamp.now();
-  
+
   const docRef = await addDoc(collection(db, CATEGORIES_COLLECTION), {
     ...categoryData,
     productCount: 0,
@@ -141,7 +172,7 @@ export async function uploadCategoryImage(categoryId: string, file: File): Promi
   const imageId = uuidv4();
   const extension = file.name.split('.').pop();
   const path = `categories/${categoryId}/${imageId}.${extension}`;
-  
+
   const storageRef = ref(storage, path);
   await uploadBytes(storageRef, file);
   return await getDownloadURL(storageRef);
@@ -150,7 +181,7 @@ export async function uploadCategoryImage(categoryId: string, file: File): Promi
 // Reorder categories
 export async function reorderCategories(categories: { id: string; order: number }[]): Promise<void> {
   const batch = writeBatch(db);
-  
+
   for (const { id, order } of categories) {
     const docRef = doc(db, CATEGORIES_COLLECTION, id);
     batch.update(docRef, { order, updatedAt: Timestamp.now() });
@@ -163,11 +194,11 @@ export async function reorderCategories(categories: { id: string; order: number 
 export async function getCategoriesTree(): Promise<(Category & { children: Category[] })[]> {
   // Recalculate product counts to ensure they're accurate
   await recalculateCategoryProductCounts();
-  
+
   const categories = await getCategories();
-  
+
   const rootCategories = categories.filter(c => c.parentId === null);
-  
+
   return rootCategories.map(root => ({
     ...root,
     children: categories.filter(c => c.parentId === root.id),
@@ -192,7 +223,7 @@ export function generateSlug(name: string): string {
 export async function recalculateCategoryProductCounts(): Promise<void> {
   const categoriesSnapshot = await getDocs(collection(db, CATEGORIES_COLLECTION));
   const productsSnapshot = await getDocs(collection(db, 'products'));
-  
+
   // Count products per category
   const counts: Record<string, number> = {};
   productsSnapshot.docs.forEach((doc) => {
@@ -201,7 +232,7 @@ export async function recalculateCategoryProductCounts(): Promise<void> {
       counts[categoryId] = (counts[categoryId] || 0) + 1;
     }
   });
-  
+
   // Update each category with the correct count
   const batch = writeBatch(db);
   categoriesSnapshot.docs.forEach((categoryDoc) => {
@@ -210,7 +241,7 @@ export async function recalculateCategoryProductCounts(): Promise<void> {
       productCount: count,
     });
   });
-  
+
   await batch.commit();
 }
 

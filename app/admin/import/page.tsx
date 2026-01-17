@@ -41,6 +41,10 @@ import {
 } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCategories } from '@/lib/hooks/useCategories';
+import {
+  UNCATEGORIZED_CATEGORY_ID,
+  UNCATEGORIZED_CATEGORY_NAME,
+} from '@/lib/services/categories';
 import { importProductsFromCSV } from '@/lib/services/products';
 import {
   CSVProductRow,
@@ -80,9 +84,9 @@ const RUSSIAN_HEADER_MAP: Record<string, string> = {
 // Map status values to valid ProductStatus
 function normalizeStatus(status: string | undefined): string {
   if (!status) return "in_stock";
-  
+
   const s = status.toLowerCase().trim();
-  
+
   // In stock / available statuses
   if (
     s === "in_stock" ||
@@ -105,7 +109,7 @@ function normalizeStatus(status: string | undefined): string {
   ) {
     return "in_stock";
   }
-  
+
   // On order statuses
   if (
     s === "on_order" ||
@@ -118,7 +122,7 @@ function normalizeStatus(status: string | undefined): string {
   ) {
     return "on_order";
   }
-  
+
   // Out of stock statuses
   if (
     s === "out_of_stock" ||
@@ -134,7 +138,7 @@ function normalizeStatus(status: string | undefined): string {
   ) {
     return "out_of_stock";
   }
-  
+
   // Discontinued statuses
   if (
     s === "discontinued" ||
@@ -145,7 +149,7 @@ function normalizeStatus(status: string | undefined): string {
   ) {
     return "discontinued";
   }
-  
+
   // Default to in_stock if not recognized
   return "in_stock";
 }
@@ -159,7 +163,7 @@ function mapRussianCSVRow(row: Record<string, string>): CSVProductRow {
     const englishKey = RUSSIAN_HEADER_MAP[key] || key.toLowerCase();
     (mapped as Record<string, string | null>)[englishKey] = row[key];
   });
-  
+
   // Normalize status value
   mapped.status = normalizeStatus(mapped.status as string | undefined);
 
@@ -229,7 +233,7 @@ export default function ImportPage() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
-  const [defaultCategory, setDefaultCategory] = useState<string>("");
+  const [defaultCategory, setDefaultCategory] = useState<string>(UNCATEGORIZED_CATEGORY_ID);
 
   const canImport = hasPermission("canImportData");
 
@@ -267,9 +271,9 @@ export default function ImportPage() {
             const mappedData = hasRussianHeaders
               ? results.data.map(mapRussianCSVRow)
               : (results.data as unknown as CSVProductRow[]).map((row) => ({
-                  ...row,
-                  status: normalizeStatus(row.status),
-                }));
+                ...row,
+                status: normalizeStatus(row.status),
+              }));
 
             const errors = validateRows(mappedData);
             setParseErrors(errors);
@@ -321,13 +325,6 @@ export default function ImportPage() {
 
   const handleImport = async () => {
     if (!user || parsedData.length === 0) return;
-
-    if (!defaultCategory && parsedData.some((row) => !row.categoryId)) {
-      toast.error(
-        "Будь ласка, оберіть категорію за замовчуванням для товарів без категорії"
-      );
-      return;
-    }
 
     setImporting(true);
     setProgress(0);
@@ -381,7 +378,7 @@ export default function ImportPage() {
     setImportResult(null);
     setParseErrors([]);
     setProgress(0);
-    setDefaultCategory("");
+    setDefaultCategory(UNCATEGORIZED_CATEGORY_ID);
   };
 
   if (!canImport) {
@@ -517,7 +514,7 @@ export default function ImportPage() {
                   {/* Category Selection */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-zinc-400">
-                      Категорія за замовчуванням (для нових товарів)
+                      Категорія за замовчуванням (для товарів без категорії)
                     </label>
                     <Select
                       value={defaultCategory}
@@ -527,15 +524,23 @@ export default function ImportPage() {
                         <SelectValue placeholder="Оберіть категорію" />
                       </SelectTrigger>
                       <SelectContent className="bg-zinc-950 border-zinc-800">
-                        {categories.map((cat) => (
-                          <SelectItem
-                            key={cat.id}
-                            value={cat.id}
-                            className="text-zinc-400 focus:text-white focus:bg-zinc-900"
-                          >
-                            {cat.name}
-                          </SelectItem>
-                        ))}
+                        <SelectItem
+                          value={UNCATEGORIZED_CATEGORY_ID}
+                          className="text-amber-400 focus:text-amber-300 focus:bg-zinc-900"
+                        >
+                          {UNCATEGORIZED_CATEGORY_NAME}
+                        </SelectItem>
+                        {categories
+                          .filter((cat) => cat.id !== UNCATEGORIZED_CATEGORY_ID)
+                          .map((cat) => (
+                            <SelectItem
+                              key={cat.id}
+                              value={cat.id}
+                              className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                            >
+                              {cat.name}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -571,7 +576,7 @@ export default function ImportPage() {
                                 </span>
                                 <span className="text-white">{row.name}</span>
                               </div>
-                                <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-4">
                                 <span className="text-zinc-400">
                                   {row.price} ₴
                                 </span>

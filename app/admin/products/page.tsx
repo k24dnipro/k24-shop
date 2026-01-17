@@ -49,7 +49,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { useCategories } from '@/lib/hooks/useCategories';
 import {
   useProductMutations,
-  useProducts,
+  useProductsPaginated,
 } from '@/lib/hooks/useProducts';
 import {
   Product,
@@ -67,7 +67,7 @@ export default function ProductsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
-  const { products, search, refresh } = useProducts({
+  const { products, totalCount, search, refresh } = useProductsPaginated({
     categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
     status:
       statusFilter !== "all" ? (statusFilter as ProductStatus) : undefined,
@@ -258,7 +258,7 @@ export default function ProductsPage() {
 
   return (
     <div className="flex flex-col">
-      <Header title="Товари" />
+      <Header title={`Всього: ${totalCount} товарів`} />
 
       <div className="p-6 space-y-6">
         {/* Toolbar */}

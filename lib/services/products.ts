@@ -310,14 +310,32 @@ export async function importProductsFromCSV(
       // Check if product exists by SKU
       const existingProduct = await getProductBySku(row.sku);
 
+      const newPrice = parseFloat(row.price) || 0;
+      
+      // Determine originalPrice based on price comparison with existing product
+      let originalPrice: number | null | undefined = row.originalPrice
+        ? parseFloat(row.originalPrice)
+        : undefined;
+      
+      if (existingProduct) {
+        const oldPrice = existingProduct.price;
+        
+        if (newPrice > oldPrice) {
+          // New price is higher - clear originalPrice (no discount)
+          originalPrice = null;
+        } else if (newPrice < oldPrice) {
+          // New price is lower - set originalPrice to old price (showing discount)
+          originalPrice = oldPrice;
+        }
+        // If prices are equal, keep the originalPrice from CSV or existing
+      }
+
       const productData = {
         sku: row.sku,
         name: row.name,
         description: row.description || "",
-        price: parseFloat(row.price) || 0,
-        originalPrice: row.originalPrice
-          ? parseFloat(row.originalPrice)
-          : undefined,
+        price: newPrice,
+        originalPrice: originalPrice,
         categoryId: row.categoryId,
         subcategoryId: row.subcategoryId || undefined,
         status: (row.status as ProductStatus) || "in_stock",

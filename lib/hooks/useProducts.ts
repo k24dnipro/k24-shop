@@ -133,8 +133,7 @@ export function useProducts(options: UseProductsOptions = {}) {
       fetchCount();
       fetchProducts(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryId, status, sortBy, autoFetch]);
+  }, [categoryId, status, sortBy, autoFetch, fetchCount, fetchProducts]);
 
   const filteredProducts = products.filter((product) =>
     categoryId ? product.categoryId === categoryId : true

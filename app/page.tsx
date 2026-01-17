@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from 'react';
+import {
+  useEffect,
+  useState,
+} from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import {
@@ -135,6 +138,13 @@ export default function Home() {
   const getStatusLabel = (status: string) => {
     return PRODUCT_STATUSES.find((s) => s.value === status)?.label || status;
   };
+
+  // Re-run search when status filter or category changes during active search
+  useEffect(() => {
+    if (isSearchActive && activeSearchTerm.trim()) {
+      handleSearch(activeSearchTerm);
+    }
+  }, [statusFilter, selectedCategory]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sort search results (products are sorted on server)
   const sortSearchResults = (items: Product[]): Product[] => {

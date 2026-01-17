@@ -91,7 +91,7 @@ export default function Home() {
 
   const handleSearch = async (query?: string) => {
     const searchQuery = query !== undefined ? query : searchTerm;
-    
+
     if (searchQuery.trim()) {
       setSearchLoading(true);
       setIsSearchActive(true);
@@ -149,7 +149,7 @@ export default function Home() {
   // Sort search results (products are sorted on server)
   const sortSearchResults = (items: Product[]): Product[] => {
     const sorted = [...items];
-    
+
     sorted.sort((a, b) => {
       switch (sortBy) {
         case 'price_asc':
@@ -206,8 +206,8 @@ export default function Home() {
                 {isSearchActive && activeSearchTerm
                   ? `Результати пошуку: "${activeSearchTerm}"`
                   : selectedCategory !== 'all'
-                  ? categories.find((c) => c.id === selectedCategory)?.name || 'Товари'
-                  : 'Усі товари'}
+                    ? categories.find((c) => c.id === selectedCategory)?.name || 'Товари'
+                    : 'Усі товари'}
               </h1>
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline" className="bg-amber-500/10 text-amber-400 border-amber-500/30">
@@ -389,9 +389,16 @@ export default function Home() {
                                     {product.brand || '—'}
                                   </p>
                                 </div>
-                                <span className="text-amber-400 font-semibold shrink-0">
-                                  {product.price.toLocaleString()} ₴
-                                </span>
+                                <div className="text-right shrink-0">
+                                  <span className="text-amber-400 font-semibold block">
+                                    {product.price.toLocaleString()} ₴
+                                  </span>
+                                  {product.originalPrice && (
+                                    <span className="text-xs text-zinc-500 line-through">
+                                      {product.originalPrice.toLocaleString()} ₴
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <Button
                                 onClick={(e) => handleAddToCart(e, product)}
@@ -477,9 +484,16 @@ export default function Home() {
                                       {product.brand || '—'}
                                     </p>
                                   </div>
-                                  <span className="text-amber-400 font-semibold shrink-0">
-                                    {product.price.toLocaleString()} ₴
-                                  </span>
+                                  <div className="text-right shrink-0">
+                                    <span className="text-amber-400 font-semibold block">
+                                      {product.price.toLocaleString()} ₴
+                                    </span>
+                                    {product.originalPrice && (
+                                      <span className="text-xs text-zinc-500 line-through">
+                                        {product.originalPrice.toLocaleString()} ₴
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                                 <div className="flex items-center justify-between text-xs text-zinc-500 mt-auto pt-2 border-t border-zinc-800">
                                   <span>{product.views || 0} переглядів</span>

@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import {
+  ChevronDown,
   ChevronRight,
   FolderTree,
   Package,
@@ -22,6 +24,8 @@ interface ShopSidebarProps {
   onClose?: () => void;
 }
 
+type CategoryWithChildren = Category & { children: Category[] };
+
 export function ShopSidebar({
   categories,
   loading = false,
@@ -30,13 +34,128 @@ export function ShopSidebar({
   isMobile = false,
   onClose,
 }: ShopSidebarProps) {
-  const handleCategoryClick = (categoryId: string) => {
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  // Build category tree from flat array
+  const buildCategoryTree = (cats: Category[]): CategoryWithChildren[] => {
+    const rootCategories = cats.filter(c => !c.parentId || c.parentId === null);
+    const categoryMap = new Map<string, Category[]>();
+
+    // Group children by parentId
+    cats.forEach(cat => {
+      if (cat.parentId) {
+        if (!categoryMap.has(cat.parentId)) {
+          categoryMap.set(cat.parentId, []);
+        }
+        categoryMap.get(cat.parentId)!.push(cat);
+      }
+    });
+
+    // Build tree structure
+    return rootCategories
+      .filter(cat => cat.isActive)
+      .sort((a, b) => a.order - b.order)
+      .map(cat => ({
+        ...cat,
+        children: (categoryMap.get(cat.id) || [])
+          .filter(c => c.isActive)
+          .sort((a, b) => a.order - b.order),
+      }));
+  };
+
+  const categoryTree = buildCategoryTree(categories);
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  };
+
+  const handleCategoryClick = (categoryId: string, hasChildren: boolean = false) => {
+    if (hasChildren) {
+      toggleCategory(categoryId);
+    }
     if (onCategorySelect) {
       onCategorySelect(categoryId);
     }
     if (isMobile && onClose) {
       onClose();
     }
+  };
+
+  const renderCategory = (category: CategoryWithChildren, level: number = 0) => {
+    const isExpanded = expandedCategories.has(category.id);
+    const isActive = selectedCategoryId === category.id;
+    const hasChildren = category.children.length > 0;
+    // For root categories, show total count including children; for subcategories, show only their own count
+    const totalCount = level === 0 && hasChildren
+      ? category.productCount + category.children.reduce((sum, child) => sum + child.productCount, 0)
+      : category.productCount;
+
+    return (
+      <div key={category.id}>
+        <div className={cn('relative', level > 0 && 'ml-6')}>
+          <button
+            onClick={() => handleCategoryClick(category.id, hasChildren)}
+            className={cn(
+              'group flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-sm font-medium transition-all text-left w-full',
+              isActive
+                ? 'bg-amber-500/10 text-amber-500'
+                : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+            )}
+          >
+            <div className="flex items-center gap-3 flex-1 min-w-0 pr-2">
+              {hasChildren ? (
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleCategory(category.id);
+                  }}
+                  className="shrink-0 p-0.5 hover:bg-zinc-800 rounded cursor-pointer"
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="h-4 w-4 text-zinc-500" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-zinc-500" />
+                  )}
+                </div>
+              ) : (
+                <div className="w-5 shrink-0" />
+              )}
+              <FolderTree
+                className={cn(
+                  'h-5 w-5 shrink-0',
+                  isActive ? 'text-amber-500' : 'text-zinc-500 group-hover:text-white'
+                )}
+              />
+              <span className="truncate">{category.name}</span>
+            </div>
+            <Badge
+              variant="outline"
+              className={cn(
+                'shrink-0',
+                isActive
+                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
+                  : 'border-zinc-700 bg-zinc-800/50 text-zinc-400'
+              )}
+            >
+              {totalCount}
+            </Badge>
+          </button>
+        </div>
+        {hasChildren && isExpanded && (
+          <div className="ml-0 mt-1">
+            {category.children.map(child => renderCategory({ ...child, children: [] }, level + 1))}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const sidebarContent = (
@@ -88,47 +207,8 @@ export function ShopSidebar({
             </>
           )}
 
-          {/* Category list */}
-          {!loading &&
-            categories
-              .filter((cat) => cat.isActive)
-              .sort((a, b) => a.order - b.order)
-              .map((category) => {
-                const isActive = selectedCategoryId === category.id;
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => handleCategoryClick(category.id)}
-                    className={cn(
-                      'group flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-sm font-medium transition-all text-left',
-                      isActive
-                        ? 'bg-amber-500/10 text-amber-500'
-                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                    )}
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <FolderTree
-                        className={cn(
-                          'h-5 w-5 shrink-0',
-                          isActive ? 'text-amber-500' : 'text-zinc-500 group-hover:text-white'
-                        )}
-                      />
-                      <span className="truncate">{category.name}</span>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        'shrink-0',
-                        isActive
-                          ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
-                          : 'border-zinc-700 bg-zinc-800/50 text-zinc-400'
-                      )}
-                    >
-                      {category.productCount}
-                    </Badge>
-                  </button>
-                );
-              })}
+          {/* Category tree */}
+          {!loading && categoryTree.map((category) => renderCategory(category))}
 
           {!loading && categories.length === 0 && (
             <div className="px-2 py-8 text-center text-sm text-zinc-500">
@@ -162,7 +242,7 @@ export function ShopSidebar({
   }
 
   return (
-    <aside className="hidden lg:flex w-72 flex-col border-r border-zinc-800 bg-zinc-950 pl-[65px]">
+    <aside className="hidden lg:flex w-72 flex-col border-r border-zinc-800 bg-zinc-950 ">
       {sidebarContent}
     </aside>
   );

@@ -52,6 +52,7 @@ export default function Home() {
 
   const {
     products,
+    totalCount,
     loading,
     hasMore,
     loadMore,
@@ -156,8 +157,17 @@ export default function Home() {
                   <Package className="mr-2 h-3.5 w-3.5" />
                   {isSearchActive
                     ? `${searchResults.length} знайдено`
-                    : `${products.length} товарів`}
+                    : selectedCategory !== 'all'
+                    ? `${categories.find((c) => c.id === selectedCategory)?.productCount || 0} товарів`
+                    : `${totalCount || 0} товарів`}
                 </Badge>
+                {!isSearchActive && products.length > 0 && (
+                  <Badge variant="outline" className="bg-zinc-800/50 text-zinc-400 border-zinc-700">
+                    Показано {products.length} {selectedCategory !== 'all' 
+                      ? `з ${categories.find((c) => c.id === selectedCategory)?.productCount || 0}`
+                      : `з ${totalCount || 0}`}
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -352,13 +362,18 @@ export default function Home() {
                     </div>
 
                     {hasMore && !loading && (
-                      <div className="flex justify-center mt-6">
+                      <div className="flex flex-col items-center gap-2 mt-6">
                         <Button
                           onClick={loadMore}
                           className="bg-amber-500 hover:bg-amber-600 text-black px-6"
                         >
                           Показати більше
                         </Button>
+                        <span className="text-xs text-zinc-500">
+                          {selectedCategory !== 'all' 
+                            ? `Залишилось товарів: ${(categories.find((c) => c.id === selectedCategory)?.productCount || 0) - products.length}`
+                            : `Залишилось товарів: ${(totalCount || 0) - products.length}`}
+                        </span>
                       </div>
                     )}
                   </>

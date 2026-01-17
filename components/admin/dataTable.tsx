@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -89,16 +92,41 @@ export function DataTable<TData, TValue>({
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="border-zinc-800 hover:bg-transparent">
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="text-zinc-400 font-medium bg-zinc-900/50"
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
+                {headerGroup.headers.map((header) => {
+                  const canSort = header.column.getCanSort();
+                  const isSorted = header.column.getIsSorted();
+                  
+                  return (
+                    <TableHead
+                      key={header.id}
+                      className="text-zinc-400 font-medium bg-zinc-900/50"
+                    >
+                      {header.isPlaceholder ? null : (
+                        <div className="flex items-center gap-2">
+                          {canSort ? (
+                            <button
+                              onClick={header.column.getToggleSortingHandler()}
+                              className="flex items-center gap-2 hover:text-white transition-colors"
+                            >
+                              {flexRender(header.column.columnDef.header, header.getContext())}
+                              <span className="flex-shrink-0">
+                                {isSorted === 'asc' ? (
+                                  <ArrowUp className="h-4 w-4 text-amber-500" />
+                                ) : isSorted === 'desc' ? (
+                                  <ArrowDown className="h-4 w-4 text-amber-500" />
+                                ) : (
+                                  <ArrowUpDown className="h-4 w-4 opacity-50" />
+                                )}
+                              </span>
+                            </button>
+                          ) : (
+                            flexRender(header.column.columnDef.header, header.getContext())
+                          )}
+                        </div>
+                      )}
+                    </TableHead>
+                  );
+                })}
               </TableRow>
             ))}
           </TableHeader>

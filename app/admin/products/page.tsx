@@ -96,7 +96,7 @@ export default function ProductsPage() {
       await remove(productToDelete.id);
       toast.success("Товар видалено");
       refresh();
-    } catch (error) {
+    } catch {
       toast.error("Помилка видалення товару");
     } finally {
       setDeleteDialogOpen(false);
@@ -127,6 +127,7 @@ export default function ProductsPage() {
     {
       accessorKey: "images",
       header: "",
+      enableSorting: false,
       cell: ({ row }) => {
         const images = row.original.images;
         const firstImage = images?.[0]?.url;
@@ -200,6 +201,7 @@ export default function ProductsPage() {
     },
     {
       id: "actions",
+      enableSorting: false,
       cell: ({ row }) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>

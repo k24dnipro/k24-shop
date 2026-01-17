@@ -261,21 +261,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 </div>
 
-                {product.oem.length > 0 && (
-                  <>
-                    <Separator className="my-4 bg-zinc-800" />
-                    <div>
-                      <span className="text-zinc-500 block mb-2">OEM номери</span>
-                      <div className="flex flex-wrap gap-2">
-                        {product.oem.map((oem) => (
-                          <Badge key={oem} variant="outline" className="border-zinc-700 text-zinc-300">
-                            {oem}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
 
                 {product.compatibility.length > 0 && (
                   <>
@@ -337,8 +322,8 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <Card className="bg-zinc-900/50 border-zinc-800">
               <CardContent className="pt-6 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-500">SKU</span>
-                  <span className="font-mono text-amber-500">{product.sku}</span>
+                  <span className="text-zinc-500">Код запчастини</span>
+                  <span className="font-mono text-amber-500">{product.partNumber || '—'}</span>
                 </div>
                 <Separator className="bg-zinc-800" />
                 <div className="flex justify-between items-center">

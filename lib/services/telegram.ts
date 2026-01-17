@@ -14,7 +14,7 @@ export interface OrderData {
     product: {
       id: string;
       name: string;
-      sku: string;
+      partNumber?: string;
       price: number;
       originalPrice?: number | null;
       brand?: string;
@@ -51,7 +51,9 @@ export function formatOrderMessage(order: OrderData): string {
     const { product, quantity } = item;
     const itemTotal = product.price * quantity;
     message += `${index + 1}. ${product.name}\n`;
-    message += `   Код товару: ${product.sku}\n`;
+    if (product.partNumber) {
+      message += `   Артикул: ${product.partNumber}\n`;
+    }
     if (product.brand) {
       message += `   Бренд: ${product.brand}\n`;
     }
@@ -101,7 +103,6 @@ export async function sendTelegramOrder(order: OrderData): Promise<boolean> {
 export interface InquiryData {
   productId: string;
   productName: string;
-  productSku?: string;
   productPartNumber?: string;
   productStatus?: string;
   customerName: string;
@@ -119,7 +120,7 @@ export function formatInquiryMessage(inquiry: InquiryData): string {
   // Product info
   message += `📦 *Товар:*\n`;
   message += `${inquiry.productName}\n`;
-  const productCode = inquiry.productPartNumber || inquiry.productSku;
+    const productCode = inquiry.productPartNumber;
   if (productCode) {
     message += `Код товару: ${productCode}\n`;
   }

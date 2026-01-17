@@ -53,12 +53,12 @@ import {
 import { parseExcelProductImport } from '@/lib/utils/excel';
 
 // Sample CSV template
-const CSV_TEMPLATE = `sku,name,description,price,originalPrice,categoryId,status,brand,partNumber,oem,compatibility,condition,year,carBrand,carModel,metaTitle,metaDescription,metaKeywords,slug
-SKU001,Фара передня ліва,Оригінальна фара для BMW X5,5000,6000,cat_001,in_stock,BMW,63117442647,"123456,789012","BMW X5 2018-2022,BMW X6 2019-2022",used,2020,BMW,X5,Фара BMW X5 купити,Оригінальна фара для BMW X5 в наявності,фара bmw x5 купити київ,fara-bmw-x5`;
+const CSV_TEMPLATE = `partNumber,name,description,price,originalPrice,categoryId,status,brand,compatibility,condition,year,carBrand,carModel,metaTitle,metaDescription,metaKeywords,slug
+63117442647,Фара передня ліва,Оригінальна фара для BMW X5,5000,6000,cat_001,in_stock,BMW,"BMW X5 2018-2022,BMW X6 2019-2022",used,2020,BMW,X5,Фара BMW X5 купити,Оригінальна фара для BMW X5 в наявності,фара bmw x5 купити київ,fara-bmw-x5`;
 
 // Map Russian CSV headers to English field names
 const RUSSIAN_HEADER_MAP: Record<string, string> = {
-  "Код запчасти": "sku",
+  "Код запчасти": "partNumber",
   Производитель: "brand",
   "Марка авто": "carBrand",
   "Описание запчасти": "name",
@@ -70,7 +70,6 @@ const RUSSIAN_HEADER_MAP: Record<string, string> = {
   Статус: "status",
   "Номер запчасти": "partNumber",
   "Модель авто": "carModel",
-  "OEM номера": "oem",
   Совместимость: "compatibility",
   Состояние: "condition",
   Год: "year",
@@ -205,7 +204,6 @@ function mapRussianCSVRow(row: Record<string, string>): CSVProductRow {
   const optionalFields: (keyof CSVProductRow)[] = [
     "originalPrice",
     "subcategoryId",
-    "oem",
     "compatibility",
     "year",
     "carBrand",
@@ -234,13 +232,14 @@ export default function ImportPage() {
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [defaultCategory, setDefaultCategory] = useState<string>(UNCATEGORIZED_CATEGORY_ID);
+  const [importMode, setImportMode] = useState<'smart' | 'strict'>('smart');
 
   const canImport = hasPermission("canImportData");
 
   const validateRows = (rows: CSVProductRow[]) => {
     const errors: string[] = [];
     rows.forEach((row, index) => {
-      if (!row.sku) errors.push(`Рядок ${index + 2}: Відсутній SKU`);
+      if (!row.partNumber) errors.push(`Рядок ${index + 2}: Відсутній код запчастини`);
       if (!row.name) errors.push(`Рядок ${index + 2}: Відсутня назва`);
       if (!row.price) errors.push(`Рядок ${index + 2}: Відсутня ціна`);
     });
@@ -341,19 +340,26 @@ export default function ImportPage() {
         categoryId: row.categoryId || defaultCategory,
       }));
 
-      const result = await importProductsFromCSV(dataToImport, user.id);
+      const result = await importProductsFromCSV(dataToImport, user.id, importMode);
 
       clearInterval(progressInterval);
       setProgress(100);
       setImportResult(result);
 
+      const deletedCount = result.deleted || 0;
       if (result.failed === 0) {
-        toast.success(
-          `Імпортовано ${result.success} нових, оновлено ${result.updated}`
-        );
+        if (deletedCount > 0) {
+          toast.success(
+            `Імпортовано ${result.success} нових, оновлено ${result.updated}, видалено ${deletedCount}`
+          );
+        } else {
+          toast.success(
+            `Імпортовано ${result.success} нових, оновлено ${result.updated}`
+          );
+        }
       } else {
         toast.warning(
-          `Імпортовано ${result.success}, оновлено ${result.updated}, помилок: ${result.failed}`
+          `Імпортовано ${result.success}, оновлено ${result.updated}${deletedCount > 0 ? `, видалено ${deletedCount}` : ''}, помилок: ${result.failed}`
         );
       }
     } catch (error) {
@@ -511,6 +517,40 @@ export default function ImportPage() {
                     </Button>
                   </div>
 
+                  {/* Import Mode Selection */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-zinc-400">
+                      Режим імпорту
+                    </label>
+                    <Select
+                      value={importMode}
+                      onValueChange={(value: 'smart' | 'strict') => setImportMode(value)}
+                    >
+                      <SelectTrigger className="w-full sm:w-80 bg-zinc-900 border-zinc-800 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-950 border-zinc-800">
+                        <SelectItem
+                          value="smart"
+                          className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                        >
+                          Розумний (додає нові, оновлює існуючі)
+                        </SelectItem>
+                        <SelectItem
+                          value="strict"
+                          className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                        >
+                          Строгий (видаляє товари, яких немає в таблиці)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-zinc-500">
+                      {importMode === 'smart' 
+                        ? 'Додає нові товари та оновлює існуючі за кодом запчастини'
+                        : 'Повне співвідношення: імпортує товари з таблиці і видаляє ті, яких немає'}
+                    </p>
+                  </div>
+
                   {/* Category Selection */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-zinc-400">
@@ -572,7 +612,7 @@ export default function ImportPage() {
                             >
                               <div>
                                 <span className="font-mono text-xs text-amber-500 mr-2">
-                                  {row.sku}
+                                  {row.partNumber}
                                 </span>
                                 <span className="text-white">{row.name}</span>
                               </div>
@@ -684,7 +724,7 @@ export default function ImportPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-4">
+              <div className={`grid gap-4 ${importResult.deleted ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
                 <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-center">
                   <p className="text-3xl font-bold text-emerald-500">
                     {importResult.success}
@@ -697,6 +737,14 @@ export default function ImportPage() {
                   </p>
                   <p className="text-sm text-zinc-400 mt-1">Оновлено</p>
                 </div>
+                {importResult.deleted ? (
+                  <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg text-center">
+                    <p className="text-3xl font-bold text-orange-500">
+                      {importResult.deleted}
+                    </p>
+                    <p className="text-sm text-zinc-400 mt-1">Видалено</p>
+                  </div>
+                ) : null}
                 <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-center">
                   <p className="text-3xl font-bold text-red-500">
                     {importResult.failed}

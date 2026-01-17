@@ -30,7 +30,7 @@ export async function parseExcelProductImport(file: File): Promise<CSVProductRow
           const r = row as Record<string, unknown>;
           
           // Support both Russian (original Excel) and Ukrainian (export) column names
-          const sku = getField(r, 'Код запчасти', 'Код запчастини');
+          const partNumber = getField(r, 'Код запчасти', 'Код запчастини', 'Номер запчастини');
           const name = getField(r, 'Описание запчасти', 'Опис запчастини');
           const brand = getField(r, 'Производитель', 'Виробник');
           const price = getField(r, 'Цена', 'Ціна') || '0';
@@ -43,18 +43,16 @@ export async function parseExcelProductImport(file: File): Promise<CSVProductRow
           const originalPrice = getField(r, 'Стара ціна');
           const categoryId = getField(r, 'Категорія ID');
           const status = getField(r, 'Статус');
-          const partNumber = getField(r, 'Номер запчастини') || sku;
           const carBrand = getField(r, 'Марка авто');
           const carModel = getField(r, 'Модель авто');
-          const oem = getField(r, 'OEM номери');
           const compatibility = getField(r, 'Сумісність');
           const condition = getField(r, 'Стан');
           const year = getField(r, 'Рік');
           const description = getField(r, 'Опис') || name;
           const metaTitle = getField(r, 'Meta Title') || name;
           const metaDescription = getField(r, 'Meta Description') || name;
-          const metaKeywords = getField(r, 'Meta Keywords') || `${brand}, ${sku}, ${name}`;
-          const slug = getField(r, 'URL Slug') || sku.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+          const metaKeywords = getField(r, 'Meta Keywords') || `${brand}, ${partNumber}, ${name}`;
+          const slug = getField(r, 'URL Slug') || (partNumber ? partNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-') : '');
 
           // Determine status from quantity if not explicitly set
           const finalStatus = status || ((!isNaN(quantity) && quantity > 0) ? 'in_stock' : 'out_of_stock');
@@ -63,19 +61,17 @@ export async function parseExcelProductImport(file: File): Promise<CSVProductRow
           const finalCondition = condition || (isUsed ? 'used' : 'new');
 
           return {
-            sku,
+            partNumber,
             name,
             description,
             price,
             brand,
-            partNumber,
             status: finalStatus,
             condition: finalCondition,
             categoryId,
             slug,
             originalPrice: originalPrice || null,
             subcategoryId: null,
-            oem,
             compatibility,
             year: year || null,
             carBrand: carBrand || null,

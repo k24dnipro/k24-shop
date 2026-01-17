@@ -388,14 +388,20 @@ export default function Home() {
                             </div>
                             <CardContent className="p-4 flex-1 flex flex-col gap-3">
                               <div className="flex items-start justify-between gap-3">
-                                <div className="space-y-1 flex-1">
+                                <div className="space-y-1.5 flex-1">
                                   <h3 className="text-base font-semibold leading-tight text-white">{product.name}</h3>
-                                  <p className="text-xs text-zinc-500">
-                                    {product.partNumber || product.sku}
-                                  </p>
-                                  <p className="text-xs text-zinc-500">
-                                    {product.brand || '—'}
-                                  </p>
+                                  <div>
+                                    <p className="text-xs text-zinc-600 mb-0.5">Артикул:</p>
+                                    <p className="text-xs text-zinc-400">
+                                      {product.partNumber || '—'}
+                                    </p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-zinc-600 mb-0.5">Виробник:</p>
+                                    <p className="text-xs text-zinc-400">
+                                      {product.brand || '—'}
+                                    </p>
+                                  </div>
                                 </div>
                                 <div className="text-right shrink-0">
                                   <span className="text-amber-400 font-semibold block">
@@ -485,14 +491,20 @@ export default function Home() {
                               </div>
                               <CardContent className="p-4 flex-1 flex flex-col gap-2">
                                 <div className="flex items-start justify-between gap-3">
-                                  <div className="space-y-1 flex-1">
+                                  <div className="space-y-1.5 flex-1">
                                     <h3 className="text-base font-semibold leading-tight text-white">{product.name}</h3>
-                                    <p className="text-xs text-zinc-500">
-                                      {product.partNumber || product.sku}
-                                    </p>
-                                    <p className="text-xs text-zinc-500">
-                                      {product.brand || '—'}
-                                    </p>
+                                    <div>
+                                      <p className="text-xs text-zinc-600 mb-0.5">Артикул:</p>
+                                      <p className="text-xs text-zinc-400">
+                                        {product.partNumber || '—'}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-zinc-600 mb-0.5">Виробник:</p>
+                                      <p className="text-xs text-zinc-400">
+                                        {product.brand || '—'}
+                                      </p>
+                                    </div>
                                   </div>
                                   <div className="text-right shrink-0">
                                     <span className="text-amber-400 font-semibold block">

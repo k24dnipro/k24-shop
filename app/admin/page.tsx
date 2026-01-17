@@ -259,7 +259,7 @@ export default function DashboardPage() {
                   >
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-white">{product.name}</span>
-                      <span className="text-xs text-zinc-500">SKU: {product.sku}</span>
+                      <span className="text-xs text-zinc-500">Код: {product.partNumber || '—'}</span>
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="text-sm font-medium text-amber-500">

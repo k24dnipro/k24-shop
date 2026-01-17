@@ -139,7 +139,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
       const inquiryData = {
         productId: product.id,
         productName: product.name,
-        productSku: product.sku,
         productPartNumber: product.partNumber,
         productStatus: product.status,
         customerName: name,
@@ -369,7 +368,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                       <div className="space-y-2">
                         <CardTitle className="text-2xl text-white">{product.name}</CardTitle>
                         <CardDescription className="text-zinc-400">
-                          Артикул: {product.partNumber || product.sku}
+                          Артикул: {product.partNumber || '—'}
                         </CardDescription>
                       </div>
                       <Badge variant="outline" className={statusClass}>
@@ -569,23 +568,6 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
             {/* Additional info */}
             <div className="grid gap-6 md:grid-cols-2">
-              {/* OEM numbers */}
-              {product.oem.length > 0 && (
-                <Card className="bg-zinc-900/60 border-zinc-800">
-                  <CardHeader>
-                    <CardTitle className="text-white text-base">OEM номери</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {product.oem.map((oem) => (
-                        <Badge key={oem} variant="outline" className="border-zinc-700 text-zinc-300">
-                          {oem}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
 
               {/* Compatibility */}
               {product.compatibility.length > 0 && (

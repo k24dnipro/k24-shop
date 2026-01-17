@@ -211,7 +211,6 @@ export async function searchProducts(
   if (searchTerm && searchWords.length > 0) {
     products = products.filter((product) => {
       const normalizedName = normalizeForSearch(product.name || "");
-      const normalizedSku = normalizeForSearch(product.sku || "");
       const normalizedPartNumber = normalizeForSearch(product.partNumber || "");
       const normalizedBrand = normalizeForSearch(product.brand || "");
 
@@ -219,7 +218,6 @@ export async function searchProducts(
       return searchWords.every(
         (word) =>
           normalizedName.includes(word) ||
-          normalizedSku.includes(word) ||
           normalizedPartNumber.includes(word) ||
           normalizedBrand.includes(word)
       );
@@ -251,9 +249,9 @@ export async function getProductById(id: string): Promise<Product | null> {
   return convertToProduct(docSnap);
 }
 
-// Get product by SKU
-export async function getProductBySku(sku: string): Promise<Product | null> {
-  const q = query(collection(db, PRODUCTS_COLLECTION), where("sku", "==", sku));
+// Get product by part number
+export async function getProductByPartNumber(partNumber: string): Promise<Product | null> {
+  const q = query(collection(db, PRODUCTS_COLLECTION), where("partNumber", "==", partNumber));
   const snapshot = await getDocs(q);
 
   if (snapshot.empty) return null;
@@ -387,12 +385,14 @@ export async function incrementProductInquiries(id: string): Promise<void> {
 // Import products from CSV
 export async function importProductsFromCSV(
   rows: CSVProductRow[],
-  userId: string
+  userId: string,
+  mode: 'smart' | 'strict' = 'smart'
 ): Promise<ImportResult> {
   const result: ImportResult = {
     success: 0,
     updated: 0,
     failed: 0,
+    deleted: 0,
     errors: [],
   };
 
@@ -403,8 +403,8 @@ export async function importProductsFromCSV(
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     try {
-      // Check if product exists by SKU
-      const existingProduct = await getProductBySku(row.sku);
+      // Check if product exists by part number
+      const existingProduct = row.partNumber ? await getProductByPartNumber(row.partNumber) : null;
 
       const newPrice = parseFloat(row.price) || 0;
 
@@ -427,7 +427,6 @@ export async function importProductsFromCSV(
       }
 
       const productData = {
-        sku: row.sku,
         name: row.name,
         description: row.description || "",
         price: newPrice,
@@ -437,7 +436,6 @@ export async function importProductsFromCSV(
         status: (row.status as ProductStatus) || "in_stock",
         brand: row.brand || "",
         partNumber: row.partNumber || "",
-        oem: row.oem ? row.oem.split(",").map((s) => s.trim()) : [],
         compatibility: row.compatibility
           ? row.compatibility.split(",").map((s) => s.trim())
           : [],
@@ -457,7 +455,7 @@ export async function importProductsFromCSV(
             row.metaDescription || row.description?.substring(0, 160) || "",
           ogImage: "",
           canonicalUrl: "",
-          slug: row.slug || row.sku.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          slug: row.slug || (row.partNumber ? row.partNumber.toLowerCase().replace(/[^a-z0-9]+/g, "-") : ""),
         } as ProductSEO,
         images: [],
         createdBy: userId,
@@ -512,6 +510,52 @@ export async function importProductsFromCSV(
     await batch.commit();
   }
 
+  // In strict mode, delete products not in CSV
+  if (mode === 'strict') {
+    // Collect all part numbers from CSV
+    const csvPartNumbers = new Set(
+      rows
+        .map((row) => row.partNumber)
+        .filter((pn): pn is string => Boolean(pn))
+    );
+
+    // Get all products from database
+    const allProductsSnapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
+    const productsToDelete: string[] = [];
+
+    // Find products not in CSV
+    allProductsSnapshot.docs.forEach((doc) => {
+      const product = convertToProduct(doc);
+      if (product.partNumber && !csvPartNumbers.has(product.partNumber)) {
+        productsToDelete.push(doc.id);
+      }
+    });
+
+    // Delete products in batches
+    if (productsToDelete.length > 0) {
+      let deleteBatch = writeBatch(db);
+      let deleteBatchCount = 0;
+
+      for (const productId of productsToDelete) {
+        const docRef = doc(db, PRODUCTS_COLLECTION, productId);
+        deleteBatch.delete(docRef);
+        deleteBatchCount++;
+        result.deleted = (result.deleted || 0) + 1;
+
+        if (deleteBatchCount >= maxBatchSize) {
+          await deleteBatch.commit();
+          deleteBatch = writeBatch(db);
+          deleteBatchCount = 0;
+        }
+      }
+
+      // Commit remaining deletions
+      if (deleteBatchCount > 0) {
+        await deleteBatch.commit();
+      }
+    }
+  }
+
   // Recalculate category product counts after import
   await recalculateCategoryProductCounts();
 
@@ -536,7 +580,7 @@ export async function exportProductsToCSV(): Promise<
 
     return {
       // Primary columns (matching import format)
-      sku: product.sku || "",
+      partNumber: product.partNumber || "",
       brand: product.brand || "",
       carBrand: product.carBrand || product.brand || "",
       name: product.name || "",
@@ -547,9 +591,7 @@ export async function exportProductsToCSV(): Promise<
       originalPrice: product.originalPrice ?? null,
       categoryId: product.categoryId || "",
       status: product.status || "in_stock",
-      partNumber: product.partNumber || "",
       carModel: product.carModel ?? "",
-      oem: (product.oem || []).join(","),
       compatibility: (product.compatibility || []).join(","),
       condition: product.condition || "used",
       year: product.year ?? "",

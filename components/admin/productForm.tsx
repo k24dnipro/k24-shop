@@ -53,7 +53,6 @@ import {
 } from '@/lib/types';
 
 interface ProductFormData {
-  sku: string;
   name: string;
   description: string;
   price: number;
@@ -63,7 +62,6 @@ interface ProductFormData {
   status: ProductStatus;
   brand: string;
   partNumber: string;
-  oem: string;
   compatibility: string;
   condition: "new" | "used" | "refurbished";
   year: string | null;
@@ -100,7 +98,6 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
     formState: { errors },
   } = useForm<ProductFormData>({
     defaultValues: {
-      sku: product?.sku || "",
       name: product?.name || "",
       description: product?.description || "",
       price: product?.price || 0,
@@ -110,7 +107,6 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
       status: product?.status || "in_stock",
       brand: product?.brand || "",
       partNumber: product?.partNumber || "",
-      oem: product?.oem?.join(", ") || "",
       compatibility: product?.compatibility?.join(", ") || "",
       condition: product?.condition || "used",
       year: product?.year ?? null,
@@ -192,7 +188,6 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
 
   const onFormSubmit = async (data: ProductFormData) => {
     const submitData = {
-      sku: data.sku,
       name: data.name,
       description: data.description,
       price: data.price,
@@ -202,17 +197,11 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
       status: data.status,
       brand: data.brand,
       partNumber: data.partNumber,
-      oem: data.oem
-        ? data.oem
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : [],
       compatibility: data.compatibility
         ? data.compatibility
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean)
         : [],
       condition: data.condition,
       year: data.year ?? null,
@@ -225,16 +214,16 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
           data.metaDescription || data.description?.substring(0, 160) || "",
         metaKeywords: data.metaKeywords
           ? data.metaKeywords
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean)
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
           : [],
         ogTitle: data.metaTitle || data.name,
         ogDescription:
           data.metaDescription || data.description?.substring(0, 160) || "",
         ogImage: images[0]?.url || "",
         canonicalUrl: "",
-        slug: data.slug || data.sku.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+        slug: data.slug || (data.partNumber ? data.partNumber.toLowerCase().replace(/[^a-z0-9]+/g, "_") : ""),
       },
       createdBy: product?.createdBy || "",
     } as Omit<
@@ -282,18 +271,6 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-zinc-400">SKU *</Label>
-                  <Input
-                    {...register("sku", { required: "SKU обов'язковий" })}
-                    className="bg-zinc-800 border-zinc-700 text-white"
-                    placeholder="Унікальний код товару"
-                  />
-                  {errors.sku && (
-                    <p className="text-sm text-red-500">{errors.sku.message}</p>
-                  )}
-                </div>
-
                 <div className="space-y-2">
                   <Label className="text-zinc-400">Назва *</Label>
                   <Input
@@ -476,15 +453,6 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-zinc-400">Номер запчастини</Label>
-                  <Input
-                    {...register("partNumber")}
-                    className="bg-zinc-800 border-zinc-700 text-white"
-                    placeholder="Part Number"
-                  />
-                </div>
-
-                <div className="space-y-2">
                   <Label className="text-zinc-400">Стан</Label>
                   <Controller
                     name="condition"
@@ -539,18 +507,6 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                     placeholder="X5, A4..."
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-zinc-400">OEM номери</Label>
-                <Input
-                  {...register("oem")}
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                  placeholder="Через кому: 123456, 789012"
-                />
-                <p className="text-xs text-zinc-500">
-                  Оригінальні номери запчастини (через кому)
-                </p>
               </div>
 
               <div className="space-y-2">

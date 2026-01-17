@@ -21,7 +21,6 @@ export interface ProductSEO {
 
 export interface Product {
   id: string;
-  sku: string;
   name: string;
   description: string;
   price: number;
@@ -34,7 +33,6 @@ export interface Product {
   // Auto parts specific fields
   brand: string;
   partNumber: string;
-  oem: string[];
   compatibility: string[];
   condition: 'new' | 'used' | 'refurbished';
   year?: string | null;
@@ -111,7 +109,7 @@ export interface DashboardStats {
 
 // CSV Import types
 export interface CSVProductRow {
-  sku: string;
+  partNumber: string;
   name: string;
   description: string;
   price: string;
@@ -120,8 +118,6 @@ export interface CSVProductRow {
   subcategoryId?: string | null;
   status: string;
   brand: string;
-  partNumber: string;
-  oem?: string | null;
   compatibility?: string | null;
   condition: string;
   year?: string | null;
@@ -138,6 +134,7 @@ export interface ImportResult {
   success: number;
   updated: number;
   failed: number;
+  deleted?: number;
   errors: { row: number; message: string }[];
 }
 

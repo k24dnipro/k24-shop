@@ -54,7 +54,7 @@ export function Cart({ open, onOpenChange }: CartProps) {
           product: {
             id: item.product.id,
             name: item.product.name,
-            sku: item.product.sku,
+            partNumber: item.product.partNumber,
             price: item.product.price,
             originalPrice: item.product.originalPrice,
             brand: item.product.brand,
@@ -150,7 +150,7 @@ export function Cart({ open, onOpenChange }: CartProps) {
                         {item.product.name}
                       </h3>
                       <p className="text-xs text-zinc-500 mb-2">
-                        Артикул: {item.product.sku}
+                        Артикул: {item.product.partNumber || '—'}
                       </p>
 
                       <div className="flex items-center justify-between mt-auto">

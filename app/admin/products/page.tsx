@@ -149,11 +149,11 @@ export default function ProductsPage() {
       },
     },
     {
-      accessorKey: "sku",
-      header: "SKU",
+      accessorKey: "partNumber",
+      header: "Код запчастини",
       cell: ({ row }) => (
-        <span className="font-mono text-xs text-zinc-400">
-          {row.original.sku}
+        <span className="font-mono text-sm text-zinc-300">
+          {row.original.partNumber || '—'}
         </span>
       ),
     },
@@ -161,12 +161,7 @@ export default function ProductsPage() {
       accessorKey: "name",
       header: "Назва",
       cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span className="font-medium text-white">{row.original.name}</span>
-          <span className="text-xs text-zinc-500">
-            {row.original.partNumber}
-          </span>
-        </div>
+        <span className="font-medium text-white">{row.original.name}</span>
       ),
     },
     {
@@ -270,7 +265,7 @@ export default function ProductsPage() {
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
               <Input
-                placeholder="Пошук по SKU або назві..."
+                placeholder="Пошук по коду запчастині або назві..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-500"

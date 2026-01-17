@@ -34,7 +34,7 @@ import { exportProductsToCSV } from '@/lib/services/products';
 import { PRODUCT_STATUSES } from '@/lib/types';
 
 const EXPORT_COLUMNS = [
-  { key: 'sku', label: 'Код запчасти', default: true },
+  { key: 'partNumber', label: 'Код запчастини', default: true },
   { key: 'brand', label: 'Производитель', default: true },
   { key: 'carBrand', label: 'Марка авто', default: true },
   { key: 'name', label: 'Описание запчасти', default: true },
@@ -47,7 +47,6 @@ const EXPORT_COLUMNS = [
   { key: 'status', label: 'Статус', default: true },
   { key: 'partNumber', label: 'Номер запчасти', default: true },
   { key: 'carModel', label: 'Модель авто', default: true },
-  { key: 'oem', label: 'OEM номера', default: true },
   { key: 'compatibility', label: 'Совместимость', default: true },
   { key: 'condition', label: 'Состояние', default: true },
   { key: 'year', label: 'Год', default: true },

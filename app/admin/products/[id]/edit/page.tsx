@@ -12,6 +12,7 @@ import {
   useProduct,
   useProductMutations,
 } from '@/lib/hooks/useProducts';
+import { Product } from '@/lib/types';
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -19,7 +20,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const { product, loading: productLoading } = useProduct(id);
   const { update, loading: mutationLoading } = useProductMutations();
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = async (data: Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'views' | 'inquiries'>) => {
     try {
       await update(id, data);
       toast.success('Товар оновлено');

@@ -44,9 +44,9 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useCart } from '@/lib/hooks/useCart';
-import { useCategories } from '@/lib/hooks/useCategories';
-import { createInquiry } from '@/lib/services/inquiries';
 import { sendTelegramInquiry } from '@/lib/services/telegram';
+import { useCategories } from '@/modules/categories/hooks/use-categories';
+import { createInquiry } from '@/modules/inquiries/services/inquiries.service';
 import {
   getProductById,
   incrementProductViews,

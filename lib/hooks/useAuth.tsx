@@ -17,7 +17,7 @@ import { auth } from '@/firebase';
 import {
   createUserProfile,
   getUserById,
-} from '../services/users';
+} from '@/modules/users/services/users.service';
 import {
   User,
   UserPermissions,

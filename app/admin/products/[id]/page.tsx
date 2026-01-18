@@ -36,7 +36,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { useCategories } from '@/lib/hooks/useCategories';
+import { useCategories } from '@/modules/categories/hooks/use-categories';
 import { useProduct } from '@/modules/products/hooks/use-products';
 import {
   PRODUCT_CONDITIONS,

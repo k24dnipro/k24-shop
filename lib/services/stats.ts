@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/firebase';
 import {
+  Category,
   DashboardStats,
   Product,
   ProductStatus,
@@ -30,7 +31,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const categories = categoriesSnapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
-  }));
+  })) as Category[];
 
   // Calculate stats
   const totalProducts = products.length;
@@ -48,7 +49,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   // Products by category
   const productsByCategory = categories.map((cat) => ({
     categoryId: cat.id,
-    categoryName: (cat as any).name || 'Unknown',
+    categoryName: cat.name || 'Unknown',
     count: products.filter((p) => p.categoryId === cat.id).length,
   }));
 

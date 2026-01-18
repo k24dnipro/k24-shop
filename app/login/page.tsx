@@ -30,7 +30,7 @@ import {
   resetPassword,
   signIn,
   signUp,
-} from '@/lib/services/users';
+} from '@/modules/users/services/users.service';
 
 interface LoginFormData {
   email: string;

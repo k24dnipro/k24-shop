@@ -7,82 +7,40 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import {
-  collection,
-  deleteDoc,
-  doc,
-  DocumentSnapshot,
-  getDoc,
-  getDocs,
-  query,
-  setDoc,
   Timestamp,
-  updateDoc,
-  where,
 } from 'firebase/firestore';
 import {
   auth,
-  db,
 } from '@/firebase';
 import {
   DEFAULT_PERMISSIONS,
   User,
   UserPermissions,
   UserRole,
-} from '../types';
-
-const USERS_COLLECTION = 'users';
-
-// Convert Firestore document to User
-interface FirestoreUserData {
-  email: string;
-  displayName: string;
-  photoURL: string | null;
-  role: UserRole;
-  permissions: UserPermissions;
-  isActive: boolean;
-  lastLogin?: Timestamp;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
-const convertToUser = (doc: DocumentSnapshot): User => {
-  const data = doc.data() as FirestoreUserData;
-  return {
-    id: doc.id,
-    email: data.email,
-    displayName: data.displayName,
-    photoURL: data.photoURL,
-    role: data.role,
-    permissions: data.permissions,
-    isActive: data.isActive,
-    lastLogin: data.lastLogin?.toDate(),
-    createdAt: data.createdAt?.toDate() || new Date(),
-    updatedAt: data.updatedAt?.toDate() || new Date(),
-  };
-};
+} from '@/lib/types';
+import {
+  countUsers,
+  createUserDoc,
+  deleteUserDoc,
+  fetchUserByEmail,
+  fetchUserById,
+  fetchUsers,
+  updateUserDoc,
+} from '../gateways/users.gateway';
 
 // Get all users
 export async function getUsers(): Promise<User[]> {
-  const snapshot = await getDocs(collection(db, USERS_COLLECTION));
-  return snapshot.docs.map(convertToUser);
+  return fetchUsers();
 }
 
 // Get user by ID
 export async function getUserById(id: string): Promise<User | null> {
-  const docRef = doc(db, USERS_COLLECTION, id);
-  const docSnap = await getDoc(docRef);
-  
-  if (!docSnap.exists()) return null;
-  return convertToUser(docSnap);
+  return fetchUserById(id);
 }
 
 // Get user by email
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const q = query(collection(db, USERS_COLLECTION), where('email', '==', email));
-  const snapshot = await getDocs(q);
-  
-  if (snapshot.empty) return null;
-  return convertToUser(snapshot.docs[0]);
+  return fetchUserByEmail(email);
 }
 
 // Create user in Firestore after Firebase Auth creation
@@ -104,28 +62,19 @@ export async function createUserProfile(
     updatedAt: now.toDate(),
   };
 
-  await setDoc(doc(db, USERS_COLLECTION, firebaseUser.uid), {
-    ...userData,
-    createdAt: now,
-    updatedAt: now,
-  });
+  await createUserDoc(firebaseUser.uid, userData);
 
   return { id: firebaseUser.uid, ...userData };
 }
 
 // Update user profile
 export async function updateUserProfile(id: string, updates: Partial<User>): Promise<void> {
-  const docRef = doc(db, USERS_COLLECTION, id);
-  
   // Filter out undefined values (Firestore doesn't accept undefined)
   const cleanUpdates = Object.fromEntries(
     Object.entries(updates).filter(([, value]) => value !== undefined)
   );
   
-  await updateDoc(docRef, {
-    ...cleanUpdates,
-    updatedAt: Timestamp.now(),
-  });
+  await updateUserDoc(id, cleanUpdates);
 }
 
 // Update user role (and permissions)
@@ -153,13 +102,12 @@ export async function activateUser(id: string): Promise<void> {
 
 // Delete user
 export async function deleteUser(id: string): Promise<void> {
-  await deleteDoc(doc(db, USERS_COLLECTION, id));
+  await deleteUserDoc(id);
 }
 
 // Update last login
 export async function updateLastLogin(id: string): Promise<void> {
-  const docRef = doc(db, USERS_COLLECTION, id);
-  await updateDoc(docRef, {
+  await updateUserDoc(id, {
     lastLogin: Timestamp.now(),
   });
 }
@@ -176,7 +124,7 @@ export async function signUp(email: string, password: string, displayName: strin
 
   // Create user profile in Firestore
   // First user becomes admin, others start as viewers
-  const usersCount = (await getDocs(collection(db, USERS_COLLECTION))).size;
+  const usersCount = await countUsers();
   const role: UserRole = usersCount === 0 ? 'admin' : 'viewer';
   
   return createUserProfile(userCredential.user, role, displayName);
@@ -236,7 +184,5 @@ export function hasPermission(user: User | null, permission: keyof UserPermissio
 
 // Get users count
 export async function getUsersCount(): Promise<number> {
-  const snapshot = await getDocs(collection(db, USERS_COLLECTION));
-  return snapshot.size;
+  return countUsers();
 }
-

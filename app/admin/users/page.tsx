@@ -70,7 +70,7 @@ import {
   getUsers,
   updateUserPermissions,
   updateUserRole,
-} from '@/lib/services/users';
+} from '@/modules/users/services/users.service';
 import {
   DEFAULT_PERMISSIONS,
   User,

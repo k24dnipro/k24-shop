@@ -1,21 +1,8 @@
 import {
-  addDoc,
   collection,
-  deleteDoc,
-  doc,
-  DocumentSnapshot,
-  getDoc,
   getDocs,
-  orderBy,
-  query,
-  setDoc,
-  Timestamp,
-  updateDoc,
-  where,
-  writeBatch,
 } from 'firebase/firestore';
 import {
-  deleteObject,
   getDownloadURL,
   ref,
   uploadBytes,
@@ -25,9 +12,23 @@ import {
   db,
   storage,
 } from '@/firebase';
-import { Category } from '../types';
-
-const CATEGORIES_COLLECTION = 'categories';
+import { Category } from '@/lib/types';
+import {
+  batchUpdateCategoryCounts,
+  countCategories,
+  createCategoryDoc,
+  deleteCategoryDoc,
+  deleteCategoryImage,
+  ensureCategoryExists,
+  fetchCategories,
+  fetchCategoryById,
+  fetchCategoryBySlug,
+  fetchRootCategories,
+  fetchSubcategories,
+  getCategoriesPath,
+  updateCategoriesOrder,
+  updateCategoryDoc,
+} from '../gateways/categories.gateway';
 
 // Default uncategorized category constants
 export const UNCATEGORIZED_CATEGORY_ID = 'uncategorized';
@@ -35,112 +36,57 @@ export const UNCATEGORIZED_CATEGORY_NAME = 'Без категорії';
 
 // Ensure the "Без категорії" category exists in Firestore
 export async function ensureUncategorizedCategoryExists(): Promise<void> {
-  const docRef = doc(db, CATEGORIES_COLLECTION, UNCATEGORIZED_CATEGORY_ID);
-  const docSnap = await getDoc(docRef);
-
-  if (!docSnap.exists()) {
-    const now = Timestamp.now();
-    await setDoc(docRef, {
-      name: UNCATEGORIZED_CATEGORY_NAME,
-      slug: 'bez-kategorii',
-      description: 'Товари без визначеної категорії',
-      parentId: null,
-      order: 9999, // Put at the end
-      isActive: true,
-      productCount: 0,
-      seo: {
-        metaTitle: UNCATEGORIZED_CATEGORY_NAME,
-        metaDescription: 'Товари без визначеної категорії',
-        metaKeywords: [],
-      },
-      createdAt: now,
-      updatedAt: now,
-    });
-  }
+  await ensureCategoryExists(UNCATEGORIZED_CATEGORY_ID, {
+    name: UNCATEGORIZED_CATEGORY_NAME,
+    slug: 'bez-kategorii',
+    description: 'Товари без визначеної категорії',
+    parentId: null,
+    order: 9999, // Put at the end
+    isActive: true,
+    productCount: 0,
+    seo: {
+      metaTitle: UNCATEGORIZED_CATEGORY_NAME,
+      metaDescription: 'Товари без визначеної категорії',
+      metaKeywords: [],
+    },
+  });
 }
-
-// Convert Firestore document to Category
-const convertToCategory = (doc: DocumentSnapshot): Category => {
-  const data = doc.data();
-  if (!data) throw new Error('Document not found');
-  return {
-    ...data,
-    id: doc.id,
-    createdAt: data.createdAt?.toDate() || new Date(),
-    updatedAt: data.updatedAt?.toDate() || new Date(),
-  } as Category;
-};
 
 // Get all categories
 export async function getCategories(): Promise<Category[]> {
-  const q = query(collection(db, CATEGORIES_COLLECTION), orderBy('order', 'asc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(convertToCategory);
+  return fetchCategories();
 }
 
 // Get root categories (no parent)
 export async function getRootCategories(): Promise<Category[]> {
-  const q = query(
-    collection(db, CATEGORIES_COLLECTION),
-    where('parentId', '==', null),
-    orderBy('order', 'asc')
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(convertToCategory);
+  return fetchRootCategories();
 }
 
 // Get subcategories by parent ID
 export async function getSubcategories(parentId: string): Promise<Category[]> {
-  const q = query(
-    collection(db, CATEGORIES_COLLECTION),
-    where('parentId', '==', parentId),
-    orderBy('order', 'asc')
-  );
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(convertToCategory);
+  return fetchSubcategories(parentId);
 }
 
 // Get category by ID
 export async function getCategoryById(id: string): Promise<Category | null> {
-  const docRef = doc(db, CATEGORIES_COLLECTION, id);
-  const docSnap = await getDoc(docRef);
-
-  if (!docSnap.exists()) return null;
-  return convertToCategory(docSnap);
+  return fetchCategoryById(id);
 }
 
 // Get category by slug
 export async function getCategoryBySlug(slug: string): Promise<Category | null> {
-  const q = query(collection(db, CATEGORIES_COLLECTION), where('slug', '==', slug));
-  const snapshot = await getDocs(q);
-
-  if (snapshot.empty) return null;
-  return convertToCategory(snapshot.docs[0]);
+  return fetchCategoryBySlug(slug);
 }
 
 // Create category
 export async function createCategory(
   categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'productCount'>
 ): Promise<string> {
-  const now = Timestamp.now();
-
-  const docRef = await addDoc(collection(db, CATEGORIES_COLLECTION), {
-    ...categoryData,
-    productCount: 0,
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  return docRef.id;
+  return createCategoryDoc(categoryData);
 }
 
 // Update category
 export async function updateCategory(id: string, updates: Partial<Category>): Promise<void> {
-  const docRef = doc(db, CATEGORIES_COLLECTION, id);
-  await updateDoc(docRef, {
-    ...updates,
-    updatedAt: Timestamp.now(),
-  });
+  return updateCategoryDoc(id, updates);
 }
 
 // Delete category
@@ -150,12 +96,7 @@ export async function deleteCategory(id: string): Promise<void> {
 
   // Delete category image from storage
   if (category.image) {
-    try {
-      const imageRef = ref(storage, `categories/${id}`);
-      await deleteObject(imageRef);
-    } catch (error) {
-      console.error('Error deleting category image:', error);
-    }
+    await deleteCategoryImage(id);
   }
 
   // Get all subcategories and delete them
@@ -164,7 +105,7 @@ export async function deleteCategory(id: string): Promise<void> {
     await deleteCategory(sub.id);
   }
 
-  await deleteDoc(doc(db, CATEGORIES_COLLECTION, id));
+  await deleteCategoryDoc(id);
 }
 
 // Upload category image
@@ -180,14 +121,7 @@ export async function uploadCategoryImage(categoryId: string, file: File): Promi
 
 // Reorder categories
 export async function reorderCategories(categories: { id: string; order: number }[]): Promise<void> {
-  const batch = writeBatch(db);
-
-  for (const { id, order } of categories) {
-    const docRef = doc(db, CATEGORIES_COLLECTION, id);
-    batch.update(docRef, { order, updatedAt: Timestamp.now() });
-  }
-
-  await batch.commit();
+  return updateCategoriesOrder(categories);
 }
 
 // Get categories tree (hierarchical)
@@ -207,8 +141,7 @@ export async function getCategoriesTree(): Promise<(Category & { children: Categ
 
 // Get categories count
 export async function getCategoriesCount(): Promise<number> {
-  const snapshot = await getDocs(collection(db, CATEGORIES_COLLECTION));
-  return snapshot.size;
+  return countCategories();
 }
 
 // Generate slug from name
@@ -221,7 +154,7 @@ export function generateSlug(name: string): string {
 
 // Recalculate product counts for all categories
 export async function recalculateCategoryProductCounts(): Promise<void> {
-  const categoriesSnapshot = await getDocs(collection(db, CATEGORIES_COLLECTION));
+  const categoriesSnapshot = await getDocs(collection(db, getCategoriesPath()));
   const productsSnapshot = await getDocs(collection(db, 'products'));
 
   // Count products per category
@@ -234,14 +167,14 @@ export async function recalculateCategoryProductCounts(): Promise<void> {
   });
 
   // Update each category with the correct count
-  const batch = writeBatch(db);
+  // We need to pass counts for ALL categories, including those with 0 products if they exist in the snapshot but not in counts map.
+  // Actually, the previous implementation iterated over categories and updated them.
+  // Let's create a map for updates.
+  
+  const updates: Record<string, number> = {};
   categoriesSnapshot.docs.forEach((categoryDoc) => {
-    const count = counts[categoryDoc.id] || 0;
-    batch.update(doc(db, CATEGORIES_COLLECTION, categoryDoc.id), {
-      productCount: count,
-    });
+    updates[categoryDoc.id] = counts[categoryDoc.id] || 0;
   });
 
-  await batch.commit();
+  await batchUpdateCategoryCounts(updates);
 }
-

@@ -5,6 +5,7 @@ import {
   useEffect,
   useState,
 } from 'react';
+import { Category } from '@/lib/types';
 import {
   createCategory,
   deleteCategory,
@@ -13,8 +14,7 @@ import {
   getCategoryById,
   reorderCategories,
   updateCategory,
-} from '../services/categories';
-import { Category } from '../types';
+} from '../services/categories.service';
 
 export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);

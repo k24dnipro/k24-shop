@@ -41,7 +41,7 @@ import {
   deleteUser,
   resetPassword,
   updateUserProfile,
-} from '@/lib/services/users';
+} from '@/modules/users/services/users.service';
 
 export default function SettingsPage() {
   const { user, logOut } = useAuth();

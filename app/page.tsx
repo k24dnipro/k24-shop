@@ -38,7 +38,7 @@ import {
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/lib/hooks/useCart';
-import { useCategories } from '@/lib/hooks/useCategories';
+import { useCategories } from '@/modules/categories/hooks/use-categories';
 import { useProducts } from '@/modules/products/hooks/use-products';
 import { searchProducts } from '@/modules/products/services/products.service';
 import {

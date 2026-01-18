@@ -40,12 +40,12 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { useCategories } from '@/lib/hooks/useCategories';
+import { parseExcelProductImport } from '@/lib/utils/excel';
+import { useCategories } from '@/modules/categories/hooks/use-categories';
 import {
   UNCATEGORIZED_CATEGORY_ID,
   UNCATEGORIZED_CATEGORY_NAME,
-} from '@/lib/services/categories';
-import { parseExcelProductImport } from '@/lib/utils/excel';
+} from '@/modules/categories/services/categories.service';
 import {
   importProductsFromCSV,
 } from '@/modules/products/services/products.service';

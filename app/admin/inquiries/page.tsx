@@ -42,7 +42,7 @@ import {
   deleteInquiry,
   getInquiries,
   updateInquiryStatus,
-} from '@/lib/services/inquiries';
+} from '@/modules/inquiries/services/inquiries.service';
 import { Inquiry } from '@/lib/types';
 
 const STATUSES = [

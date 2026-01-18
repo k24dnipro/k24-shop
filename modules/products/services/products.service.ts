@@ -27,7 +27,9 @@ import {
   db,
   storage,
 } from '@/firebase';
-import { recalculateCategoryProductCounts } from '@/lib/services/categories';
+import {
+  recalculateCategoryProductCounts,
+} from '@/modules/categories/services/categories.service';
 import {
   CSVProductRow,
   ImportResult,

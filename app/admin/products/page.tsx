@@ -47,7 +47,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { useCategories } from '@/lib/hooks/useCategories';
+import { useCategories } from '@/modules/categories/hooks/use-categories';
 import {
   useProductMutations,
   useProductsPaginated,

@@ -47,12 +47,12 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { Category } from '@/lib/types';
 import {
   useCategoriesTree,
   useCategoryMutations,
-} from '@/lib/hooks/useCategories';
-import { generateSlug } from '@/lib/services/categories';
-import { Category } from '@/lib/types';
+} from '@/modules/categories/hooks/use-categories';
+import { generateSlug } from '@/modules/categories/services/categories.service';
 
 export default function CategoriesPage() {
   const { categoriesTree, loading, refresh } = useCategoriesTree();

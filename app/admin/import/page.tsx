@@ -45,12 +45,14 @@ import {
   UNCATEGORIZED_CATEGORY_ID,
   UNCATEGORIZED_CATEGORY_NAME,
 } from '@/lib/services/categories';
-import { importProductsFromCSV } from '@/lib/services/products';
+import { parseExcelProductImport } from '@/lib/utils/excel';
+import {
+  importProductsFromCSV,
+} from '@/modules/products/services/products.service';
 import {
   CSVProductRow,
   ImportResult,
-} from '@/lib/types';
-import { parseExcelProductImport } from '@/lib/utils/excel';
+} from '@/modules/products/types';
 
 // Sample CSV template
 const CSV_TEMPLATE = `partNumber,name,description,price,originalPrice,categoryId,status,brand,compatibility,condition,year,carBrand,carModel,metaTitle,metaDescription,metaKeywords,slug

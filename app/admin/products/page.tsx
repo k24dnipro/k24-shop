@@ -51,12 +51,12 @@ import { useCategories } from '@/lib/hooks/useCategories';
 import {
   useProductMutations,
   useProductsPaginated,
-} from '@/lib/hooks/useProducts';
+} from '@/modules/products/hooks/use-products';
 import {
   Product,
   PRODUCT_STATUSES,
   ProductStatus,
-} from '@/lib/types';
+} from '@/modules/products/types';
 import { ColumnDef } from '@tanstack/react-table';
 
 export default function ProductsPage() {

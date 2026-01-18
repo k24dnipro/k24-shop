@@ -30,8 +30,10 @@ import {
 } from '@/components/ui/select';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCategories } from '@/lib/hooks/useCategories';
-import { exportProductsToCSV } from '@/lib/services/products';
-import { PRODUCT_STATUSES } from '@/lib/types';
+import {
+  exportProductsToCSV,
+} from '@/modules/products/services/products.service';
+import { PRODUCT_STATUSES } from '@/modules/products/types';
 
 const EXPORT_COLUMNS = [
   { key: 'partNumber', label: 'Код запчастини', default: true },
@@ -45,7 +47,6 @@ const EXPORT_COLUMNS = [
   { key: 'originalPrice', label: 'Старая цена', default: true },
   { key: 'categoryId', label: 'Категория ID', default: true },
   { key: 'status', label: 'Статус', default: true },
-  { key: 'partNumber', label: 'Номер запчасти', default: true },
   { key: 'carModel', label: 'Модель авто', default: true },
   { key: 'compatibility', label: 'Совместимость', default: true },
   { key: 'condition', label: 'Состояние', default: true },

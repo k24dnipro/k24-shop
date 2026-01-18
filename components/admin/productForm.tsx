@@ -43,14 +43,14 @@ import { useCategories } from '@/lib/hooks/useCategories';
 import {
   deleteProductImage,
   uploadProductImage,
-} from '@/lib/services/products';
+} from '@/modules/products/services/products.service';
 import {
   Product,
   PRODUCT_CONDITIONS,
   PRODUCT_STATUSES,
   ProductImage,
   ProductStatus,
-} from '@/lib/types';
+} from '@/modules/products/types';
 
 interface ProductFormData {
   name: string;

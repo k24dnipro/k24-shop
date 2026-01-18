@@ -8,11 +8,11 @@ import { Header } from '@/components/admin/header';
 import { ProductForm } from '@/components/admin/productForm';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Product } from '@/lib/types';
 import {
   useProduct,
   useProductMutations,
-} from '@/lib/hooks/useProducts';
-import { Product } from '@/lib/types';
+} from '@/modules/products/hooks/use-products';
 
 export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);

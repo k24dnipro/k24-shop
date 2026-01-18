@@ -27,6 +27,7 @@ import {
   db,
   storage,
 } from '@/firebase';
+import { recalculateCategoryProductCounts } from '@/lib/services/categories';
 import {
   CSVProductRow,
   ImportResult,
@@ -35,7 +36,6 @@ import {
   ProductSEO,
   ProductStatus,
 } from '../types';
-import { recalculateCategoryProductCounts } from './categories';
 
 const PRODUCTS_COLLECTION = "products";
 

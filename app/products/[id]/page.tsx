@@ -46,16 +46,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { useCart } from '@/lib/hooks/useCart';
 import { useCategories } from '@/lib/hooks/useCategories';
 import { createInquiry } from '@/lib/services/inquiries';
+import { sendTelegramInquiry } from '@/lib/services/telegram';
 import {
   getProductById,
   incrementProductViews,
-} from '@/lib/services/products';
-import { sendTelegramInquiry } from '@/lib/services/telegram';
+} from '@/modules/products/services/products.service';
 import {
   Product,
   PRODUCT_CONDITIONS,
   PRODUCT_STATUSES,
-} from '@/lib/types';
+} from '@/modules/products/types';
 
 const statusColors: Record<string, string> = {
   in_stock: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',

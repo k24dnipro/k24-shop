@@ -39,13 +39,13 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/lib/hooks/useCart';
 import { useCategories } from '@/lib/hooks/useCategories';
-import { useProducts } from '@/lib/hooks/useProducts';
-import { searchProducts } from '@/lib/services/products';
+import { useProducts } from '@/modules/products/hooks/use-products';
+import { searchProducts } from '@/modules/products/services/products.service';
 import {
   Product,
   PRODUCT_STATUSES,
   ProductStatus,
-} from '@/lib/types';
+} from '@/modules/products/types';
 
 const statusColors: Record<string, string> = {
   in_stock: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',

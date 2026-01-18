@@ -37,11 +37,11 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCategories } from '@/lib/hooks/useCategories';
-import { useProduct } from '@/lib/hooks/useProducts';
+import { useProduct } from '@/modules/products/hooks/use-products';
 import {
   PRODUCT_CONDITIONS,
   PRODUCT_STATUSES,
-} from '@/lib/types';
+} from '@/modules/products/types';
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -58,7 +58,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
       await remove();
       toast.success('Товар видалено');
       router.push('/admin/products');
-    } catch (error) {
+    } catch {
       toast.error('Помилка видалення товару');
     }
   };

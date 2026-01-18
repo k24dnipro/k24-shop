@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { Header } from '@/components/admin/header';
 import { ProductForm } from '@/components/admin/productForm';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { useProductMutations } from '@/lib/hooks/useProducts';
+import { useProductMutations } from '@/modules/products/hooks/use-products';
 
 export default function NewProductPage() {
   const router = useRouter();

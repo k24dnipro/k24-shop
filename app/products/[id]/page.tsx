@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ShopHeader } from '@/components/shop/header';
 import { ShopSidebar } from '@/components/shop/sidebar';
@@ -66,12 +67,12 @@ const statusColors: Record<string, string> = {
 
 export default function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showInquiryForm, setShowInquiryForm] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const { categories } = useCategories();
   const { addItem } = useCart();
 
@@ -169,8 +170,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
   };
 
   const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategory(categoryId);
-    // Could navigate to home with category selected
+    router.push(`/catalog?category=${categoryId}`);
   };
 
   const handleAddToCart = () => {
@@ -199,7 +199,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           <ShopSidebar
             categories={categories}
             loading={true}
-            selectedCategoryId={selectedCategory}
+            selectedCategoryId={product?.categoryId}
             onCategorySelect={handleCategorySelect}
           />
           <main className="flex-1 overflow-auto">
@@ -226,7 +226,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           <ShopSidebar
             categories={categories}
             loading={false}
-            selectedCategoryId={selectedCategory}
+            selectedCategoryId={undefined}
             onCategorySelect={handleCategorySelect}
           />
           <main className="flex-1 overflow-auto">
@@ -240,7 +240,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   <Link href="/">
                     <Button
                       variant="outline"
-                      className="border-zinc-800 text-zinc-200 hover:border-amber-500 hover:text-white"
+                      className="border-zinc-800 text-zinc-200 hover:border-k24-yellow hover:text-white"
                     >
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Повернутися на головну
@@ -269,7 +269,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
         <ShopSidebar
           categories={categories}
           loading={false}
-          selectedCategoryId={selectedCategory}
+          selectedCategoryId={product?.categoryId}
           onCategorySelect={handleCategorySelect}
         />
 
@@ -277,8 +277,8 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
           <div className="container mx-auto px-4 py-6 space-y-6">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-zinc-400">
-              <Link href="/" className="hover:text-amber-400 transition">
-                Головна
+              <Link href="/catalog" className="hover:text-k24-yellow transition">
+                Каталог
               </Link>
               <span>/</span>
               <span className="text-white">{product.name}</span>
@@ -289,7 +289,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               {/* Images */}
               <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden">
                 <CardContent className="p-0">
-                  <div className="relative aspect-[4/3] bg-zinc-950">
+                  <div className="relative aspect-4/3 bg-zinc-950">
                     {product.images.length > 0 ? (
                       <>
                         <Image
@@ -318,7 +318,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                                   key={index}
                                   onClick={() => setCurrentImageIndex(index)}
                                   className={`w-2 h-2 rounded-full transition ${index === currentImageIndex
-                                      ? 'bg-amber-400'
+                                      ? 'bg-k24-yellow'
                                       : 'bg-white/30 hover:bg-white/50'
                                     }`}
                                 />
@@ -342,7 +342,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                           key={image.id}
                           onClick={() => setCurrentImageIndex(index)}
                           className={`relative aspect-square rounded-lg overflow-hidden border-2 transition ${index === currentImageIndex
-                              ? 'border-amber-500'
+                              ? 'border-k24-yellow'
                               : 'border-zinc-800 hover:border-zinc-700'
                             }`}
                         >
@@ -378,7 +378,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-baseline gap-3">
-                      <span className="text-3xl font-bold text-amber-400">
+                      <span className="text-3xl font-bold text-k24-yellow">
                         {product.price.toLocaleString()} ₴
                       </span>
                       {product.originalPrice && (
@@ -429,20 +429,22 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                       {product.status === 'in_stock' && (
                         <Button
                           onClick={handleAddToCart}
-                          className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+                          className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-semibold"
                         >
                           <ShoppingCart className="mr-2 h-4 w-4" />
                           Додати в корзину
                         </Button>
                       )}
-                      <Button
-                        onClick={() => setShowInquiryForm(!showInquiryForm)}
-                        variant="outline"
-                        className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
-                      >
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        {showInquiryForm ? 'Сховати форму' : 'Зробити запит'}
-                      </Button>
+                      {product.status !== 'in_stock' && (
+                        <Button
+                          onClick={() => setShowInquiryForm(!showInquiryForm)}
+                          variant="outline"
+                          className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                        >
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          {showInquiryForm ? 'Сховати форму' : 'Зробити запит'}
+                        </Button>
+                      )}
                     </div>
 
                     <div className="flex gap-2 text-xs text-zinc-500">
@@ -463,7 +465,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   <Card className="bg-zinc-900/60 border-zinc-800">
                     <CardHeader>
                       <CardTitle className="text-white flex items-center gap-2">
-                        <MessageSquare className="h-5 w-5 text-amber-400" />
+                        <MessageSquare className="h-5 w-5 text-k24-yellow" />
                         Форма запиту
                       </CardTitle>
                       <CardDescription className="text-zinc-400">
@@ -528,7 +530,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                         <Button
                           type="submit"
                           disabled={submitting}
-                          className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+                          className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-semibold"
                         >
                           {submitting ? (
                             <>
@@ -554,7 +556,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
               <Card className="bg-zinc-900/60 border-zinc-800">
                 <CardHeader>
                   <CardTitle className="text-white flex items-center gap-2">
-                    <Package className="h-5 w-5 text-amber-400" />
+                    <Package className="h-5 w-5 text-k24-yellow" />
                     Опис
                   </CardTitle>
                 </CardHeader>
@@ -589,7 +591,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             </div>
 
             {/* Contact info */}
-            <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
+            <Card className="bg-linear-to-br from-k24-yellow/10 to-k24-yellow/5 border-k24-yellow/20">
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                   <div>
@@ -603,17 +605,10 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
                   <div className="flex gap-3">
                     <Button
                       variant="outline"
-                      className="border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50"
+                      className="border-k24-yellow/30 bg-k24-yellow/10 text-k24-yellow hover:bg-k24-yellow/20 hover:border-k24-yellow/50"
                     >
                       <Phone className="mr-2 h-4 w-4" />
                       Подзвонити
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50"
-                    >
-                      <Mail className="mr-2 h-4 w-4" />
-                      Email
                     </Button>
                   </div>
                 </div>
@@ -628,7 +623,7 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
             <ShopSidebar
               categories={categories}
               loading={false}
-              selectedCategoryId={selectedCategory}
+              selectedCategoryId={product?.categoryId}
               onCategorySelect={handleCategorySelect}
               isMobile={true}
               onClose={() => setMobileMenuOpen(false)}

@@ -52,7 +52,7 @@ export function Header({ title }: HeaderProps) {
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
             <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || ''} />
-            <AvatarFallback className="bg-amber-500/10 text-amber-500">
+            <AvatarFallback className="bg-k24-yellow/10 text-k24-yellow">
               {user?.displayName?.charAt(0).toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>

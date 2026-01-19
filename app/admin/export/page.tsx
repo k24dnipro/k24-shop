@@ -278,8 +278,8 @@ export default function ExportPage() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-amber-500/10">
-                  <FileSpreadsheet className="h-6 w-6 text-amber-500" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-k24-yellow/10">
+                  <FileSpreadsheet className="h-6 w-6 text-k24-yellow" />
                 </div>
                 <div>
                   <p className="font-medium text-white">Готово до експорту</p>
@@ -292,7 +292,7 @@ export default function ExportPage() {
               <Button
                 onClick={handleExport}
                 disabled={exporting || selectedColumns.length === 0}
-                className="bg-amber-500 hover:bg-amber-600 text-black"
+                className="bg-k24-yellow hover:bg-k24-yellow text-black"
               >
                 {exporting ? (
                   <>

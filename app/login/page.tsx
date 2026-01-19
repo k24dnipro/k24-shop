@@ -156,13 +156,13 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
       <Toaster />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-900/20 via-zinc-900 to-zinc-950" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-k24-yellow/20 via-zinc-900 to-zinc-950" />
 
       <Card className="relative w-full max-w-md bg-zinc-900/80 border-zinc-800 backdrop-blur">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20">
-              <Car className="h-7 w-7 text-amber-500" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-k24-yellow/10 border border-k24-yellow/20">
+              <Car className="h-7 w-7 text-k24-yellow" />
             </div>
           </div>
           <CardTitle className="text-2xl font-bold text-white">
@@ -227,7 +227,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-medium"
+                  className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-medium"
                 >
                   {loading ? (
                     <>
@@ -353,7 +353,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-medium"
+                  className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-medium"
                 >
                   {loading ? (
                     <>

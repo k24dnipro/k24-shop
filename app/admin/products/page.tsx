@@ -187,7 +187,7 @@ export default function ProductsPage() {
       accessorKey: "price",
       header: "Ціна",
       cell: ({ row }) => (
-        <span className="font-medium text-amber-500">
+        <span className="font-medium text-k24-yellow">
           {row.original.price.toLocaleString()} ₴
         </span>
       ),
@@ -349,7 +349,7 @@ export default function ProductsPage() {
           {canCreate && (
             <Button
               onClick={() => router.push("/admin/products/new")}
-              className="bg-amber-500 hover:bg-amber-600 text-black w-full sm:w-auto"
+              className="bg-k24-yellow hover:bg-k24-yellow text-black w-full sm:w-auto"
             >
               <Plus className="mr-2 h-4 w-4" />
               Додати товар

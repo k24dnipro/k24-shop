@@ -21,6 +21,7 @@ import {
   deleteCategoryImage,
   ensureCategoryExists,
   fetchCategories,
+  fetchCategoriesWithCounts,
   fetchCategoryById,
   fetchCategoryBySlug,
   fetchRootCategories,
@@ -57,6 +58,11 @@ export async function getCategories(): Promise<Category[]> {
   return fetchCategories();
 }
 
+// Get all categories with real-time calculated product counts
+export async function getCategoriesWithCounts(): Promise<Category[]> {
+  return fetchCategoriesWithCounts();
+}
+
 // Get root categories (no parent)
 export async function getRootCategories(): Promise<Category[]> {
   return fetchRootCategories();
@@ -91,6 +97,10 @@ export async function updateCategory(id: string, updates: Partial<Category>): Pr
 
 // Delete category
 export async function deleteCategory(id: string): Promise<void> {
+  if (id === UNCATEGORIZED_CATEGORY_ID) {
+    throw new Error('Цю категорію не можна видалити');
+  }
+
   const category = await getCategoryById(id);
   if (!category) return;
 
@@ -124,12 +134,10 @@ export async function reorderCategories(categories: { id: string; order: number 
   return updateCategoriesOrder(categories);
 }
 
-// Get categories tree (hierarchical)
+// Get categories tree (hierarchical) with accurate counts
 export async function getCategoriesTree(): Promise<(Category & { children: Category[] })[]> {
-  // Recalculate product counts to ensure they're accurate
-  await recalculateCategoryProductCounts();
-
-  const categories = await getCategories();
+  // Use getCategoriesWithCounts to get accurate counts without writing to DB
+  const categories = await getCategoriesWithCounts();
 
   const rootCategories = categories.filter(c => c.parentId === null);
 
@@ -158,19 +166,19 @@ export async function recalculateCategoryProductCounts(): Promise<void> {
   const productsSnapshot = await getDocs(collection(db, 'products'));
 
   // Count products per category
+  // Use subcategoryId if it exists, otherwise use categoryId
+  // This ensures each product is counted once in its most specific category
   const counts: Record<string, number> = {};
   productsSnapshot.docs.forEach((doc) => {
-    const categoryId = doc.data().categoryId;
-    if (categoryId) {
-      counts[categoryId] = (counts[categoryId] || 0) + 1;
+    const data = doc.data();
+    // Use subcategoryId if available, otherwise categoryId
+    const effectiveCategoryId = data.subcategoryId || data.categoryId;
+    if (effectiveCategoryId) {
+      counts[effectiveCategoryId] = (counts[effectiveCategoryId] || 0) + 1;
     }
   });
 
   // Update each category with the correct count
-  // We need to pass counts for ALL categories, including those with 0 products if they exist in the snapshot but not in counts map.
-  // Actually, the previous implementation iterated over categories and updated them.
-  // Let's create a map for updates.
-  
   const updates: Record<string, number> = {};
   categoriesSnapshot.docs.forEach((categoryDoc) => {
     updates[categoryDoc.id] = counts[categoryDoc.id] || 0;

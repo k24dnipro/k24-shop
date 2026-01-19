@@ -194,11 +194,20 @@ function normalizeForSearch(text: string): string {
     .trim();
 }
 
-// Search products with optional filters
+// Search products with optional filters (returns all results for backward compatibility)
 export async function searchProducts(
   searchTerm: string,
   options?: { categoryId?: string; status?: ProductStatus }
 ) {
+  const result = await searchProductsInternal(searchTerm, options);
+  return result.products;
+}
+
+// Internal search function that returns all matching products
+async function searchProductsInternal(
+  searchTerm: string,
+  options?: { categoryId?: string; status?: ProductStatus }
+): Promise<{ products: Product[]; totalCount: number }> {
   // Firestore doesn't support full-text search natively
   // For production, consider using Algolia or Elasticsearch
   // Smart search: normalize both search term and product fields
@@ -239,7 +248,68 @@ export async function searchProducts(
   // Sort by createdAt desc
   products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-  return products;
+  return { products, totalCount: products.length };
+}
+
+// Paginated search - first call fetches all, subsequent calls use cached results
+export async function searchProductsPaginated(
+  searchTerm: string,
+  options?: {
+    categoryId?: string;
+    status?: ProductStatus;
+    pageSize?: number;
+    offset?: number;
+    sortBy?: 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
+  }
+): Promise<{
+  products: Product[];
+  totalCount: number;
+  hasMore: boolean;
+  allProducts: Product[]; // Return all products for caching on client
+}> {
+  const { categoryId, status, pageSize = 12, offset = 0, sortBy = 'date_desc' } = options || {};
+
+  const { products: allProducts } = await searchProductsInternal(searchTerm, { categoryId, status });
+
+  // Sort products based on sortBy option
+  const sortedProducts = [...allProducts];
+  sortedProducts.sort((a, b) => {
+    switch (sortBy) {
+      case 'price_asc':
+        return a.price - b.price;
+      case 'price_desc':
+        return b.price - a.price;
+      case 'name_asc':
+        return a.name.localeCompare(b.name, 'uk');
+      case 'name_desc':
+        return b.name.localeCompare(a.name, 'uk');
+      case 'date_asc':
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      case 'date_desc':
+      default:
+        return b.createdAt.getTime() - a.createdAt.getTime();
+    }
+  });
+
+  // Paginate
+  const paginatedProducts = sortedProducts.slice(offset, offset + pageSize);
+  const hasMore = offset + pageSize < sortedProducts.length;
+
+  return {
+    products: paginatedProducts,
+    totalCount: sortedProducts.length,
+    hasMore,
+    allProducts: sortedProducts,
+  };
+}
+
+// Get search results count (for display before loading all results)
+export async function getSearchProductsCount(
+  searchTerm: string,
+  options?: { categoryId?: string; status?: ProductStatus }
+): Promise<number> {
+  const { totalCount } = await searchProductsInternal(searchTerm, options);
+  return totalCount;
 }
 
 // Get single product by ID

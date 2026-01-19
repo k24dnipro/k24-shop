@@ -46,7 +46,7 @@ import {
 import { Inquiry } from '@/lib/types';
 
 const STATUSES = [
-  { value: 'new', label: 'Нове', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
+  { value: 'new', label: 'Нове', color: 'bg-k24-yellow/10 text-k24-yellow border-k24-yellow/20' },
   { value: 'in_progress', label: 'В обробці', color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
   { value: 'completed', label: 'Завершено', color: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
   { value: 'cancelled', label: 'Скасовано', color: 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20' },
@@ -127,7 +127,7 @@ export default function InquiriesPage() {
                   <p className="text-sm text-zinc-500">Всього</p>
                   <p className="text-2xl font-bold text-white">{inquiries.length}</p>
                 </div>
-                <MessageSquare className="h-8 w-8 text-amber-500" />
+                <MessageSquare className="h-8 w-8 text-k24-yellow" />
               </div>
             </CardContent>
           </Card>
@@ -136,9 +136,9 @@ export default function InquiriesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-zinc-500">Нових</p>
-                  <p className="text-2xl font-bold text-amber-500">{newCount}</p>
+                  <p className="text-2xl font-bold text-k24-yellow">{newCount}</p>
                 </div>
-                <Clock className="h-8 w-8 text-amber-500" />
+                <Clock className="h-8 w-8 text-k24-yellow" />
               </div>
             </CardContent>
           </Card>
@@ -196,7 +196,7 @@ export default function InquiriesPage() {
           <CardContent className="p-0 divide-y divide-zinc-800">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                <Loader2 className="h-6 w-6 animate-spin text-k24-yellow" />
               </div>
             ) : filteredInquiries.length > 0 ? (
               filteredInquiries.map((inquiry) => (
@@ -226,7 +226,7 @@ export default function InquiriesPage() {
                       </div>
                       <div className="flex items-center gap-2 text-sm">
                         <Package className="h-3 w-3 text-zinc-500" />
-                        <span className="text-amber-500">{inquiry.productName}</span>
+                        <span className="text-k24-yellow">{inquiry.productName}</span>
                       </div>
                       <p className="text-sm text-zinc-400 line-clamp-2 mt-2">
                         {inquiry.message}
@@ -302,7 +302,7 @@ export default function InquiriesPage() {
                   <Label className="text-zinc-500">Email</Label>
                   <a
                     href={`mailto:${selectedInquiry.customerEmail}`}
-                    className="text-amber-500 hover:underline flex items-center gap-1"
+                    className="text-k24-yellow hover:underline flex items-center gap-1"
                   >
                     <Mail className="h-4 w-4" />
                     {selectedInquiry.customerEmail}
@@ -312,7 +312,7 @@ export default function InquiriesPage() {
                   <Label className="text-zinc-500">Телефон</Label>
                   <a
                     href={`tel:${selectedInquiry.customerPhone}`}
-                    className="text-amber-500 hover:underline flex items-center gap-1"
+                    className="text-k24-yellow hover:underline flex items-center gap-1"
                   >
                     <Phone className="h-4 w-4" />
                     {selectedInquiry.customerPhone}

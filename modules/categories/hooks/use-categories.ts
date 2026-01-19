@@ -9,8 +9,8 @@ import { Category } from '@/lib/types';
 import {
   createCategory,
   deleteCategory,
-  getCategories,
   getCategoriesTree,
+  getCategoriesWithCounts,
   getCategoryById,
   reorderCategories,
   updateCategory,
@@ -21,11 +21,12 @@ export function useCategories() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCategories = useCallback(async () => {
+  const fetchCategoriesData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getCategories();
+      // Use getCategoriesWithCounts to get real-time accurate product counts
+      const data = await getCategoriesWithCounts();
       setCategories(data);
     } catch (err: unknown) {
       const message =
@@ -37,14 +38,14 @@ export function useCategories() {
   }, []);
 
   useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    fetchCategoriesData();
+  }, [fetchCategoriesData]);
 
   return {
     categories,
     loading,
     error,
-    refresh: fetchCategories,
+    refresh: fetchCategoriesData,
   };
 }
 

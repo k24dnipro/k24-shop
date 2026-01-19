@@ -195,7 +195,7 @@ export default function SettingsPage() {
                 <Button
                   onClick={handleSaveProfile}
                   disabled={loading}
-                  className="bg-amber-500 hover:bg-amber-600 text-black"
+                  className="bg-k24-yellow hover:bg-k24-yellow text-black"
                 >
                   {loading ? (
                     <>

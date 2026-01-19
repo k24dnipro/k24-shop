@@ -155,7 +155,7 @@ export default function DashboardPage() {
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-amber-500" />
+                <TrendingUp className="h-5 w-5 text-k24-yellow" />
                 Активність
               </CardTitle>
               <CardDescription className="text-zinc-500">
@@ -201,7 +201,7 @@ export default function DashboardPage() {
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-amber-500" />
+                <AlertCircle className="h-5 w-5 text-k24-yellow" />
                 Товари за статусом
               </CardTitle>
               <CardDescription className="text-zinc-500">
@@ -220,7 +220,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-4">
                       <div className="w-32 h-2 bg-zinc-800 rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-amber-500 rounded-full"
+                          className="h-full bg-k24-yellow rounded-full"
                           style={{
                             width: `${stats?.totalProducts ? (item.count / stats.totalProducts) * 100 : 0}%`,
                           }}
@@ -243,7 +243,7 @@ export default function DashboardPage() {
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <Package className="h-5 w-5 text-amber-500" />
+                <Package className="h-5 w-5 text-k24-yellow" />
                 Останні товари
               </CardTitle>
               <CardDescription className="text-zinc-500">
@@ -262,7 +262,7 @@ export default function DashboardPage() {
                       <span className="text-xs text-zinc-500">Код: {product.partNumber || '—'}</span>
                     </div>
                     <div className="flex flex-col items-end">
-                      <span className="text-sm font-medium text-amber-500">
+                      <span className="text-sm font-medium text-k24-yellow">
                         {product.price.toLocaleString()} ₴
                       </span>
                       <span className="text-xs text-zinc-500">
@@ -287,7 +287,7 @@ export default function DashboardPage() {
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
-                <FolderTree className="h-5 w-5 text-amber-500" />
+                <FolderTree className="h-5 w-5 text-k24-yellow" />
                 Товари по категоріях
               </CardTitle>
               <CardDescription className="text-zinc-500">
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-4">
                         <div className="w-24 h-2 bg-zinc-800 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-amber-500 rounded-full"
+                            className="h-full bg-k24-yellow rounded-full"
                             style={{
                               width: `${stats?.totalProducts ? (item.count / stats.totalProducts) * 100 : 0}%`,
                             }}

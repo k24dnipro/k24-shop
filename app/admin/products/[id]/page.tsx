@@ -135,7 +135,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             {canEdit && (
               <Button
                 onClick={() => router.push(`/admin/products/${product.id}/edit`)}
-                className="bg-amber-500 hover:bg-amber-600 text-black"
+                className="bg-k24-yellow hover:bg-k24-yellow text-black"
               >
                 <Pencil className="mr-2 h-4 w-4" />
                 Редагувати
@@ -197,7 +197,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                           className="object-cover"
                         />
                         {index === 0 && (
-                          <div className="absolute top-2 left-2 bg-amber-500 text-black text-xs px-2 py-1 rounded">
+                          <div className="absolute top-2 left-2 bg-k24-yellow text-black text-xs px-2 py-1 rounded">
                             Головне
                           </div>
                         )}
@@ -310,7 +310,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                 </div>
                 <div>
                   <span className="text-zinc-500 block mb-1">URL Slug</span>
-                  <span className="text-amber-500">{product.seo.slug || '-'}</span>
+                  <span className="text-k24-yellow">{product.seo.slug || '-'}</span>
                 </div>
               </CardContent>
             </Card>
@@ -323,7 +323,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <CardContent className="pt-6 space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-zinc-500">Код запчастини</span>
-                  <span className="font-mono text-amber-500">{product.partNumber || '—'}</span>
+                  <span className="font-mono text-k24-yellow">{product.partNumber || '—'}</span>
                 </div>
                 <Separator className="bg-zinc-800" />
                 <div className="flex justify-between items-center">

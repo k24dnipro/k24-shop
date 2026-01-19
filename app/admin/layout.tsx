@@ -30,7 +30,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex h-screen items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-k24-yellow border-t-transparent" />
           <p className="text-sm text-zinc-500">Завантаження...</p>
         </div>
       </div>
@@ -42,7 +42,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     return (
       <div className="flex h-screen items-center justify-center bg-zinc-950">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-k24-yellow border-t-transparent" />
           <p className="text-sm text-zinc-500">Завантаження...</p>
         </div>
       </div>

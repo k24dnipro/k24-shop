@@ -189,7 +189,7 @@ export default function UsersPage() {
   const getRoleBadge = (role: UserRole) => {
     const config: Record<UserRole, string> = {
       admin: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
-      manager: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
+      manager: 'bg-k24-yellow/10 text-k24-yellow border-k24-yellow/20',
       viewer: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
     };
 
@@ -230,7 +230,7 @@ export default function UsersPage() {
                   <p className="text-sm text-zinc-500">Всього</p>
                   <p className="text-2xl font-bold text-white">{users.length}</p>
                 </div>
-                <Users className="h-8 w-8 text-amber-500" />
+                <Users className="h-8 w-8 text-k24-yellow" />
               </div>
             </CardContent>
           </Card>
@@ -267,7 +267,7 @@ export default function UsersPage() {
           <CardContent className="p-0 divide-y divide-zinc-800">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                <Loader2 className="h-6 w-6 animate-spin text-k24-yellow" />
               </div>
             ) : users.length > 0 ? (
               users.map((user) => (
@@ -280,7 +280,7 @@ export default function UsersPage() {
                   <div className="flex items-center gap-4">
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={user.photoURL || undefined} />
-                      <AvatarFallback className="bg-amber-500/10 text-amber-500">
+                      <AvatarFallback className="bg-k24-yellow/10 text-k24-yellow">
                         {user.displayName?.charAt(0).toUpperCase() || 'U'}
                       </AvatarFallback>
                     </Avatar>
@@ -294,7 +294,7 @@ export default function UsersPage() {
                           </Badge>
                         )}
                         {user.id === currentUser?.id && (
-                          <Badge variant="outline" className="border-amber-500/20 text-amber-500">
+                          <Badge variant="outline" className="border-k24-yellow/20 text-k24-yellow">
                             Ви
                           </Badge>
                         )}
@@ -461,7 +461,7 @@ export default function UsersPage() {
             </Button>
             <Button
               onClick={handleSavePermissions}
-              className="bg-amber-500 hover:bg-amber-600 text-black"
+              className="bg-k24-yellow hover:bg-k24-yellow text-black"
             >
               Зберегти
             </Button>

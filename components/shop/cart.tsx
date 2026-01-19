@@ -98,7 +98,7 @@ export function Cart({ open, onOpenChange }: CartProps) {
         <SheetHeader className="px-6 py-4 border-b border-zinc-800">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-xl font-bold text-white flex items-center gap-2">
-              <ShoppingBag className="h-5 w-5 text-amber-500" />
+              <ShoppingBag className="h-5 w-5 text-k24-yellow" />
               Корзина
               {getTotalItems() > 0 && (
                 <span className="text-sm font-normal text-zinc-400">
@@ -183,7 +183,7 @@ export function Cart({ open, onOpenChange }: CartProps) {
 
                         {/* Price */}
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-amber-500">
+                          <span className="text-sm font-bold text-k24-yellow">
                             {formatPrice(item.product.price * item.quantity)}
                           </span>
                           <Button
@@ -249,7 +249,7 @@ export function Cart({ open, onOpenChange }: CartProps) {
               {/* Total */}
               <div className="flex items-center justify-between">
                 <span className="text-lg font-semibold text-white">Всього:</span>
-                <span className="text-2xl font-bold text-amber-500">
+                <span className="text-2xl font-bold text-k24-yellow">
                   {formatPrice(getTotalPrice())}
                 </span>
               </div>
@@ -259,7 +259,7 @@ export function Cart({ open, onOpenChange }: CartProps) {
                 <Button
                   onClick={handleCheckout}
                   disabled={!customerInfo.name || !customerInfo.phone || isSubmitting}
-                  className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold"
+                  className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-semibold"
                 >
                   {isSubmitting ? (
                     <>

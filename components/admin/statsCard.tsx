@@ -33,8 +33,8 @@ export function StatsCard({
     <Card className={cn('bg-zinc-900/50 border-zinc-800', className)}>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-zinc-400">{title}</CardTitle>
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10">
-          <Icon className="h-4 w-4 text-amber-500" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-k24-yellow/10">
+          <Icon className="h-4 w-4 text-k24-yellow" />
         </div>
       </CardHeader>
       <CardContent>

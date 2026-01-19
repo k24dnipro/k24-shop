@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Pencil,
   Plus,
+  RefreshCw,
   Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -52,7 +53,11 @@ import {
   useCategoriesTree,
   useCategoryMutations,
 } from '@/modules/categories/hooks/use-categories';
-import { generateSlug } from '@/modules/categories/services/categories.service';
+import {
+  generateSlug,
+  recalculateCategoryProductCounts,
+  UNCATEGORIZED_CATEGORY_ID,
+} from '@/modules/categories/services/categories.service';
 
 export default function CategoriesPage() {
   const { categoriesTree, loading, refresh } = useCategoriesTree();
@@ -64,6 +69,7 @@ export default function CategoriesPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [parentId, setParentId] = useState<string | null>(null);
+  const [recalculating, setRecalculating] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -77,6 +83,20 @@ export default function CategoriesPage() {
   });
 
   const canManage = hasPermission('canManageCategories');
+
+  const handleRecalculateCounts = async () => {
+    setRecalculating(true);
+    try {
+      await recalculateCategoryProductCounts();
+      toast.success('Кількість товарів перераховано');
+      refresh();
+    } catch (error) {
+      console.error('Error recalculating counts:', error);
+      toast.error('Помилка перерахунку');
+    } finally {
+      setRecalculating(false);
+    }
+  };
 
   const handleOpenDialog = (category?: Category, parent?: string | null) => {
     if (category) {
@@ -145,7 +165,8 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault();
     if (!categoryToDelete) return;
 
     try {
@@ -154,8 +175,10 @@ export default function CategoriesPage() {
       setDeleteDialogOpen(false);
       setCategoryToDelete(null);
       refresh();
-    } catch {
-      toast.error('Помилка видалення категорії');
+    } catch (error: unknown) {
+      console.error('Delete error details:', error);
+      const message = error instanceof Error ? error.message : 'невідома помилка';
+      toast.error(`Помилка видалення категорії: ${message}`);
     }
   };
 
@@ -167,8 +190,8 @@ export default function CategoriesPage() {
         }`}
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-500/10">
-            <FolderTree className="h-5 w-5 text-amber-500" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-k24-yellow/10">
+            <FolderTree className="h-5 w-5 text-k24-yellow" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -209,16 +232,18 @@ export default function CategoriesPage() {
                   Додати підкатегорію
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem
-                onClick={() => {
-                  setCategoryToDelete(category);
-                  setDeleteDialogOpen(true);
-                }}
-                className="text-red-400 focus:text-red-400 focus:bg-red-500/10"
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Видалити
-              </DropdownMenuItem>
+              {category.id !== UNCATEGORIZED_CATEGORY_ID && (
+                <DropdownMenuItem
+                  onClick={() => {
+                    setCategoryToDelete(category);
+                    setDeleteDialogOpen(true);
+                  }}
+                  className="text-red-400 focus:text-red-400 focus:bg-red-500/10"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Видалити
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         )}
@@ -245,15 +270,28 @@ export default function CategoriesPage() {
           <p className="text-zinc-400">
             Управління категоріями та підкатегоріями товарів
           </p>
-          {canManage && (
-            <Button
-              onClick={() => handleOpenDialog()}
-              className="bg-amber-500 hover:bg-amber-600 text-black"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Додати категорію
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {canManage && (
+              <Button
+                variant="outline"
+                onClick={handleRecalculateCounts}
+                disabled={recalculating}
+                className="border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${recalculating ? 'animate-spin' : ''}`} />
+                {recalculating ? 'Перераховую...' : 'Перерахувати кількість'}
+              </Button>
+            )}
+            {canManage && (
+              <Button
+                onClick={() => handleOpenDialog()}
+                className="bg-k24-yellow hover:bg-k24-yellow text-black"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Додати категорію
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Categories list */}
@@ -261,7 +299,7 @@ export default function CategoriesPage() {
           <CardContent className="p-0 divide-y divide-zinc-800">
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+                <Loader2 className="h-6 w-6 animate-spin text-k24-yellow" />
               </div>
             ) : categoriesTree.length > 0 ? (
               categoriesTree.map((category) => renderCategory(category))
@@ -273,7 +311,7 @@ export default function CategoriesPage() {
                   <Button
                     variant="link"
                     onClick={() => handleOpenDialog()}
-                    className="text-amber-500 mt-2"
+                    className="text-k24-yellow mt-2"
                   >
                     Створити першу категорію
                   </Button>
@@ -388,7 +426,7 @@ export default function CategoriesPage() {
             <Button
               onClick={handleSubmit}
               disabled={mutationLoading}
-              className="bg-amber-500 hover:bg-amber-600 text-black"
+              className="bg-k24-yellow hover:bg-k24-yellow text-black"
             >
               {mutationLoading ? (
                 <>

@@ -13,9 +13,17 @@ import {
   where,
   writeBatch,
 } from 'firebase/firestore';
-import { db, storage } from '@/firebase';
-import { deleteObject, ref } from 'firebase/storage';
-import { Category } from '@/lib/types'; // Using lib/types for now as they are re-exported
+import {
+  deleteObject,
+  ref,
+} from 'firebase/storage';
+import {
+  db,
+  storage,
+} from '@/firebase';
+import {
+  Category,
+} from '@/lib/types'; // Using lib/types for now as they are re-exported
 
 const CATEGORIES_COLLECTION = 'categories';
 
@@ -144,7 +152,7 @@ export const countCategories = async (): Promise<number> => {
   return snapshot.size;
 };
 
-export const ensureCategoryExists = async (id: string, data: any): Promise<void> => {
+export const ensureCategoryExists = async (id: string, data: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
   const docRef = doc(db, getCategoryPath(id));
   const docSnap = await getDoc(docRef);
 
@@ -166,4 +174,32 @@ export const batchUpdateCategoryCounts = async (counts: Record<string, number>):
     });
   });
   await batch.commit();
+};
+
+// Fetch categories with real-time calculated product counts (without writing to DB)
+export const fetchCategoriesWithCounts = async (): Promise<Category[]> => {
+  // Fetch categories and products in parallel
+  const [categoriesSnapshot, productsSnapshot] = await Promise.all([
+    getDocs(query(collection(db, getCategoriesPath()), orderBy('order', 'asc'))),
+    getDocs(collection(db, 'products')),
+  ]);
+
+  // Count products per category (use subcategoryId if available, otherwise categoryId)
+  const counts: Record<string, number> = {};
+  productsSnapshot.docs.forEach((productDoc) => {
+    const data = productDoc.data();
+    const effectiveCategoryId = data.subcategoryId || data.categoryId;
+    if (effectiveCategoryId) {
+      counts[effectiveCategoryId] = (counts[effectiveCategoryId] || 0) + 1;
+    }
+  });
+
+  // Map categories with calculated counts
+  return categoriesSnapshot.docs.map(catDoc => ({
+    id: catDoc.id,
+    ...catDoc.data(),
+    productCount: counts[catDoc.id] || 0, // Override with calculated count
+    createdAt: catDoc.data().createdAt?.toDate() || new Date(),
+    updatedAt: catDoc.data().updatedAt?.toDate() || new Date(),
+  } as Category));
 };

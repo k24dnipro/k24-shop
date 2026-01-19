@@ -131,9 +131,9 @@ export function DataTable<TData, TValue>({
                               {flexRender(header.column.columnDef.header, header.getContext())}
                               <span className="shrink-0">
                                 {isSorted === 'asc' ? (
-                                  <ArrowUp className="h-4 w-4 text-amber-500" />
+                                  <ArrowUp className="h-4 w-4 text-k24-yellow" />
                                 ) : isSorted === 'desc' ? (
-                                  <ArrowDown className="h-4 w-4 text-amber-500" />
+                                  <ArrowDown className="h-4 w-4 text-k24-yellow" />
                                 ) : (
                                   <ArrowUpDown className="h-4 w-4 opacity-50" />
                                 )}

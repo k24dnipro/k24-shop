@@ -22,6 +22,12 @@ interface ShopSidebarProps {
   onCategorySelect?: (categoryId: string) => void;
   isMobile?: boolean;
   onClose?: () => void;
+  // Search-related props
+  isSearchActive?: boolean;
+  searchCategoryCounts?: Record<string, number>;
+  totalSearchCount?: number;
+  // Actual product count for selected category (to override stale productCount)
+  selectedCategoryActualCount?: number;
 }
 
 type CategoryWithChildren = Category & { children: Category[] };
@@ -33,6 +39,10 @@ export function ShopSidebar({
   onCategorySelect,
   isMobile = false,
   onClose,
+  isSearchActive = false,
+  searchCategoryCounts = {},
+  totalSearchCount = 0,
+  selectedCategoryActualCount,
 }: ShopSidebarProps) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
@@ -89,14 +99,36 @@ export function ShopSidebar({
     }
   };
 
+  // Get category count - either from search, actual loaded count, or from category data
+  const getCategoryCount = (category: Category, children: Category[] = []): number => {
+    if (isSearchActive) {
+      // In search mode, show count of search results in this category
+      const ownCount = searchCategoryCounts[category.id] || 0;
+      const childrenCount = children.reduce((sum, child) => sum + (searchCategoryCounts[child.id] || 0), 0);
+      return ownCount + childrenCount;
+    }
+    
+    // For selected category, use actual count if available (overrides stale productCount)
+    if (selectedCategoryId === category.id && selectedCategoryActualCount !== undefined) {
+      return selectedCategoryActualCount;
+    }
+    
+    // Normal mode - show product count from category
+    return category.productCount + children.reduce((sum, child) => sum + child.productCount, 0);
+  };
+
   const renderCategory = (category: CategoryWithChildren, level: number = 0) => {
     const isExpanded = expandedCategories.has(category.id);
     const isActive = selectedCategoryId === category.id;
     const hasChildren = category.children.length > 0;
+    
     // For root categories, show total count including children; for subcategories, show only their own count
-    const totalCount = level === 0 && hasChildren
-      ? category.productCount + category.children.reduce((sum, child) => sum + child.productCount, 0)
-      : category.productCount;
+    const displayCount = level === 0 && hasChildren
+      ? getCategoryCount(category, category.children)
+      : getCategoryCount(category);
+    
+    // In search mode, hide categories with 0 results (optional - can remove this if you want to show all)
+    // if (isSearchActive && displayCount === 0) return null;
 
     return (
       <div key={category.id}>
@@ -106,8 +138,10 @@ export function ShopSidebar({
             className={cn(
               'group flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-sm font-medium transition-all text-left w-full',
               isActive
-                ? 'bg-amber-500/10 text-amber-500'
-                : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                ? 'bg-k24-yellow/10 text-k24-yellow'
+                : isSearchActive && displayCount === 0
+                  ? 'text-zinc-600 hover:bg-zinc-900 hover:text-zinc-500'
+                  : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
             )}
           >
             <div className="flex items-center gap-3 flex-1 min-w-0 pr-2">
@@ -131,7 +165,7 @@ export function ShopSidebar({
               <FolderTree
                 className={cn(
                   'h-5 w-5 shrink-0',
-                  isActive ? 'text-amber-500' : 'text-zinc-500 group-hover:text-white'
+                  isActive ? 'text-k24-yellow' : 'text-zinc-500 group-hover:text-white'
                 )}
               />
               <span className="truncate">{category.name}</span>
@@ -141,11 +175,13 @@ export function ShopSidebar({
               className={cn(
                 'shrink-0',
                 isActive
-                  ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
-                  : 'border-zinc-700 bg-zinc-800/50 text-zinc-400'
+                  ? 'border-k24-yellow/30 bg-k24-yellow/10 text-k24-yellow'
+                  : isSearchActive && displayCount === 0
+                    ? 'border-zinc-800 bg-zinc-900/50 text-zinc-600'
+                    : 'border-zinc-700 bg-zinc-800/50 text-zinc-400'
               )}
             >
-              {totalCount}
+              {displayCount}
             </Badge>
           </button>
         </div>
@@ -163,7 +199,7 @@ export function ShopSidebar({
       {/* Header */}
       <div className="flex h-16 items-center justify-between border-b border-zinc-800 px-4">
         <div className="flex items-center gap-2">
-          <FolderTree className="h-5 w-5 text-amber-500" />
+          <FolderTree className="h-5 w-5 text-k24-yellow" />
           <span className="text-sm font-bold text-white">Каталог</span>
         </div>
         {isMobile && (
@@ -187,15 +223,29 @@ export function ShopSidebar({
             className={cn(
               'group flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-sm font-medium transition-all text-left',
               selectedCategoryId === 'all' || !selectedCategoryId
-                ? 'bg-amber-500/10 text-amber-500'
+                ? 'bg-k24-yellow/10 text-k24-yellow'
                 : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
             )}
           >
             <div className="flex items-center gap-3">
               <Package className="h-5 w-5 shrink-0" />
-              <span>Усі товари</span>
+              <span>{isSearchActive ? 'Усі результати' : 'Усі товари'}</span>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 opacity-50" />
+            {isSearchActive ? (
+              <Badge
+                variant="outline"
+                className={cn(
+                  'shrink-0',
+                  selectedCategoryId === 'all' || !selectedCategoryId
+                    ? 'border-k24-yellow/30 bg-k24-yellow/10 text-k24-yellow'
+                    : 'border-zinc-700 bg-zinc-800/50 text-zinc-400'
+                )}
+              >
+                {totalSearchCount}
+              </Badge>
+            ) : (
+              <ChevronRight className="h-4 w-4 shrink-0 opacity-50" />
+            )}
           </button>
 
           {/* Loading skeleton */}
@@ -227,7 +277,7 @@ export function ShopSidebar({
           </p>
           <Button
             size="sm"
-            className="w-full bg-amber-500 hover:bg-amber-600 text-black text-xs"
+            className="w-full bg-k24-yellow hover:bg-k24-yellow text-black text-xs"
             asChild
           >
             <a href="tel:+380">Зателефонувати</a>

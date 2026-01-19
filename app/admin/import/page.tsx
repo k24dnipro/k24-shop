@@ -416,14 +416,14 @@ export default function ImportPage() {
         <Card className="bg-zinc-900/50 border-zinc-800">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
-              <Info className="h-5 w-5 text-amber-500" />
+              <Info className="h-5 w-5 text-k24-yellow" />
               Інструкція
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 md:grid-cols-3">
               <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-500 font-medium">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-k24-yellow/10 text-k24-yellow font-medium">
                   1
                 </div>
                 <div>
@@ -436,7 +436,7 @@ export default function ImportPage() {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-500 font-medium">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-k24-yellow/10 text-k24-yellow font-medium">
                   2
                 </div>
                 <div>
@@ -447,7 +447,7 @@ export default function ImportPage() {
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-500 font-medium">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-k24-yellow/10 text-k24-yellow font-medium">
                   3
                 </div>
                 <div>
@@ -479,7 +479,7 @@ export default function ImportPage() {
               {!file ? (
                 <label
                   htmlFor="file-upload"
-                  className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-zinc-700 rounded-lg cursor-pointer hover:border-amber-500/50 transition-colors"
+                  className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-zinc-700 rounded-lg cursor-pointer hover:border-k24-yellow/50 transition-colors"
                 >
                   <Upload className="h-12 w-12 text-zinc-500 mb-4" />
                   <span className="text-lg font-medium text-white">
@@ -501,7 +501,7 @@ export default function ImportPage() {
                   {/* File info */}
                   <div className="flex items-center justify-between p-4 bg-zinc-800/50 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <FileSpreadsheet className="h-10 w-10 text-amber-500" />
+                      <FileSpreadsheet className="h-10 w-10 text-k24-yellow" />
                       <div>
                         <p className="font-medium text-white">{file.name}</p>
                         <p className="text-sm text-zinc-500">
@@ -568,7 +568,7 @@ export default function ImportPage() {
                       <SelectContent className="bg-zinc-950 border-zinc-800">
                         <SelectItem
                           value={UNCATEGORIZED_CATEGORY_ID}
-                          className="text-amber-400 focus:text-amber-300 focus:bg-zinc-900"
+                          className="text-k24-yellow focus:text-k24-yellow focus:bg-zinc-900"
                         >
                           {UNCATEGORIZED_CATEGORY_NAME}
                         </SelectItem>
@@ -613,7 +613,7 @@ export default function ImportPage() {
                               className="flex items-center justify-between p-3 bg-zinc-800/30 rounded"
                             >
                               <div>
-                                <span className="font-mono text-xs text-amber-500 mr-2">
+                                <span className="font-mono text-xs text-k24-yellow mr-2">
                                   {row.partNumber}
                                 </span>
                                 <span className="text-white">{row.name}</span>
@@ -627,7 +627,7 @@ export default function ImportPage() {
                                     {row.status === "in_stock" ? "В наявності" : "Під замовлення"}
                                   </span>
                                 ) : row.status === "discontinued" ? (
-                                  <span className="text-amber-500 text-xs">
+                                  <span className="text-k24-yellow text-xs">
                                     Знято з виробництва
                                   </span>
                                 ) : row.status === "out_of_stock" ? (
@@ -695,7 +695,7 @@ export default function ImportPage() {
                     <Button
                       onClick={handleImport}
                       disabled={importing || parseErrors.length > 0}
-                      className="bg-amber-500 hover:bg-amber-600 text-black"
+                      className="bg-k24-yellow hover:bg-k24-yellow text-black"
                     >
                       {importing ? (
                         <>
@@ -778,7 +778,7 @@ export default function ImportPage() {
 
               <Button
                 onClick={handleReset}
-                className="bg-amber-500 hover:bg-amber-600 text-black"
+                className="bg-k24-yellow hover:bg-k24-yellow text-black"
               >
                 Імпортувати ще
               </Button>

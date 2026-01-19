@@ -91,8 +91,8 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b border-zinc-800 px-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500/10">
-          <Car className="h-5 w-5 text-amber-500" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-k24-yellow/10">
+          <Car className="h-5 w-5 text-k24-yellow" />
         </div>
         {!collapsed && (
           <div className="flex flex-col">
@@ -116,7 +116,7 @@ export function Sidebar() {
                 className={cn(
                   'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
                   isActive
-                    ? 'bg-amber-500/10 text-amber-500'
+                    ? 'bg-k24-yellow/10 text-k24-yellow'
                     : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
                 )}
                 title={collapsed ? item.name : undefined}
@@ -124,7 +124,7 @@ export function Sidebar() {
                 <item.icon
                   className={cn(
                     'h-5 w-5 shrink-0 transition-colors',
-                    isActive ? 'text-amber-500' : 'text-zinc-500 group-hover:text-white'
+                    isActive ? 'text-k24-yellow' : 'text-zinc-500 group-hover:text-white'
                   )}
                 />
                 {!collapsed && <span>{item.name}</span>}

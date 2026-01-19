@@ -15,6 +15,7 @@ import {
   getProducts,
   getProductsCount,
   searchProducts,
+  searchProductsPaginated,
   updateProduct,
 } from '../services/products.service';
 import {
@@ -310,6 +311,231 @@ export function useProductMutations() {
     update,
     remove,
     removeMany,
+  };
+}
+
+// Hook for paginated search results (for catalog/shop)
+interface UseProductsSearchOptions {
+  pageSize?: number;
+  categoryId?: string;
+  status?: ProductStatus;
+  sortBy?: 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
+}
+
+export function useProductsSearch(options: UseProductsSearchOptions = {}) {
+  const { pageSize = 12, categoryId, status, sortBy = 'date_desc' } = options;
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  
+  // Cache all search results (without category filter)
+  const allSearchResultsRef = useRef<Product[]>([]);
+  // Cache filtered results (with category filter applied)
+  const filteredProductsRef = useRef<Product[]>([]);
+  const currentOffsetRef = useRef(0);
+  const lastSearchTermRef = useRef('');
+  const lastStatusRef = useRef(status);
+
+  // Sort products helper
+  const sortProducts = useCallback((products: Product[], sort: string) => {
+    const sorted = [...products];
+    sorted.sort((a, b) => {
+      switch (sort) {
+        case 'price_asc':
+          return a.price - b.price;
+        case 'price_desc':
+          return b.price - a.price;
+        case 'name_asc':
+          return a.name.localeCompare(b.name, 'uk');
+        case 'name_desc':
+          return b.name.localeCompare(a.name, 'uk');
+        case 'date_asc':
+          return a.createdAt.getTime() - b.createdAt.getTime();
+        case 'date_desc':
+        default:
+          return b.createdAt.getTime() - a.createdAt.getTime();
+      }
+    });
+    return sorted;
+  }, []);
+
+  // Calculate category counts from all search results
+  // Each product is counted only once - in its most specific category
+  const calculateCategoryCounts = useCallback((products: Product[]) => {
+    const counts: Record<string, number> = {};
+    products.forEach(product => {
+      // Use subcategoryId if it exists, otherwise use categoryId
+      // This ensures each product is counted only once
+      const effectiveCategoryId = product.subcategoryId || product.categoryId;
+      if (effectiveCategoryId) {
+        counts[effectiveCategoryId] = (counts[effectiveCategoryId] || 0) + 1;
+      }
+    });
+    return counts;
+  }, []);
+
+  // Reset and search with new term
+  const search = useCallback(async (term: string) => {
+    const trimmedTerm = term.trim();
+    setSearchTerm(trimmedTerm);
+    
+    if (!trimmedTerm) {
+      // Clear search
+      allSearchResultsRef.current = [];
+      filteredProductsRef.current = [];
+      currentOffsetRef.current = 0;
+      lastSearchTermRef.current = '';
+      setDisplayedProducts([]);
+      setTotalCount(0);
+      setHasMore(false);
+      setCategoryCounts({});
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    currentOffsetRef.current = 0;
+    lastSearchTermRef.current = trimmedTerm;
+    lastStatusRef.current = status;
+
+    try {
+      // Search WITHOUT category filter to get all results for category counts
+      const result = await searchProductsPaginated(trimmedTerm, {
+        // Don't pass categoryId - we want all results
+        status,
+        pageSize: 10000, // Get all results
+        offset: 0,
+        sortBy,
+      });
+      
+      // Store all search results
+      allSearchResultsRef.current = result.allProducts;
+      
+      // Calculate category counts from all results
+      const counts = calculateCategoryCounts(result.allProducts);
+      setCategoryCounts(counts);
+      
+      // Now filter by category and paginate
+      let filteredProducts = [...result.allProducts];
+      if (categoryId) {
+        // Filter by categoryId OR subcategoryId to support both parent and child categories
+        filteredProducts = filteredProducts.filter(p => 
+          p.categoryId === categoryId || p.subcategoryId === categoryId
+        );
+      }
+      
+      // Sort and store filtered products
+      filteredProducts = sortProducts(filteredProducts, sortBy);
+      filteredProductsRef.current = filteredProducts;
+      
+      // Paginate
+      const paginatedProducts = filteredProducts.slice(0, pageSize);
+      setDisplayedProducts(paginatedProducts);
+      setTotalCount(filteredProducts.length);
+      setHasMore(pageSize < filteredProducts.length);
+      currentOffsetRef.current = paginatedProducts.length;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Помилка пошуку';
+      setError(message);
+      setDisplayedProducts([]);
+      setTotalCount(0);
+      setHasMore(false);
+      setCategoryCounts({});
+    } finally {
+      setLoading(false);
+    }
+  }, [status, sortBy, pageSize, categoryId, calculateCategoryCounts, sortProducts]);
+
+  // Load more results from cache
+  const loadMore = useCallback(() => {
+    if (!hasMore || loading) return;
+    
+    const allProducts = filteredProductsRef.current;
+    const currentOffset = currentOffsetRef.current;
+    const nextProducts = allProducts.slice(currentOffset, currentOffset + pageSize);
+    
+    if (nextProducts.length > 0) {
+      setDisplayedProducts(prev => [...prev, ...nextProducts]);
+      currentOffsetRef.current = currentOffset + nextProducts.length;
+      setHasMore(currentOffsetRef.current < allProducts.length);
+    } else {
+      setHasMore(false);
+    }
+  }, [hasMore, loading, pageSize]);
+
+  // Re-filter when category changes (use cached results)
+  useEffect(() => {
+    if (lastSearchTermRef.current && allSearchResultsRef.current.length > 0) {
+      // Filter cached results by new category
+      let products = [...allSearchResultsRef.current];
+      
+      // Apply status filter
+      if (status) {
+        products = products.filter(p => p.status === status);
+      }
+      
+      // Apply category filter (check both categoryId and subcategoryId)
+      if (categoryId) {
+        products = products.filter(p => 
+          p.categoryId === categoryId || p.subcategoryId === categoryId
+        );
+      }
+      
+      // Sort
+      products = sortProducts(products, sortBy);
+      filteredProductsRef.current = products;
+      
+      // Reset pagination and show first page
+      const paginatedProducts = products.slice(0, pageSize);
+      setDisplayedProducts(paginatedProducts);
+      setTotalCount(products.length);
+      setHasMore(pageSize < products.length);
+      currentOffsetRef.current = paginatedProducts.length;
+    }
+  }, [categoryId, sortBy, pageSize, sortProducts, status]);
+
+  // Re-search when status filter changes (need to refetch because status is applied server-side)
+  useEffect(() => {
+    if (lastSearchTermRef.current && lastStatusRef.current !== status) {
+      lastStatusRef.current = status;
+      search(lastSearchTermRef.current);
+    }
+  }, [status, search]);
+
+  // Clear search
+  const clearSearch = useCallback(() => {
+    allSearchResultsRef.current = [];
+    filteredProductsRef.current = [];
+    currentOffsetRef.current = 0;
+    lastSearchTermRef.current = '';
+    setSearchTerm('');
+    setDisplayedProducts([]);
+    setTotalCount(0);
+    setHasMore(false);
+    setError(null);
+    setCategoryCounts({});
+  }, []);
+
+  // Get total count of all search results (without category filter)
+  const totalSearchCount = allSearchResultsRef.current.length;
+
+  return {
+    searchTerm,
+    products: displayedProducts,
+    totalCount,
+    totalSearchCount, // Total without category filter
+    categoryCounts, // Counts per category
+    loading,
+    error,
+    hasMore,
+    search,
+    loadMore,
+    clearSearch,
   };
 }
 

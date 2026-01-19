@@ -534,10 +534,10 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
               <div className="relative">
                 <label
                   htmlFor="image_upload"
-                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-zinc-700 rounded-lg cursor-pointer hover:border-amber-500/50 transition-colors"
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-zinc-700 rounded-lg cursor-pointer hover:border-k24-yellow/50 transition-colors"
                 >
                   {uploading ? (
-                    <Loader2 className="h-8 w-8 text-amber-500 animate-spin" />
+                    <Loader2 className="h-8 w-8 text-k24-yellow animate-spin" />
                   ) : (
                     <>
                       <Upload className="h-8 w-8 text-zinc-500 mb-2" />
@@ -586,7 +586,7 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                         </Button>
                       </div>
                       {index === 0 && (
-                        <div className="absolute top-2 left-2 bg-amber-500 text-black text-xs px-2 py-1 rounded">
+                        <div className="absolute top-2 left-2 bg-k24-yellow text-black text-xs px-2 py-1 rounded">
                           Головне
                         </div>
                       )}
@@ -674,7 +674,7 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
         <Button
           type="submit"
           disabled={loading}
-          className="bg-amber-500 hover:bg-amber-600 text-black"
+          className="bg-k24-yellow hover:bg-k24-yellow text-black"
         >
           {loading ? (
             <>

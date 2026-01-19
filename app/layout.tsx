@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { FloatingCart } from '@/components/shop/floating-cart';
 import { Providers } from '@/components/providers';
 
 const inter = Inter({
@@ -89,7 +90,10 @@ export default function RootLayout({
   return (
     <html lang="uk" className="dark">
       <body className={`${inter.variable} font-sans antialiased`}>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <FloatingCart />
+        </Providers>
       </body>
     </html>
   );

@@ -38,6 +38,7 @@ import {
   SheetContent,
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
+import { NoIndexFilter } from '@/components/seo/noindex-filter';
 import { useCart } from '@/lib/hooks/useCart';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
 import {
@@ -166,6 +167,9 @@ function CatalogContent() {
 
   return (
     <div className="flex h-screen flex-col bg-zinc-950">
+      {/* SEO: noindex для фільтрів */}
+      <NoIndexFilter />
+      
       {/* Header */}
       <ShopHeader
         onSearch={handleHeaderSearch}

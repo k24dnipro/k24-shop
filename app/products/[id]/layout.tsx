@@ -4,18 +4,10 @@ import {
 } from '@/modules/categories/services/categories.service';
 import { getProductById } from '@/modules/products/services/products.service';
 
-export async function generateStaticParams() {
-  try {
-    const { getAllProductIds } = await import('@/modules/products/services/products.service');
-    const productIds = await getAllProductIds();
-    return productIds.map((id) => ({
-      id: id,
-    }));
-  } catch (error) {
-    console.error('Error generating static params:', error);
-    return [];
-  }
-}
+// Не генеруємо статичні шляхи для всіх товарів - використовуємо ISR замість цього
+// export async function generateStaticParams() {
+//   // Видалено - використовуємо ISR для товарів замість SSG
+// }
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24-shop.com';
 

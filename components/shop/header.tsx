@@ -151,11 +151,11 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
               </Button>
             )}
 
-            {/* Cart */}
+            {/* Cart - Mobile only (desktop uses floating cart) */}
             <Button
               variant="ghost"
               size="icon"
-              className="text-zinc-400 hover:text-white relative"
+              className="lg:hidden text-zinc-400 hover:text-white relative"
               onClick={() => setIsCartOpen(true)}
             >
               <ShoppingCart className="h-5 w-5" />

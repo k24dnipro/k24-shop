@@ -97,7 +97,7 @@ export default function Home() {
                 <span className="text-k24-yellow">швидко та надійно</span>
               </h1>
               <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-                Більше 10 років досвіду. Оригінальні запчастини та якісні аналоги для вашого авто.
+                Більше 4 років досвіду. Оригінальні запчастини та якісні аналоги для вашого авто.
               </p>
 
               {/* Main Search */}
@@ -108,7 +108,7 @@ export default function Home() {
                     <Input
                       type="text"
                       placeholder="Введіть назву запчастини, артикул або бренд..."
-                      className="h-14 pl-12 pr-4 bg-zinc-950 border-zinc-800 text-lg shadow-xl focus-visible:ring-k24-yellow transition-all"
+                      className="h-14 pl-12 pr-4 bg-zinc-950 border-none text-lg shadow-xl focus-visible:ring-k24-yellow transition-all placeholder:text-sm"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />

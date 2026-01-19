@@ -11,7 +11,7 @@ export function ShopFooter() {
   return (
     <footer className="bg-zinc-900 border-t border-zinc-800 pt-16 pb-8">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
           {/* Company Info */}
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2">
@@ -28,7 +28,7 @@ export function ShopFooter() {
                 <span className="text-xs text-zinc-500">Автозапчастини</span>
               </div>
             </Link>
-            <p className="text-zinc-400 text-sm leading-relaxed">
+            <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
               Ваш надійний партнер у світі автозапчастин. Широкий асортимент,
               швидка доставка та професійна консультація.
             </p>
@@ -55,37 +55,7 @@ export function ShopFooter() {
             </div>
           </div>
 
-          {/* Catalog Links */}
-          <div>
-            <h3 className="text-white font-semibold mb-6">Каталог</h3>
-            <ul className="space-y-3">
-              <li>
-                <Link href="#" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
-                  Запчастини для іномарок
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
-                  Запчастини для вантажівок
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
-                  Універсальні товари
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
-                  Рідини та масла
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
-                  Аксесуари
-                </Link>
-              </li>
-            </ul>
-          </div>
+
 
           {/* Client Info */}
           <div>

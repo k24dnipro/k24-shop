@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import {
+  FolderTree,
   Menu,
   Search,
   ShoppingCart,
@@ -27,12 +28,14 @@ interface HeaderProps {
   onMobileMenuToggle?: () => void;
 }
 
-export function ShopHeader({ onSearch, searchValue = '' }: HeaderProps) {
+export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: HeaderProps) {
   const pathname = usePathname();
   const [localSearch, setLocalSearch] = useState(searchValue);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { getTotalItems } = useCart();
+  
+  const isCatalogPage = pathname.startsWith('/catalog') || pathname.startsWith('/products');
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +48,7 @@ export function ShopHeader({ onSearch, searchValue = '' }: HeaderProps) {
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur supports-backdrop-filter:bg-zinc-950/80">
       <div className="pl-4 md:pl-[65px] pr-4">
         {/* Top bar */}
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-16 items-center gap-2 sm:gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0">
             <Image
@@ -58,21 +61,21 @@ export function ShopHeader({ onSearch, searchValue = '' }: HeaderProps) {
             />
           </Link>
 
-          {/* Search bar - Desktop (only on catalog page) */}
-          {pathname.startsWith('/catalog') && (
-            <form onSubmit={handleSearch} className="hidden xl:flex flex-1 max-w-xl ml-auto mr-4">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+          {/* Search bar - Desktop and Mobile (only on catalog page) */}
+          {isCatalogPage && (
+            <form onSubmit={handleSearch} className="flex flex-1 min-w-0 max-w-md">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
                 <Input
                   value={localSearch}
                   onChange={(e) => setLocalSearch(e.target.value)}
-                  placeholder="Пошук по назві, артикулу або бренду..."
-                  className="pl-9 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 focus-visible:ring-k24-yellow"
+                  placeholder="Пошук за назвою, артикулом або брендом..."
+                  className="w-full pl-8 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 focus-visible:ring-k24-yellow text-sm h-9 sm:h-10"
                 />
               </div>
               <Button
                 type="submit"
-                className="ml-2 bg-k24-yellow hover:bg-k24-yellow text-black"
+                className="ml-1 sm:ml-2 bg-k24-yellow hover:bg-k24-yellow text-black shrink-0 h-9 sm:h-10 px-2 sm:px-3"
               >
                 <Search className="h-4 w-4" />
               </Button>
@@ -128,11 +131,25 @@ export function ShopHeader({ onSearch, searchValue = '' }: HeaderProps) {
             </Link>
           </nav>
 
-          <div className="flex-1" />
+          {/* Spacer - only when not catalog page or on desktop with nav */}
+          {(!isCatalogPage || pathname.startsWith('/') && !pathname.startsWith('/catalog')) && (
+            <div className="flex-1" />
+          )}
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
-
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Categories button - Mobile (only on catalog page) */}
+            {isCatalogPage && onMobileMenuToggle && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-zinc-400 hover:text-white"
+                onClick={onMobileMenuToggle}
+                title="Категорії"
+              >
+                <FolderTree className="h-5 w-5" />
+              </Button>
+            )}
 
             {/* Cart */}
             <Button

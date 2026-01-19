@@ -200,7 +200,7 @@ export function ShopSidebar({
       <div className="flex h-16 items-center justify-between border-b border-zinc-800 px-4">
         <div className="flex items-center gap-2">
           <FolderTree className="h-5 w-5 text-k24-yellow" />
-          <span className="text-sm font-bold text-white">Каталог</span>
+          <span className="text-sm font-bold text-white">Категорії</span>
         </div>
         {isMobile && (
           <Button

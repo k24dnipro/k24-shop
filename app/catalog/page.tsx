@@ -13,7 +13,6 @@ import {
   Loader2,
   Package,
   ShoppingCart,
-  Sparkles,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -70,7 +69,7 @@ export default function CatalogPage() {
 
 function CatalogContent() {
   const searchParams = useSearchParams();
-  
+
   const initialSearch = searchParams.get('q') || '';
   const initialCategory = searchParams.get('category') || 'all';
 
@@ -114,7 +113,7 @@ function CatalogContent() {
   });
 
   const isSearchActive = !!activeSearchTerm;
-  
+
   const { categories, loading: categoriesLoading } = useCategories();
   const { addItem } = useCart();
 
@@ -193,10 +192,6 @@ function CatalogContent() {
           <div className="container mx-auto px-4 py-6 space-y-6">
             {/* Hero section */}
             <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-2 text-k24-yellow text-sm">
-                <Sparkles className="h-4 w-4" />
-                <span>Каталог автозапчастин K24</span>
-              </div>
               <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-white">
                 {isSearchActive && activeSearchTerm
                   ? `Результати пошуку: "${activeSearchTerm}"`
@@ -525,18 +520,18 @@ function CatalogContent() {
                                         {product.originalPrice.toLocaleString()} ₴
                                       </span>
                                     )}
+                                  </div>
                                 </div>
-                              </div>
-                              {product.status === 'in_stock' && (
-                                <Button
-                                  onClick={(e) => handleAddToCart(e, product)}
-                                  className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-medium text-sm h-9"
-                                >
-                                  <ShoppingCart className="mr-2 h-4 w-4" />
-                                  В корзину
-                                </Button>
-                              )}
-                              <div className="flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-800">
+                                {product.status === 'in_stock' && (
+                                  <Button
+                                    onClick={(e) => handleAddToCart(e, product)}
+                                    className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-medium text-sm h-9"
+                                  >
+                                    <ShoppingCart className="mr-2 h-4 w-4" />
+                                    В корзину
+                                  </Button>
+                                )}
+                                <div className="flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-800">
                                   <span>{product.views || 0} переглядів</span>
                                   <span>
                                     {formatDistanceToNow(product.createdAt, { addSuffix: true, locale: uk })}

@@ -1,10 +1,10 @@
 import {
-  Car,
-  Facebook,
   Instagram,
   MapPin,
+  Music2,
   Phone,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 
 export function ShopFooter() {
@@ -15,9 +15,14 @@ export function ShopFooter() {
           {/* Company Info */}
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-k24-yellow/10">
-                <Car className="h-6 w-6 text-k24-yellow" />
-              </div>
+              <Image
+                src="/logo.png"
+                alt="K24 Dnipro"
+                width={140}
+                height={48}
+                className="h-12 w-auto rounded-md"
+                priority
+              />
               <div className="flex flex-col">
                 <span className="text-lg font-bold text-white">K24 Shop</span>
                 <span className="text-xs text-zinc-500">Автозапчастини</span>
@@ -28,11 +33,24 @@ export function ShopFooter() {
               швидка доставка та професійна консультація.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="h-10 w-10 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:bg-k24-yellow hover:text-black transition-colors">
-                <Facebook className="h-5 w-5" />
+              <a
+                href="https://instagram.com/k24.dnipro"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram"
+                className="text-zinc-400 hover:text-k24-yellow text-2xl transition-colors"
+              >
+                <Instagram />
               </a>
-              <a href="#" className="h-10 w-10 flex items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:bg-k24-yellow hover:text-black transition-colors">
-                <Instagram className="h-5 w-5" />
+
+              <a
+                href="https://www.tiktok.com/@k24.dnipro"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="TikTok"
+                className="text-zinc-400 hover:text-k24-yellow text-2xl transition-colors"
+              >
+                <Music2 />
               </a>
             </div>
           </div>

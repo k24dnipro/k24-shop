@@ -26,6 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/lib/hooks/useCart';
+import { generateOrganizationStructuredData } from '@/lib/seo/utils';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
 import { useProducts } from '@/modules/products/hooks/use-products';
 import { Product } from '@/modules/products/types';
@@ -78,8 +79,20 @@ export default function Home() {
   // Filter root categories for the main grid
   const rootCategories = categories.filter(c => !c.parentId).slice(0, 8);
 
+  // Use a constant to avoid hydration mismatch
+  const siteUrl = 'https://k24-shop.com';
+  const organizationData = generateOrganizationStructuredData(siteUrl);
+
   return (
     <div className="min-h-screen flex flex-col bg-zinc-950">
+      {/* Structured Data for Organization */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(organizationData),
+        }}
+      />
+      
       <ShopHeader onSearch={handleHeaderSearch} />
 
       <main className="flex-1">

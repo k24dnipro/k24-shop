@@ -14,7 +14,6 @@ import {
   ChevronRight,
   Eye,
   Loader2,
-  Mail,
   MessageSquare,
   Package,
   Phone,
@@ -45,6 +44,10 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { useCart } from '@/lib/hooks/useCart';
+import {
+  generateBreadcrumbStructuredData,
+  generateProductStructuredData,
+} from '@/lib/seo/utils';
 import { sendTelegramInquiry } from '@/lib/services/telegram';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
 import { createInquiry } from '@/modules/inquiries/services/inquiries.service';
@@ -257,8 +260,33 @@ export default function ProductPage({ params }: { params: Promise<{ id: string }
 
   const statusClass = statusColors[product.status] || statusColors.discontinued;
 
+  // Use a constant to avoid hydration mismatch
+  const siteUrl = 'https://k24-shop.com';
+  const categoryName = getCategoryName(product.categoryId);
+  
+  const productStructuredData = generateProductStructuredData(product, siteUrl);
+  const breadcrumbStructuredData = generateBreadcrumbStructuredData([
+    { name: 'Головна', url: siteUrl },
+    { name: 'Каталог', url: `${siteUrl}/catalog` },
+    { name: categoryName, url: `${siteUrl}/catalog?category=${product.categoryId}` },
+    { name: product.name, url: `${siteUrl}/products/${product.id}` },
+  ]);
+
   return (
     <div className="flex h-screen flex-col bg-zinc-950">
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(productStructuredData),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbStructuredData),
+        }}
+      />
       <ShopHeader
         onMobileMenuToggle={() => setMobileMenuOpen(true)}
       />

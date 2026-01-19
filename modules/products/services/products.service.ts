@@ -719,3 +719,9 @@ export async function getProductsByStatusCount(): Promise<
 
   return counts;
 }
+
+// Get all product IDs for static generation
+export async function getAllProductIds(): Promise<string[]> {
+  const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
+  return snapshot.docs.map((doc) => doc.id);
+}

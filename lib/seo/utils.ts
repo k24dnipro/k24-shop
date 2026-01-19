@@ -26,7 +26,6 @@ export function generateProductStructuredData(product: Product, siteUrl: string)
     ? conditionMap[product.condition]
     : 'https://schema.org/NewCondition';
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const structuredData: {
     '@context': string;
     '@type': string;
@@ -93,7 +92,6 @@ export function generateProductStructuredData(product: Product, siteUrl: string)
         },
       },
     },
-    additionalProperty: [],
   };
 
   // Add MPN if available
@@ -111,31 +109,37 @@ export function generateProductStructuredData(product: Product, siteUrl: string)
   }
 
   // Add additional properties
+  const additionalProperties: Array<{
+    '@type': string;
+    name: string;
+    value: string;
+  }> = [];
+
   if (product.carBrand) {
-    structuredData.additionalProperty.push({
+    additionalProperties.push({
       '@type': 'PropertyValue',
       name: 'Марка авто',
       value: product.carBrand,
     });
   }
   if (product.carModel) {
-    structuredData.additionalProperty.push({
+    additionalProperties.push({
       '@type': 'PropertyValue',
       name: 'Модель авто',
       value: product.carModel,
     });
   }
   if (product.year) {
-    structuredData.additionalProperty.push({
+    additionalProperties.push({
       '@type': 'PropertyValue',
       name: 'Рік',
       value: product.year,
     });
   }
 
-  // Remove empty additionalProperty array if no items
-  if (structuredData.additionalProperty.length === 0) {
-    delete structuredData.additionalProperty;
+  // Only add additionalProperty if there are items
+  if (additionalProperties.length > 0) {
+    structuredData.additionalProperty = additionalProperties;
   }
 
   return structuredData;

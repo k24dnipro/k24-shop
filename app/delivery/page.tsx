@@ -1,8 +1,11 @@
 "use client";
 
-import { ShopHeader } from '@/components/shop/header';
+import {
+  RotateCcw,
+  Truck,
+} from 'lucide-react';
 import { ShopFooter } from '@/components/shop/footer';
-import { Truck, CreditCard, RotateCcw } from 'lucide-react';
+import { ShopHeader } from '@/components/shop/header';
 
 export default function DeliveryPage() {
   return (
@@ -19,15 +22,10 @@ export default function DeliveryPage() {
             <h2 className="text-xl font-bold text-white">Доставка</h2>
             <div className="space-y-2 text-zinc-400">
               <p>Ми здійснюємо доставку по всій Україні службою "Нова Пошта".</p>
-              <ul className="list-disc pl-5 space-y-1 text-sm">
-                <li>Відправка в день замовлення (при замовленні до 16:00)</li>
-                <li>Безкоштовна доставка для замовлень від 3000 грн</li>
-                <li>Можливість самовивозу в Києві</li>
-              </ul>
             </div>
           </div>
 
-          <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl space-y-4">
+          {/* <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl space-y-4">
             <div className="w-12 h-12 bg-k24-yellow/10 rounded-lg flex items-center justify-center text-k24-yellow">
               <CreditCard className="h-6 w-6" />
             </div>
@@ -41,7 +39,7 @@ export default function DeliveryPage() {
                 <li>Оплата частинами від Monobank</li>
               </ul>
             </div>
-          </div>
+          </div> */}
 
           <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-xl space-y-4">
             <div className="w-12 h-12 bg-k24-yellow/10 rounded-lg flex items-center justify-center text-k24-yellow">

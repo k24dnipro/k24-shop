@@ -2,17 +2,26 @@
 
 import { useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/lib/hooks/useCart';
 import { Cart } from './cart';
 
 /**
  * Floating cart button for desktop - always visible in corner
+ * Hidden in admin area
  */
 export function FloatingCart() {
+  const pathname = usePathname();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const { getTotalItems } = useCart();
   const totalItems = getTotalItems();
+
+  // Приховуємо корзину в адмінці
+  const isAdminArea = pathname?.startsWith('/admin');
+  if (isAdminArea) {
+    return null;
+  }
 
   return (
     <>

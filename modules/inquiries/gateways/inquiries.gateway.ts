@@ -69,10 +69,20 @@ export const createInquiryDoc = async (
 
 export const updateInquiryDoc = async (id: string, updates: Partial<Inquiry>): Promise<void> => {
   const docRef = doc(db, getInquiryPath(id));
-  await updateDoc(docRef, {
-    ...updates,
+  
+  // Видаляємо undefined значення, бо Firestore їх не підтримує
+  const cleanUpdates: Record<string, unknown> = {
     updatedAt: Timestamp.now(),
+  };
+  
+  Object.keys(updates).forEach((key) => {
+    const value = updates[key as keyof Inquiry];
+    if (value !== undefined) {
+      cleanUpdates[key] = value;
+    }
   });
+  
+  await updateDoc(docRef, cleanUpdates);
 };
 
 export const deleteInquiryDoc = async (id: string): Promise<void> => {

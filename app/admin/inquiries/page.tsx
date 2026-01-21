@@ -38,12 +38,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Inquiry } from '@/lib/types';
 import {
   deleteInquiry,
   getInquiries,
   updateInquiryStatus,
 } from '@/modules/inquiries/services/inquiries.service';
-import { Inquiry } from '@/lib/types';
 
 const STATUSES = [
   { value: 'new', label: 'Нове', color: 'bg-k24-yellow/10 text-k24-yellow border-k24-yellow/20' },
@@ -65,9 +65,11 @@ export default function InquiriesPage() {
 
   const fetchInquiries = async () => {
     try {
+      setLoading(true);
       const data = await getInquiries();
       setInquiries(data);
     } catch (error) {
+      console.error('Error fetching inquiries:', error);
       toast.error('Помилка завантаження звернень');
     } finally {
       setLoading(false);
@@ -78,8 +80,20 @@ export default function InquiriesPage() {
     try {
       await updateInquiryStatus(id, status);
       toast.success('Статус оновлено');
-      fetchInquiries();
+      
+      // Оновлюємо список звернень
+      await fetchInquiries();
+      
+      // Оновлюємо вибране звернення в діалозі, якщо воно відкрите
+      if (selectedInquiry && selectedInquiry.id === id) {
+        setSelectedInquiry({
+          ...selectedInquiry,
+          status,
+          updatedAt: new Date(),
+        });
+      }
     } catch (error) {
+      console.error('Error updating inquiry status:', error);
       toast.error('Помилка оновлення статусу');
     }
   };
@@ -241,17 +255,21 @@ export default function InquiriesPage() {
                       </span>
                       <Select
                         value={inquiry.status}
-                        onValueChange={(value) =>
-                          handleStatusChange(inquiry.id, value as Inquiry['status'])
-                        }
+                        onValueChange={(value) => {
+                          handleStatusChange(inquiry.id, value as Inquiry['status']);
+                        }}
                       >
                         <SelectTrigger
                           className="w-32 h-8 bg-zinc-800 border-zinc-700 text-xs"
                           onClick={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
                         >
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-950 border-zinc-800">
+                        <SelectContent 
+                          className="bg-zinc-950 border-zinc-800"
+                          onPointerDownOutside={(e) => e.stopPropagation()}
+                        >
                           {STATUSES.map((status) => (
                             <SelectItem
                               key={status.value}

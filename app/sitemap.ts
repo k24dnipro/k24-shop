@@ -58,11 +58,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
 
     // Додаємо всі товари (всі статуси включно з discontinued)
-    // ⚠️ ОБМЕЖЕННЯ: pageSize: 5000 - максимум 5k товарів в sitemap
+    // ⚠️ ОБМЕЖЕННЯ: pageSize: 10000 - максимум 10k товарів в sitemap
     // Google рекомендує до 50k URL в одному sitemap, але для продуктивності обмежуємо до 5k
     // Якщо товарів більше 5k - потрібно буде розбити на кілька sitemap файлів або збільшити pageSize
     const { products } = await getProducts({
-      pageSize: 10000, // ⚠️ ТУТ ОБМЕЖЕННЯ: максимум 5k товарів в sitemap
+      pageSize: 10000, // ⚠️ ТУТ ОБМЕЖЕННЯ: максимум 10k товарів в sitemap
       status: undefined, // Всі статуси (включно з discontinued)
     });
 

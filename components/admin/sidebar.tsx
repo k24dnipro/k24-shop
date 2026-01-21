@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import {
-  Car,
   ChevronLeft,
   ChevronRight,
   FileDown,
@@ -14,6 +13,7 @@ import {
   Settings,
   Users,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -91,13 +91,29 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b border-zinc-800 px-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-k24-yellow/10">
-          <Car className="h-5 w-5 text-k24-yellow" />
-        </div>
+        <Link href="/" className="flex items-center shrink-0">
+          {collapsed ? (
+            <Image
+              src="/logo.png"
+              alt="K24 Dnipro"
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-md object-contain"
+              priority
+            />
+          ) : (
+            <Image
+              src="/logo.png"
+              alt="K24 Dnipro"
+              width={140}
+              height={48}
+              className="h-10 w-auto rounded-md"
+              priority
+            />
+          )}
+        </Link>
         {!collapsed && (
-          <div className="flex flex-col">
-            <span className="text-sm font-bold text-white">K24 Shop</span>
-            <span className="text-xs text-zinc-500">Адмін панель</span>
+          <div className="flex flex-col ml-2"><span className="text-sm font-bold text-white">K24 Shop</span>            <span className="text-xs text-zinc-500">Адмін панель</span>
           </div>
         )}
       </div>
@@ -106,9 +122,9 @@ export function Sidebar() {
       <ScrollArea className="flex-1 px-3 py-4">
         <nav className="flex flex-col gap-1">
           {filteredNavigation.map((item) => {
-            const isActive = pathname === item.href || 
+            const isActive = pathname === item.href ||
               (item.href !== '/admin' && pathname.startsWith(item.href));
-            
+
             return (
               <Link
                 key={item.name}

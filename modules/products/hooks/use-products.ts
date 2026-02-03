@@ -137,7 +137,9 @@ export function useProducts(options: UseProductsOptions = {}) {
   }, [categoryId, status, sortBy, autoFetch, fetchCount, fetchProducts]);
 
   const filteredProducts = products.filter((product) =>
-    categoryId ? product.categoryId === categoryId : true
+    categoryId
+      ? product.categoryId === categoryId || product.subcategoryId === categoryId
+      : true
   );
 
   return {

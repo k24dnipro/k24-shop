@@ -129,11 +129,11 @@ export function generateProductStructuredData(product: Product, siteUrl: string)
       value: product.carModel,
     });
   }
-  if (product.year) {
+  if (product.oem) {
     additionalProperties.push({
       '@type': 'PropertyValue',
-      name: 'Рік',
-      value: product.year,
+      name: 'Оригінальний номер (OEM)',
+      value: product.oem,
     });
   }
 

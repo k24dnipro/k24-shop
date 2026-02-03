@@ -1,6 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import {
+  useEffect,
+  useState,
+} from 'react';
 import {
   FolderTree,
   Menu,
@@ -9,7 +12,10 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import {
+  usePathname,
+  useRouter,
+} from 'next/navigation';
 import { Cart } from '@/components/shop/cart';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +36,7 @@ interface HeaderProps {
 
 export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: HeaderProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [localSearch, setLocalSearch] = useState(searchValue);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -37,10 +44,19 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
   
   const isCatalogPage = pathname.startsWith('/catalog') || pathname.startsWith('/products');
 
+  // Sync local search with URL/parent when searchValue changes (e.g. after navigating with ?q=)
+  useEffect(() => {
+    setLocalSearch(searchValue);
+  }, [searchValue]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    const query = localSearch.trim();
+    if (!query) return;
     if (onSearch) {
-      onSearch(localSearch);
+      onSearch(query);
+    } else {
+      router.push(`/catalog?q=${encodeURIComponent(query)}`);
     }
   };
 
@@ -69,7 +85,7 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
                 <Input
                   value={localSearch}
                   onChange={(e) => setLocalSearch(e.target.value)}
-                  placeholder="Пошук за назвою, артикулом або брендом..."
+                  placeholder="Пошук за назвою, брендом, артикулом або OEM..."
                   className="w-full pl-8 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 focus-visible:ring-k24-yellow text-sm h-9 sm:h-10"
                 />
               </div>

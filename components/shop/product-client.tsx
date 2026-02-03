@@ -286,6 +286,12 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
                   <span className="text-zinc-500">Категорія</span>
                   <span className="text-white font-medium">{categoryName}</span>
                 </div>
+                {product.oem && (
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Оригінальний номер (OEM)</span>
+                    <span className="text-white font-medium">{product.oem}</span>
+                  </div>
+                )}
                 {product.carBrand && (
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Марка авто</span>
@@ -296,12 +302,6 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
                   <div className="flex justify-between">
                     <span className="text-zinc-500">Модель авто</span>
                     <span className="text-white font-medium">{product.carModel}</span>
-                  </div>
-                )}
-                {product.year && (
-                  <div className="flex justify-between">
-                    <span className="text-zinc-500">Рік</span>
-                    <span className="text-white font-medium">{product.year}</span>
                   </div>
                 )}
               </div>

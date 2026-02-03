@@ -62,9 +62,9 @@ interface ProductFormData {
   status: ProductStatus;
   brand: string;
   partNumber: string;
+  oem: string | null;
   compatibility: string;
   condition: "new" | "used" | "refurbished";
-  year: string | null;
   carBrand: string | null;
   carModel: string | null;
   metaTitle: string;
@@ -107,9 +107,9 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
       status: product?.status || "in_stock",
       brand: product?.brand || "",
       partNumber: product?.partNumber || "",
+      oem: product?.oem ?? null,
       compatibility: product?.compatibility?.join(", ") || "",
       condition: product?.condition || "used",
-      year: product?.year ?? null,
       carBrand: product?.carBrand ?? null,
       carModel: product?.carModel ?? null,
       metaTitle: product?.seo?.metaTitle || "",
@@ -197,6 +197,7 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
       status: data.status,
       brand: data.brand,
       partNumber: data.partNumber,
+      oem: data.oem ?? null,
       compatibility: data.compatibility
         ? data.compatibility
           .split(",")
@@ -204,7 +205,6 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
           .filter(Boolean)
         : [],
       condition: data.condition,
-      year: data.year ?? null,
       carBrand: data.carBrand ?? null,
       carModel: data.carModel ?? null,
       images,
@@ -482,11 +482,11 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label className="text-zinc-400">Рік</Label>
+                  <Label className="text-zinc-400">Оригінальний номер (OEM)</Label>
                   <Input
-                    {...register("year")}
+                    {...register("oem")}
                     className="bg-zinc-800 border-zinc-700 text-white"
-                    placeholder="2020"
+                    placeholder="Оригінальний номер виробника"
                   />
                 </div>
 

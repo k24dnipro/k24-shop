@@ -46,10 +46,12 @@ const EXPORT_COLUMNS = [
   // Additional columns
   { key: 'originalPrice', label: 'Старая цена', default: true },
   { key: 'categoryId', label: 'Категория ID', default: true },
+  { key: 'subcategoryId', label: 'Підкатегорія ID', default: true },
   { key: 'status', label: 'Статус', default: true },
   { key: 'carModel', label: 'Модель авто', default: true },
   { key: 'compatibility', label: 'Совместимость', default: true },
   { key: 'condition', label: 'Состояние', default: true },
+  { key: 'oem', label: 'OEM (оригінальний номер)', default: true },
   { key: 'year', label: 'Год', default: true },
   { key: 'description', label: 'Описание', default: true },
   { key: 'metaTitle', label: 'Meta Title', default: true },

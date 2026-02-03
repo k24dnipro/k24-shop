@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { uk } from 'date-fns/locale';
 import {
   ArrowRight,
   CheckCircle2,
@@ -120,7 +118,7 @@ export default function Home() {
                   <div className="relative flex">
                     <Input
                       type="text"
-                      placeholder="Введіть назву запчастини, артикул або бренд..."
+                      placeholder="Назва, бренд, артикул або OEM..."
                       className="h-14 pl-12 pr-4 bg-zinc-950 border-none text-lg shadow-xl focus-visible:ring-k24-yellow transition-all placeholder:text-sm"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -234,7 +232,7 @@ export default function Home() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
               {productsLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <Skeleton key={i} className="h-[300px] bg-zinc-900 rounded-xl" />
@@ -242,8 +240,8 @@ export default function Home() {
               ) : (
                 newProducts.map((product) => (
                   <Link key={product.id} href={`/products/${product.id}`} className="group h-full">
-                    <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col hover:border-k24-yellow/40 transition-colors cursor-pointer h-full">
-                      <div className="relative aspect-4/3 bg-zinc-950">
+                    <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col hover:border-k24-yellow/40 transition-colors cursor-pointer h-full pt-0 pb-0">
+                      <div className="relative aspect-4/3 bg-zinc-950 shrink-0">
                         {product.images?.[0]?.url ? (
                           <Image
                             src={product.images[0].url}
@@ -256,59 +254,57 @@ export default function Home() {
                             Немає фото
                           </div>
                         )}
-                        <div className="absolute top-3 left-3">
-                          <Badge variant="outline" className={statusColors[product.status] || statusColors.discontinued}>
+                        <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
+                          <Badge variant="outline" className={`${statusColors[product.status] || statusColors.discontinued} text-[12px] sm:text-xs px-1.5 py-0`}>
                             {product.status === 'in_stock' ? 'В наявності' :
                               product.status === 'on_order' ? 'Під замовлення' :
                                 product.status === 'out_of_stock' ? 'Немає в наявності' : 'Знято з виробництва'}
                           </Badge>
                         </div>
                       </div>
-                      <CardContent className="p-4 flex-1 flex flex-col gap-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-1.5 flex-1">
-                            <h3 className="text-base font-semibold leading-tight text-white">{product.name}</h3>
-                            <div className="flex gap-4">
-                              <div className="flex gap-1 text-xs">
-                                <span className="text-zinc-600">Артикул:</span>
-                                <span className="text-zinc-400 font-mono">
-                                  {product.partNumber || '—'}
+                      <CardContent className="pt-0 px-4 pb-4 flex-1 flex flex-col gap-3 min-h-0">
+                        <div className="flex-1 flex flex-col min-h-0 gap-2">
+                          <h3 className="text-[15px] sm:text-base font-semibold leading-snug text-white line-clamp-2 w-full">
+                            {product.name}
+                          </h3>
+                          <div className="flex items-start justify-between gap-2 sm:gap-3">
+                            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] sm:text-xs text-zinc-400 flex-1 min-w-0">
+                              <span className="truncate">
+                                <span className="sm:hidden font-mono text-zinc-300">{product.partNumber || '—'}</span>
+                                <span className="hidden sm:inline">
+                                  <span className="text-zinc-500">Артикул:</span>{' '}
+                                  <span className="font-mono text-zinc-300">{product.partNumber || '—'}</span>
                                 </span>
-                              </div>
-                              <div className="flex gap-1 text-xs">
-                                <span className="text-zinc-600">Виробник:</span>
-                                <span className="text-zinc-400">
-                                  {product.brand || '—'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0">
-                            <span className="text-k24-yellow font-semibold block">
-                              {product.price.toLocaleString()} ₴
-                            </span>
-                            {product.originalPrice && (
-                              <span className="text-xs text-zinc-500 line-through">
-                                {product.originalPrice.toLocaleString()} ₴
                               </span>
-                            )}
+                              <span className="truncate">
+                                <span className="sm:hidden text-zinc-300">{product.brand || '—'}</span>
+                                <span className="hidden sm:inline">
+                                  <span className="text-zinc-500">Виробник:</span>{' '}
+                                  <span className="text-zinc-300">{product.brand || '—'}</span>
+                                </span>
+                              </span>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <span className="text-base sm:text-lg text-k24-yellow font-bold block">
+                                {product.price.toLocaleString()} ₴
+                              </span>
+                              {product.originalPrice && (
+                                <span className="text-[13px] sm:text-sm text-zinc-500 line-through block">
+                                  {product.originalPrice.toLocaleString()} ₴
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         {product.status === 'in_stock' && (
                           <Button
                             onClick={(e) => handleAddToCart(e, product)}
-                            className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-medium text-sm h-9"
+                            className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-medium text-[13px] sm:text-sm h-10 shrink-0 rounded-lg"
                           >
-                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            <ShoppingCart className="mr-2 h-4 w-4 shrink-0" />
                             В корзину
                           </Button>
                         )}
-                        <div className="flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-800">
-                          <span>{product.views || 0} переглядів</span>
-                          <span>
-                            {formatDistanceToNow(product.createdAt, { addSuffix: true, locale: uk })}
-                          </span>
-                        </div>
                       </CardContent>
                     </Card>
                   </Link>

@@ -5,8 +5,6 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { uk } from 'date-fns/locale';
 import {
   ArrowUpDown,
   Filter,
@@ -18,6 +16,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
+import { NoIndexFilter } from '@/components/seo/noindex-filter';
 import { ShopHeader } from '@/components/shop/header';
 import { ShopSidebar } from '@/components/shop/sidebar';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +37,6 @@ import {
   SheetContent,
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
-import { NoIndexFilter } from '@/components/seo/noindex-filter';
 import { useCart } from '@/lib/hooks/useCart';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
 import {
@@ -118,12 +116,12 @@ function CatalogContent() {
   const { categories, loading: categoriesLoading } = useCategories();
   const { addItem } = useCart();
 
-  // Initialize search if query param exists
+  // Run search when URL has ?q= (e.g. navigated from product page or shared link)
   useEffect(() => {
-    if (initialSearch) {
+    if (initialSearch.trim()) {
       performSearch(initialSearch);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [initialSearch, performSearch]);
 
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
@@ -173,7 +171,7 @@ function CatalogContent() {
       {/* Header */}
       <ShopHeader
         onSearch={handleHeaderSearch}
-        searchValue={inputSearchTerm}
+        searchValue={isSearchActive ? activeSearchTerm : inputSearchTerm}
         onMobileMenuToggle={() => setMobileMenuOpen(true)}
       />
 
@@ -343,21 +341,21 @@ function CatalogContent() {
                 )}
 
                 {searchLoading && searchResults.length === 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                     {Array.from({ length: 6 }).map((_, idx) => (
                       <Skeleton key={idx} className="h-64 bg-zinc-900/60" />
                     ))}
                   </div>
                 ) : displaySearchResults.length > 0 ? (
                   <>
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                       {displaySearchResults.map((product) => {
                         const firstImage = product.images?.[0]?.url;
                         const statusClass = statusColors[product.status] || statusColors.discontinued;
                         return (
                           <Link key={product.id} href={`/products/${product.id}`}>
-                            <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col hover:border-k24-yellow/40 transition-colors cursor-pointer h-full">
-                              <div className="relative aspect-4/3 bg-zinc-950">
+                            <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col hover:border-k24-yellow/40 transition-colors cursor-pointer h-full pt-0 pb-0">
+                              <div className="relative aspect-4/3 bg-zinc-950 shrink-0">
                                 {firstImage ? (
                                   <Image
                                     src={firstImage}
@@ -370,57 +368,55 @@ function CatalogContent() {
                                     Немає фото
                                   </div>
                                 )}
-                                <div className="absolute top-3 left-3">
-                                  <Badge variant="outline" className={statusClass}>
+                                <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
+                                  <Badge variant="outline" className={`${statusClass} text-[12px] sm:text-xs px-1.5 py-0`}>
                                     {getStatusLabel(product.status)}
                                   </Badge>
                                 </div>
                               </div>
-                              <CardContent className="p-4 flex-1 flex flex-col gap-3">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="space-y-1.5 flex-1">
-                                    <h3 className="text-base font-semibold leading-tight text-white">{product.name}</h3>
-                                    <div className="flex gap-4">
-                                      <div className="flex gap-1 text-xs">
-                                        <span className="text-zinc-600">Артикул:</span>
-                                        <span className="text-zinc-400 font-mono">
-                                          {product.partNumber || '—'}
+                              <CardContent className="pt-0 px-4 pb-4 flex-1 flex flex-col gap-3 min-h-0">
+                                <div className="flex-1 flex flex-col min-h-0 gap-2">
+                                  <h3 className="text-[15px] sm:text-base font-semibold leading-snug text-white line-clamp-2 w-full">
+                                    {product.name}
+                                  </h3>
+                                  <div className="flex items-start justify-between gap-2 sm:gap-3">
+                                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] sm:text-xs text-zinc-400 flex-1 min-w-0">
+                                      <span className="truncate">
+                                        <span className="sm:hidden font-mono text-zinc-300">{product.partNumber || '—'}</span>
+                                        <span className="hidden sm:inline">
+                                          <span className="text-zinc-500">Артикул:</span>{' '}
+                                          <span className="font-mono text-zinc-300">{product.partNumber || '—'}</span>
                                         </span>
-                                      </div>
-                                      <div className="flex gap-1 text-xs">
-                                        <span className="text-zinc-600">Виробник:</span>
-                                        <span className="text-zinc-400">
-                                          {product.brand || '—'}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="text-right shrink-0">
-                                    <span className="text-k24-yellow font-semibold block">
-                                      {product.price.toLocaleString()} ₴
-                                    </span>
-                                    {product.originalPrice && (
-                                      <span className="text-xs text-zinc-500 line-through">
-                                        {product.originalPrice.toLocaleString()} ₴
                                       </span>
-                                    )}
+                                      <span className="truncate">
+                                        <span className="sm:hidden text-zinc-300">{product.brand || '—'}</span>
+                                        <span className="hidden sm:inline">
+                                          <span className="text-zinc-500">Виробник:</span>{' '}
+                                          <span className="text-zinc-300">{product.brand || '—'}</span>
+                                        </span>
+                                      </span>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <span className="text-base sm:text-lg text-k24-yellow font-bold block">
+                                        {product.price.toLocaleString()} ₴
+                                      </span>
+                                      {product.originalPrice && (
+                                        <span className="text-[13px] sm:text-sm text-zinc-500 line-through block">
+                                          {product.originalPrice.toLocaleString()} ₴
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                                 {product.status === 'in_stock' && (
                                   <Button
                                     onClick={(e) => handleAddToCart(e, product)}
-                                    className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-medium text-sm h-9"
+                                    className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-medium text-[13px] sm:text-sm h-10 shrink-0 rounded-lg"
                                   >
-                                    <ShoppingCart className="mr-2 h-4 w-4" />
+                                    <ShoppingCart className="mr-2 h-4 w-4 shrink-0" />
                                     В корзину
                                   </Button>
                                 )}
-                                <div className="flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-800">
-                                  <span>{product.views || 0} переглядів</span>
-                                  <span>
-                                    {formatDistanceToNow(product.createdAt, { addSuffix: true, locale: uk })}
-                                  </span>
-                                </div>
                               </CardContent>
                             </Card>
                           </Link>
@@ -463,21 +459,21 @@ function CatalogContent() {
                 )}
 
                 {loading && products.length === 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                     {Array.from({ length: 6 }).map((_, idx) => (
                       <Skeleton key={idx} className="h-64 bg-zinc-900/60" />
                     ))}
                   </div>
                 ) : displayProducts.length > 0 ? (
                   <>
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-4 xl:grid-cols-3">
                       {displayProducts.map((product) => {
                         const firstImage = product.images?.[0]?.url;
                         const statusClass = statusColors[product.status] || statusColors.discontinued;
                         return (
                           <Link key={product.id} href={`/products/${product.id}`}>
-                            <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col hover:border-k24-yellow/40 transition-colors cursor-pointer h-full">
-                              <div className="relative aspect-4/3 bg-zinc-950">
+                            <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col hover:border-k24-yellow/40 transition-colors cursor-pointer h-full pt-0 pb-0">
+                              <div className="relative aspect-4/3 bg-zinc-950 shrink-0">
                                 {firstImage ? (
                                   <Image
                                     src={firstImage}
@@ -490,57 +486,55 @@ function CatalogContent() {
                                     Немає фото
                                   </div>
                                 )}
-                                <div className="absolute top-3 left-3">
-                                  <Badge variant="outline" className={statusClass}>
+                                <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
+                                  <Badge variant="outline" className={`${statusClass} text-[12px] sm:text-xs px-1.5 py-0`}>
                                     {getStatusLabel(product.status)}
                                   </Badge>
                                 </div>
                               </div>
-                              <CardContent className="p-4 flex-1 flex flex-col gap-3">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div className="space-y-1.5 flex-1">
-                                    <h3 className="text-base font-semibold leading-tight text-white">{product.name}</h3>
-                                    <div className="flex gap-4">
-                                      <div className="flex gap-1 text-xs">
-                                        <span className="text-zinc-600">Артикул:</span>
-                                        <span className="text-zinc-400 font-mono">
-                                          {product.partNumber || '—'}
+                              <CardContent className="pt-0 px-4 pb-4 flex-1 flex flex-col gap-3 min-h-0">
+                                <div className="flex-1 flex flex-col min-h-0 gap-2">
+                                  <h3 className="text-[15px] sm:text-base font-semibold leading-snug text-white line-clamp-2 w-full">
+                                    {product.name}
+                                  </h3>
+                                  <div className="flex items-start justify-between gap-2 sm:gap-3">
+                                    <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] sm:text-xs text-zinc-400 flex-1 min-w-0">
+                                      <span className="truncate">
+                                        <span className="sm:hidden font-mono text-zinc-300">{product.partNumber || '—'}</span>
+                                        <span className="hidden sm:inline">
+                                          <span className="text-zinc-500">Артикул:</span>{' '}
+                                          <span className="font-mono text-zinc-300">{product.partNumber || '—'}</span>
                                         </span>
-                                      </div>
-                                      <div className="flex gap-1 text-xs">
-                                        <span className="text-zinc-600">Виробник:</span>
-                                        <span className="text-zinc-400">
-                                          {product.brand || '—'}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="text-right shrink-0">
-                                    <span className="text-k24-yellow font-semibold block">
-                                      {product.price.toLocaleString()} ₴
-                                    </span>
-                                    {product.originalPrice && (
-                                      <span className="text-xs text-zinc-500 line-through">
-                                        {product.originalPrice.toLocaleString()} ₴
                                       </span>
-                                    )}
+                                      <span className="truncate">
+                                        <span className="sm:hidden text-zinc-300">{product.brand || '—'}</span>
+                                        <span className="hidden sm:inline">
+                                          <span className="text-zinc-500">Виробник:</span>{' '}
+                                          <span className="text-zinc-300">{product.brand || '—'}</span>
+                                        </span>
+                                      </span>
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                      <span className="text-base sm:text-lg text-k24-yellow font-bold block">
+                                        {product.price.toLocaleString()} ₴
+                                      </span>
+                                      {product.originalPrice && (
+                                        <span className="text-[13px] sm:text-sm text-zinc-500 line-through block">
+                                          {product.originalPrice.toLocaleString()} ₴
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
                                 {product.status === 'in_stock' && (
                                   <Button
                                     onClick={(e) => handleAddToCart(e, product)}
-                                    className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-medium text-sm h-9"
+                                    className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-medium text-[13px] sm:text-sm h-10 shrink-0 rounded-lg"
                                   >
-                                    <ShoppingCart className="mr-2 h-4 w-4" />
+                                    <ShoppingCart className="mr-2 h-4 w-4 shrink-0" />
                                     В корзину
                                   </Button>
                                 )}
-                                <div className="flex items-center justify-between text-xs text-zinc-500 pt-2 border-t border-zinc-800">
-                                  <span>{product.views || 0} переглядів</span>
-                                  <span>
-                                    {formatDistanceToNow(product.createdAt, { addSuffix: true, locale: uk })}
-                                  </span>
-                                </div>
                               </CardContent>
                             </Card>
                           </Link>

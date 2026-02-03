@@ -244,10 +244,12 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       <span className="text-zinc-500">Стан</span>
                       <span className="text-white">{getConditionLabel(product.condition)}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-zinc-500">Рік</span>
-                      <span className="text-white">{product.year || '-'}</span>
-                    </div>
+                    {product.oem && (
+                      <div className="flex justify-between">
+                        <span className="text-zinc-500">Оригінальний номер (OEM)</span>
+                        <span className="text-white">{product.oem}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between">

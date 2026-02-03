@@ -33,6 +33,7 @@ export interface Product {
   // Auto parts specific fields
   brand: string;
   partNumber: string;
+  oem?: string | null;
   compatibility: string[];
   condition: 'new' | 'used' | 'refurbished';
   year?: string | null;
@@ -57,6 +58,7 @@ export interface CSVProductRow {
   subcategoryId?: string | null;
   status: string;
   brand: string;
+  oem?: string | null;
   compatibility?: string | null;
   condition: string;
   year?: string | null;

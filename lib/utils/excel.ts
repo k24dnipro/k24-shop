@@ -41,13 +41,14 @@ export async function parseExcelProductImport(file: File): Promise<CSVProductRow
           
           // Additional columns from export
           const originalPrice = getField(r, 'Стара ціна');
-          const categoryId = getField(r, 'Категорія ID');
+          const categoryId = getField(r, 'Категорія ID', 'Категория ID', 'categoryId');
+          const subcategoryId = getField(r, 'Підкатегорія ID', 'Подкатегория ID', 'subcategoryId');
           const status = getField(r, 'Статус');
           const carBrand = getField(r, 'Марка авто');
           const carModel = getField(r, 'Модель авто');
           const compatibility = getField(r, 'Сумісність');
           const condition = getField(r, 'Стан');
-          const year = getField(r, 'Рік');
+          const oem = getField(r, 'OEM', 'Оригінальний номер', 'Оригінальний номер (OEM)');
           const description = getField(r, 'Опис') || name;
           const metaTitle = getField(r, 'Meta Title') || name;
           const metaDescription = getField(r, 'Meta Description') || name;
@@ -71,9 +72,9 @@ export async function parseExcelProductImport(file: File): Promise<CSVProductRow
             categoryId,
             slug,
             originalPrice: originalPrice || null,
-            subcategoryId: null,
+            subcategoryId: subcategoryId || null,
             compatibility,
-            year: year || null,
+            oem: oem || null,
             carBrand: carBrand || null,
             carModel: carModel || null,
             metaTitle,

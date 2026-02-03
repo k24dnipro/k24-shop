@@ -8,6 +8,7 @@ import {
   getDocs,
   increment,
   limit,
+  or,
   orderBy,
   query,
   startAfter,
@@ -98,11 +99,17 @@ export async function getProducts(options?: {
   }
 
   // Build query with correct order: where filters first, then orderBy, then limit
+  // When filtering by category, include products where categoryId OR subcategoryId matches (parent or child category)
   let q = query(collection(db, PRODUCTS_COLLECTION));
 
-  // Apply where filters first
   if (categoryId) {
-    q = query(q, where("categoryId", "==", categoryId));
+    q = query(
+      q,
+      or(
+        where("categoryId", "==", categoryId),
+        where("subcategoryId", "==", categoryId)
+      )
+    );
   }
 
   if (status) {
@@ -153,7 +160,13 @@ export async function getProducts(options?: {
       // Retry without status filter
       let fallbackQ = query(collection(db, PRODUCTS_COLLECTION));
       if (categoryId) {
-        fallbackQ = query(fallbackQ, where("categoryId", "==", categoryId));
+        fallbackQ = query(
+          fallbackQ,
+          or(
+            where("categoryId", "==", categoryId),
+            where("subcategoryId", "==", categoryId)
+          )
+        );
       }
       fallbackQ = query(fallbackQ, orderBy(sortField, sortDirection));
       if (lastDoc) {
@@ -185,9 +198,11 @@ export async function getProducts(options?: {
   }
 }
 
-// Normalize text for smart search (removes special chars, normalizes spaces)
-function normalizeForSearch(text: string): string {
-  return text
+// Normalize text for smart search (removes special chars, normalizes spaces).
+// Accepts string or number (Firestore may store OEM/partNumber as number).
+function normalizeForSearch(text: string | number | null | undefined): string {
+  const s = text === null || text === undefined ? "" : String(text);
+  return s
     .toLowerCase()
     .replace(/[-_.,;:!?'"()\[\]{}\/\\]/g, " ") // Replace special chars with space
     .replace(/\s+/g, " ") // Normalize multiple spaces to single
@@ -218,26 +233,38 @@ async function searchProductsInternal(
   const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
   let products = snapshot.docs.map(convertToProduct);
 
-  // Apply search filter
-  if (searchTerm && searchWords.length > 0) {
-    products = products.filter((product) => {
-      const normalizedName = normalizeForSearch(product.name || "");
-      const normalizedPartNumber = normalizeForSearch(product.partNumber || "");
-      const normalizedBrand = normalizeForSearch(product.brand || "");
+  // Search by: name, brand, store article (partNumber), and original number (OEM).
+  // Partial match on all fields; OEM is never ignored (each word can match inside OEM).
+  const trimmedTerm = searchTerm.trim();
+  if (trimmedTerm) {
+    if (searchWords.length === 0) {
+      // Only special chars/spaces in term → no match
+      products = [];
+    } else {
+      products = products.filter((product) => {
+        const normalizedName = normalizeForSearch(product.name);
+        const normalizedPartNumber = normalizeForSearch(product.partNumber);
+        const normalizedBrand = normalizeForSearch(product.brand);
+        const normalizedOem = normalizeForSearch(product.oem);
 
-      // Check if all search words are found in any of the fields
-      return searchWords.every(
-        (word) =>
-          normalizedName.includes(word) ||
-          normalizedPartNumber.includes(word) ||
-          normalizedBrand.includes(word)
-      );
-    });
+        return searchWords.every(
+          (word) =>
+            normalizedName.includes(word) ||
+            normalizedPartNumber.includes(word) ||
+            normalizedBrand.includes(word) ||
+            normalizedOem.includes(word)
+        );
+      });
+    }
   }
 
-  // Apply category filter
+  // Apply category filter (categoryId or subcategoryId for parent/child categories)
   if (categoryId) {
-    products = products.filter((product) => product.categoryId === categoryId);
+    products = products.filter(
+      (product) =>
+        product.categoryId === categoryId ||
+        product.subcategoryId === categoryId
+    );
   }
 
   // Apply status filter
@@ -508,6 +535,7 @@ export async function importProductsFromCSV(
         status: (row.status as ProductStatus) || "in_stock",
         brand: row.brand || "",
         partNumber: row.partNumber || "",
+        oem: row.oem ?? null,
         compatibility: row.compatibility
           ? row.compatibility.split(",").map((s) => s.trim())
           : [],
@@ -662,10 +690,12 @@ export async function exportProductsToCSV(): Promise<
       // Additional columns
       originalPrice: product.originalPrice ?? null,
       categoryId: product.categoryId || "",
+      subcategoryId: product.subcategoryId ?? "",
       status: product.status || "in_stock",
       carModel: product.carModel ?? "",
       compatibility: (product.compatibility || []).join(","),
       condition: product.condition || "used",
+      oem: product.oem ?? "",
       year: product.year ?? "",
       description: product.description || "",
       metaTitle: product.seo?.metaTitle || "",
@@ -676,7 +706,7 @@ export async function exportProductsToCSV(): Promise<
   });
 }
 
-// Get products count with optional filters
+// Get products count with optional filters (categoryId = parent or child category id)
 export async function getProductsCount(options?: {
   categoryId?: string;
   status?: ProductStatus;
@@ -686,7 +716,13 @@ export async function getProductsCount(options?: {
   let q = query(collection(db, PRODUCTS_COLLECTION));
 
   if (categoryId) {
-    q = query(q, where("categoryId", "==", categoryId));
+    q = query(
+      q,
+      or(
+        where("categoryId", "==", categoryId),
+        where("subcategoryId", "==", categoryId)
+      )
+    );
   }
 
   if (status) {

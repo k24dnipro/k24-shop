@@ -203,6 +203,8 @@ export default function CategoriesPage() {
               )}
             </div>
             <span className="text-sm text-zinc-500">
+              <span className="font-mono text-zinc-400">{category.id}</span>
+              {' • '}
               {category.productCount || 0} товарів • /{category.slug}
             </span>
           </div>
@@ -339,6 +341,16 @@ export default function CategoriesPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {editingCategory && (
+              <div className="space-y-2">
+                <Label className="text-zinc-400">ID категорії</Label>
+                <Input
+                  value={editingCategory.id}
+                  readOnly
+                  className="bg-zinc-900/50 border-zinc-800 text-zinc-400 font-mono cursor-default"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label className="text-zinc-400">Назва *</Label>
               <Input

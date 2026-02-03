@@ -55,12 +55,14 @@ import {
 } from '@/modules/products/types';
 
 // Sample CSV template
-const CSV_TEMPLATE = `partNumber,name,description,price,originalPrice,categoryId,status,brand,compatibility,condition,year,carBrand,carModel,metaTitle,metaDescription,metaKeywords,slug
-63117442647,Фара передня ліва,Оригінальна фара для BMW X5,5000,6000,cat_001,in_stock,BMW,"BMW X5 2018-2022,BMW X6 2019-2022",used,2020,BMW,X5,Фара BMW X5 купити,Оригінальна фара для BMW X5 в наявності,фара bmw x5 купити київ,fara-bmw-x5`;
+const CSV_TEMPLATE = `partNumber,name,description,price,originalPrice,categoryId,subcategoryId,status,brand,oem,compatibility,condition,carBrand,carModel,metaTitle,metaDescription,metaKeywords,slug
+63117442647,Фара передня ліва,Оригінальна фара для BMW X5,5000,6000,cat_001,sub_001,in_stock,BMW,63117442647,"BMW X5 2018-2022,BMW X6 2019-2022",used,BMW,X5,Фара BMW X5 купити,Оригінальна фара для BMW X5 в наявності,фара bmw x5 купити київ,fara-bmw-x5`;
 
-// Map Russian CSV headers to English field names
+// Map Russian/Ukrainian CSV headers to English field names
 const RUSSIAN_HEADER_MAP: Record<string, string> = {
+  // Russian
   "Код запчасти": "partNumber",
+  "Номер запчасти": "partNumber",
   Производитель: "brand",
   "Марка авто": "carBrand",
   "Описание запчасти": "name",
@@ -69,8 +71,8 @@ const RUSSIAN_HEADER_MAP: Record<string, string> = {
   Цена: "price",
   "Старая цена": "originalPrice",
   "Категория ID": "categoryId",
+  "Подкатегория ID": "subcategoryId",
   Статус: "status",
-  "Номер запчасти": "partNumber",
   "Модель авто": "carModel",
   Совместимость: "compatibility",
   Состояние: "condition",
@@ -80,6 +82,23 @@ const RUSSIAN_HEADER_MAP: Record<string, string> = {
   "Meta Description": "metaDescription",
   "Meta Keywords": "metaKeywords",
   "URL Slug": "slug",
+  // Ukrainian — щоб таблиця з українськими колонками імпортувалась без помилки «немає коду запчастини»
+  "Код запчастини": "partNumber",
+  "Номер запчастини": "partNumber",
+  Виробник: "brand",
+  "Опис запчастини": "name",
+  "Опис": "description",
+  "Ціна": "price",
+  "Стара ціна": "originalPrice",
+  "Категорія ID": "categoryId",
+  "Підкатегорія ID": "subcategoryId",
+  "Кількість": "quantity",
+  "Б/в": "isUsed",
+  "Оригінальний номер": "oem",
+  OEM: "oem",
+  "Сумісність": "compatibility",
+  Стан: "condition",
+  Рік: "year",
 };
 
 // Map status values to valid ProductStatus
@@ -159,10 +178,11 @@ function normalizeStatus(status: string | undefined): string {
 function mapRussianCSVRow(row: Record<string, string>): CSVProductRow {
   const mapped: Partial<CSVProductRow> & { isUsed?: string | number } = {};
 
-  // Map headers from Russian to English
+  // Map headers from Russian/Ukrainian to English (trim keys so "Код запчастини " still maps)
   Object.keys(row).forEach((key) => {
-    const englishKey = RUSSIAN_HEADER_MAP[key] || key.toLowerCase();
-    (mapped as Record<string, string | null>)[englishKey] = row[key];
+    const trimmedKey = key.trim();
+    const englishKey = RUSSIAN_HEADER_MAP[trimmedKey] || trimmedKey.toLowerCase();
+    (mapped as Record<string, string | null>)[englishKey] = row[key] ?? "";
   });
 
   // Normalize status value
@@ -207,6 +227,7 @@ function mapRussianCSVRow(row: Record<string, string>): CSVProductRow {
     "originalPrice",
     "subcategoryId",
     "compatibility",
+    "oem",
     "year",
     "carBrand",
     "carModel",
@@ -263,14 +284,14 @@ export default function ImportPage() {
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
-            // Check if headers are in Russian
-            const hasRussianHeaders = results.meta.fields?.some(
-              (field) => RUSSIAN_HEADER_MAP[field] !== undefined
+            // Check if headers are in Russian or Ukrainian (need mapping to English)
+            const hasLocalizedHeaders = results.meta.fields?.some(
+              (field) => field && RUSSIAN_HEADER_MAP[field.trim()] !== undefined
             );
 
-            // Map rows if Russian headers detected, otherwise just normalize status
-            const mappedData = hasRussianHeaders
-              ? results.data.map(mapRussianCSVRow)
+            // Map rows if Russian/Ukrainian headers detected, otherwise just normalize status
+            const mappedData = hasLocalizedHeaders
+              ? results.data.map((row) => mapRussianCSVRow(row as Record<string, string>))
               : (results.data as unknown as CSVProductRow[]).map((row) => ({
                 ...row,
                 status: normalizeStatus(row.status),

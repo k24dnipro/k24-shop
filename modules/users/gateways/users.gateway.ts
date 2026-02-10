@@ -14,6 +14,7 @@ import {
 import { db } from '@/firebase';
 import {
   User,
+  UserApprovalStatus,
   UserPermissions,
   UserRole,
 } from '@/lib/types'; // Using lib/types for now
@@ -28,6 +29,7 @@ interface FirestoreUserData {
   role: UserRole;
   permissions: UserPermissions;
   isActive: boolean;
+  approvalStatus?: UserApprovalStatus;
   lastLogin?: Timestamp;
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -43,6 +45,7 @@ const convertToUser = (doc: DocumentSnapshot): User => {
     role: data.role,
     permissions: data.permissions,
     isActive: data.isActive,
+    approvalStatus: data.approvalStatus ?? 'approved',
     lastLogin: data.lastLogin?.toDate(),
     createdAt: data.createdAt?.toDate() || new Date(),
     updatedAt: data.updatedAt?.toDate() || new Date(),

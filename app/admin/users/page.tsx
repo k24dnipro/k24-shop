@@ -7,12 +7,14 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import {
+  CheckCircle,
   Loader2,
   MoreHorizontal,
   Settings,
   Shield,
   ShieldOff,
   Trash2,
+  UserCheck,
   Users,
   XCircle,
 } from 'lucide-react';
@@ -65,6 +67,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/hooks/useAuth';
 import {
   activateUser,
+  approveUser,
   deactivateUser,
   deleteUser,
   getUsers,
@@ -106,8 +109,11 @@ export default function UsersPage() {
   const [userToDeactivate, setUserToDeactivate] = useState<User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [userToApprove, setUserToApprove] = useState<User | null>(null);
 
   const canManageUsers = hasPermission('canManageUsers');
+  const pendingUsers = users.filter((u) => u.approvalStatus === 'pending');
 
   useEffect(() => {
     fetchUsers();
@@ -186,6 +192,20 @@ export default function UsersPage() {
     }
   };
 
+  const handleApprove = async () => {
+    if (!userToApprove) return;
+
+    try {
+      await approveUser(userToApprove.id);
+      toast.success('Заявку одобрено');
+      setApproveDialogOpen(false);
+      setUserToApprove(null);
+      fetchUsers();
+    } catch {
+      toast.error('Помилка одобрення');
+    }
+  };
+
   const getRoleBadge = (role: UserRole) => {
     const config: Record<UserRole, string> = {
       admin: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
@@ -222,7 +242,7 @@ export default function UsersPage() {
 
       <div className="p-6 space-y-6">
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card className="bg-zinc-900/50 border-zinc-800">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -231,6 +251,17 @@ export default function UsersPage() {
                   <p className="text-2xl font-bold text-white">{users.length}</p>
                 </div>
                 <Users className="h-8 w-8 text-k24-yellow" />
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-zinc-900/50 border-zinc-800">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-zinc-500">Очікують</p>
+                  <p className="text-2xl font-bold text-amber-500">{pendingUsers.length}</p>
+                </div>
+                <UserCheck className="h-8 w-8 text-amber-500" />
               </div>
             </CardContent>
           </Card>
@@ -288,7 +319,12 @@ export default function UsersPage() {
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-white">{user.displayName}</span>
                         {getRoleBadge(user.role)}
-                        {!user.isActive && (
+                        {user.approvalStatus === 'pending' && (
+                          <Badge variant="outline" className="border-amber-500/20 text-amber-500">
+                            Очікує підтвердження
+                          </Badge>
+                        )}
+                        {!user.isActive && user.approvalStatus !== 'pending' && (
                           <Badge variant="outline" className="border-red-500/20 text-red-500">
                             Деактивовано
                           </Badge>
@@ -319,6 +355,34 @@ export default function UsersPage() {
 
                   {user.id !== currentUser?.id && (
                     <div className="flex items-center gap-2">
+                      {user.approvalStatus === 'pending' && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setUserToApprove(user);
+                              setApproveDialogOpen(true);
+                            }}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Одобрити
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setUserToDelete(user);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                          >
+                            Відхилити
+                          </Button>
+                        </>
+                      )}
+                      {user.approvalStatus !== 'pending' && (
+                        <>
                       {/* Role selector */}
                       <Select
                         value={user.role}
@@ -393,6 +457,8 @@ export default function UsersPage() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
@@ -468,6 +534,31 @@ export default function UsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Approve confirmation */}
+      <AlertDialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        <AlertDialogContent className="bg-zinc-950 border-zinc-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">
+              Одобрити заявку?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              Користувач {userToApprove?.displayName} ({userToApprove?.email}) зможе увійти в адмін-панель.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800">
+              Скасувати
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleApprove}
+              className="bg-emerald-500 hover:bg-emerald-600"
+            >
+              Одобрити
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Deactivate confirmation */}
       <AlertDialog open={deactivateDialogOpen} onOpenChange={setDeactivateDialogOpen}>

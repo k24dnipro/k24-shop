@@ -41,6 +41,9 @@ export interface UserPermissions {
   canViewStats: boolean;
 }
 
+/** Статус заявки на доступ до адмінки: очікує підтвердження / одобрено */
+export type UserApprovalStatus = 'pending' | 'approved';
+
 export interface User {
   id: string;
   email: string;
@@ -49,6 +52,8 @@ export interface User {
   role: UserRole;
   permissions: UserPermissions;
   isActive: boolean;
+  /** Чи одобрена заявка (для реєстрації в адмінці). Якщо відсутнє — вважається approved. */
+  approvalStatus?: UserApprovalStatus;
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -98,7 +103,7 @@ export const DEFAULT_PERMISSIONS: Record<UserRole, UserPermissions> = {
     canEditProducts: true,
     canDeleteProducts: false,
     canManageCategories: false,
-    canManageUsers: false,
+    canManageUsers: true, // може керувати користувачами та одобрювати заявки
     canExportData: true,
     canImportData: true,
     canViewStats: true,

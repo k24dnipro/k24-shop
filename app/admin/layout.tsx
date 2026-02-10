@@ -11,6 +11,7 @@ import {
   AuthProvider,
   useAuth,
 } from '@/lib/hooks/useAuth';
+import { logOut } from '@/modules/users/services/users.service';
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { user, firebaseUser, loading } = useAuth();
@@ -19,12 +20,20 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Only redirect when we know there is no Firebase auth user.
-    // Also guard against StrictMode double-invocation causing overlapping navigations (AbortError in dev).
     if (!loading && !firebaseUser && !didRedirectRef.current) {
       didRedirectRef.current = true;
       router.replace('/login');
     }
   }, [loading, firebaseUser, router]);
+
+  useEffect(() => {
+    // Заявка не одобрена — вийти і перенаправити на логін (тільки в effect, не під час render)
+    if (loading || !user) return;
+    if (user.approvalStatus !== 'pending') return;
+    if (didRedirectRef.current) return;
+    didRedirectRef.current = true;
+    logOut().then(() => router.replace('/login'));
+  }, [loading, user, router]);
 
   if (loading) {
     return (
@@ -51,6 +60,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (!firebaseUser || !user) {
     return null;
+  }
+
+  if (user.approvalStatus === 'pending') {
+    return null; // redirect handled in useEffect
   }
 
   return (

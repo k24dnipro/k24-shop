@@ -47,17 +47,20 @@ export async function getUserByEmail(email: string): Promise<User | null> {
 export async function createUserProfile(
   firebaseUser: FirebaseUser,
   role: UserRole = 'viewer',
-  displayName?: string
+  displayName?: string,
+  approvalStatus: User['approvalStatus'] = 'approved'
 ): Promise<User> {
   const now = Timestamp.now();
-  
+  const isApproved = approvalStatus === 'approved';
+
   const userData: Omit<User, 'id'> = {
     email: firebaseUser.email || '',
     displayName: displayName || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || '',
     photoURL: firebaseUser.photoURL || null,
     role,
     permissions: DEFAULT_PERMISSIONS[role],
-    isActive: true,
+    isActive: isApproved,
+    approvalStatus,
     createdAt: now.toDate(),
     updatedAt: now.toDate(),
   };
@@ -100,6 +103,11 @@ export async function activateUser(id: string): Promise<void> {
   await updateUserProfile(id, { isActive: true });
 }
 
+// Одобрити заявку користувача (дозволити вхід в адмінку)
+export async function approveUser(id: string): Promise<void> {
+  await updateUserProfile(id, { approvalStatus: 'approved', isActive: true });
+}
+
 // Delete user
 export async function deleteUser(id: string): Promise<void> {
   await deleteUserDoc(id);
@@ -122,12 +130,13 @@ export async function signUp(email: string, password: string, displayName: strin
     await updateProfile(userCredential.user, { displayName });
   }
 
-  // Create user profile in Firestore
-  // First user becomes admin, others start as viewers
+  // First user becomes admin and is approved; others need manager approval
   const usersCount = await countUsers();
-  const role: UserRole = usersCount === 0 ? 'admin' : 'viewer';
-  
-  return createUserProfile(userCredential.user, role, displayName);
+  const isFirstUser = usersCount === 0;
+  const role: UserRole = isFirstUser ? 'admin' : 'viewer';
+  const approvalStatus: User['approvalStatus'] = isFirstUser ? 'approved' : 'pending';
+
+  return createUserProfile(userCredential.user, role, displayName, approvalStatus);
 }
 
 // Sign in
@@ -142,7 +151,12 @@ export async function signIn(email: string, password: string): Promise<User> {
     user = await createUserProfile(userCredential.user);
   }
 
-  // Check if user is active
+  // Заявка ще не одобрена — не пускати в адмінку
+  if (user.approvalStatus === 'pending') {
+    await signOut(auth);
+    throw new Error('Ваша заявка очікує підтвердження адміністратором.');
+  }
+
   if (!user.isActive) {
     await signOut(auth);
     throw new Error('Ваш акаунт деактивовано. Зверніться до адміністратора.');

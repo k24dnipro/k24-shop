@@ -124,9 +124,14 @@ export default function LoginPage() {
 
     setLoading(true);
     try {
-      await signUp(data.email, data.password, data.name);
-      toast.success("Реєстрація успішна");
-      router.replace("/admin");
+      const user = await signUp(data.email, data.password, data.name);
+      if (user.approvalStatus === 'pending') {
+        toast.success("Реєстрація успішна. Очікуйте підтвердження адміністратора.");
+        // Не редіректимо в адмінку — доступ буде після одобрення
+      } else {
+        toast.success("Реєстрація успішна");
+        router.replace("/admin");
+      }
     } catch (error) {
       console.error("Register error:", error);
       toast.error(getAuthErrorMessage(error));

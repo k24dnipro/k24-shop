@@ -9,6 +9,7 @@ import {
   Menu,
   Search,
   ShoppingCart,
+  User,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -147,13 +148,29 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
             </Link>
           </nav>
 
-          {/* Spacer - only when not catalog page or on desktop with nav */}
-          {(!isCatalogPage || pathname.startsWith('/') && !pathname.startsWith('/catalog')) && (
-            <div className="flex-1" />
-          )}
+          {/* Spacer to push actions (акаунт, корзина) вправо */}
+          <div className="flex-1" />
 
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* User / Особистий кабінет - Desktop only, right side */}
+            <Button
+              variant="ghost"
+              className="hidden lg:inline-flex items-center gap-2 text-zinc-400 hover:text-white"
+              asChild
+            >
+              <Link
+                href="/account"
+                title="Особистий кабінет"
+                className={cn(
+                  pathname === "/account" && "text-k24-yellow"
+                )}
+              >
+                <User className="h-5 w-5" />
+                <span className="text-sm">Особистий кабінет</span>
+              </Link>
+            </Button>
+
             {/* Categories button - Mobile (only on catalog page) */}
             {isCatalogPage && onMobileMenuToggle && (
               <Button
@@ -251,6 +268,16 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
               )}
             >
               Контакти
+            </Link>
+            <Link
+              href="/account"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={cn(
+                "text-lg font-medium transition-colors hover:text-k24-yellow",
+                pathname === "/account" ? "text-k24-yellow" : "text-zinc-400"
+              )}
+            >
+              Особистий кабінет
             </Link>
           </div>
         </SheetContent>

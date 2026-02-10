@@ -86,6 +86,51 @@ export interface Inquiry {
   assignedTo?: string;
 }
 
+// Storefront order types
+export interface OrderItem {
+  productId: string;
+  name: string;
+  partNumber?: string;
+  brand?: string;
+  price: number;
+  quantity: number;
+}
+
+export interface OrderCustomerInfo {
+  name: string;
+  phone: string;
+  email?: string;
+  comment?: string;
+}
+
+export type OrderStatus = 'new' | 'processing' | 'completed' | 'cancelled';
+
+export interface Order {
+  id: string;
+  /** Firebase auth uid, якщо користувач оформив замовлення будучи залогіненим */
+  customerId?: string;
+  /** Email з Firebase або з форми, для історії */
+  customerEmail?: string;
+  customerInfo: OrderCustomerInfo;
+  items: OrderItem[];
+  totalPrice: number;
+  totalItems: number;
+  status: OrderStatus;
+  createdAt: Date;
+}
+
+// Customer profile (особистий кабінет покупця)
+export interface CustomerProfile {
+  id: string; // Firebase uid
+  name: string;
+  phone?: string;
+  city?: string;
+  address?: string;
+  email: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Default values
 export const DEFAULT_PERMISSIONS: Record<UserRole, UserPermissions> = {
   admin: {

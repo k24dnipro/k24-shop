@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/sheet';
 import { useCart } from '@/lib/hooks/useCart';
 import { sendTelegramOrder } from '@/lib/services/telegram';
+import { auth } from '@/firebase';
+import { createOrderFromCart } from '@/modules/orders/services/orders.service';
 
 interface CartProps {
   open: boolean;
@@ -65,7 +67,26 @@ export function Cart({ open, onOpenChange }: CartProps) {
         totalItems: getTotalItems(),
       };
 
-      // Send to Telegram
+      // Якщо користувач залогінений через Firebase (опціональна реєстрація) — прив'язуємо замовлення до нього
+      const currentUser = auth.currentUser;
+
+      await createOrderFromCart({
+        customerInfo,
+        items: items.map(item => ({
+          productId: item.product.id,
+          name: item.product.name,
+          partNumber: item.product.partNumber,
+          brand: item.product.brand,
+          price: item.product.price,
+          quantity: item.quantity,
+        })),
+        totalPrice: orderData.totalPrice,
+        totalItems: orderData.totalItems,
+        customerId: currentUser?.uid,
+        customerEmail: currentUser?.email ?? (customerInfo.email || undefined),
+      });
+
+      // Send to Telegram (як і раніше)
       const success = await sendTelegramOrder(orderData);
 
       if (success) {

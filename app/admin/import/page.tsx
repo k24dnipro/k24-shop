@@ -55,8 +55,9 @@ import {
 } from '@/modules/products/types';
 
 // Sample CSV template
-const CSV_TEMPLATE = `partNumber,name,description,price,originalPrice,categoryId,subcategoryId,status,brand,oem,compatibility,condition,carBrand,carModel,metaTitle,metaDescription,metaKeywords,slug
-63117442647,Фара передня ліва,Оригінальна фара для BMW X5,5000,6000,cat_001,sub_001,in_stock,BMW,63117442647,"BMW X5 2018-2022,BMW X6 2019-2022",used,BMW,X5,Фара BMW X5 купити,Оригінальна фара для BMW X5 в наявності,фара bmw x5 купити київ,fara-bmw-x5`;
+// Кілька фото в колонці imageUrl — через "|" (наприклад: url1|url2|url3)
+const CSV_TEMPLATE = `partNumber,imageUrl,name,description,price,originalPrice,categoryId,subcategoryId,status,brand,oem,compatibility,condition,carBrand,carModel,metaTitle,metaDescription,metaKeywords,slug
+63117442647,https://example.com/images/fara-1.jpg|https://example.com/images/fara-2.jpg,Фара передня ліва,Оригінальна фара для BMW X5,5000,6000,cat_001,sub_001,in_stock,BMW,63117442647,"BMW X5 2018-2022,BMW X6 2019-2022",used,BMW,X5,Фара BMW X5 купити,Оригінальна фара для BMW X5 в наявності,фара bmw x5 купити київ,fara-bmw-x5`;
 
 // Map Russian/Ukrainian CSV headers to English field names
 const RUSSIAN_HEADER_MAP: Record<string, string> = {
@@ -82,6 +83,9 @@ const RUSSIAN_HEADER_MAP: Record<string, string> = {
   "Meta Description": "metaDescription",
   "Meta Keywords": "metaKeywords",
   "URL Slug": "slug",
+  "Фото URL": "imageUrl",
+  "Фото": "imageUrl",
+  "Посилання на фото": "imageUrl",
   // Ukrainian — щоб таблиця з українськими колонками імпортувалась без помилки «немає коду запчастини»
   "Код запчастини": "partNumber",
   "Номер запчастини": "partNumber",
@@ -452,7 +456,7 @@ export default function ImportPage() {
                     Завантажте шаблон або Excel файл
                   </p>
                   <p className="text-sm text-zinc-500">
-                    Підтримуються формати CSV та XLSX
+                    Підтримуються формати CSV та XLSX. Кілька фото — в одній комірці через «|»
                   </p>
                 </div>
               </div>

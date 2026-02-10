@@ -37,6 +37,7 @@ import { PRODUCT_STATUSES } from '@/modules/products/types';
 
 const EXPORT_COLUMNS = [
   { key: 'partNumber', label: 'Код запчастини', default: true },
+  { key: 'imageUrl', label: 'Фото URL', default: true },
   { key: 'brand', label: 'Производитель', default: true },
   { key: 'carBrand', label: 'Марка авто', default: true },
   { key: 'name', label: 'Описание запчасти', default: true },

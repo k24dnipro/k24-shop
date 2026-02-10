@@ -54,6 +54,13 @@ export async function parseExcelProductImport(file: File): Promise<CSVProductRow
           const metaDescription = getField(r, 'Meta Description') || name;
           const metaKeywords = getField(r, 'Meta Keywords') || `${brand}, ${partNumber}, ${name}`;
           const slug = getField(r, 'URL Slug') || (partNumber ? partNumber.toLowerCase().replace(/[^a-z0-9]+/g, '-') : '');
+          const imageUrl = getField(
+            r,
+            'Фото URL',
+            'Фото',
+            'Посилання на фото',
+            'imageUrl',
+          );
 
           // Determine status from quantity if not explicitly set
           const finalStatus = status || ((!isNaN(quantity) && quantity > 0) ? 'in_stock' : 'out_of_stock');
@@ -77,6 +84,7 @@ export async function parseExcelProductImport(file: File): Promise<CSVProductRow
             oem: oem || null,
             carBrand: carBrand || null,
             carModel: carModel || null,
+            imageUrl: imageUrl || null,
             metaTitle,
             metaDescription,
             metaKeywords,

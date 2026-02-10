@@ -64,6 +64,8 @@ export interface CSVProductRow {
   year?: string | null;
   carBrand?: string | null;
   carModel?: string | null;
+  // URL головного зображення товару (для імпорту/експорту з таблиці)
+  imageUrl?: string | null;
   // SEO fields
   metaTitle?: string | null;
   metaDescription?: string | null;

@@ -42,6 +42,9 @@ import {
 
 const PRODUCTS_COLLECTION = "products";
 
+// Роздільник кількох URL фото в одній комірці таблиці (CSV/Excel)
+const IMAGE_URL_DELIMITER = "|";
+
 // Convert Firestore document to Product
 const convertToProduct = (doc: DocumentSnapshot): Product => {
   const data = doc.data();
@@ -141,14 +144,7 @@ export async function getProducts(options?: {
     }
 
     const hasMore = snapshot.docs.length === pageSize;
-    console.log('getProducts result:', {
-      requestedPageSize: pageSize,
-      receivedDocs: snapshot.docs.length,
-      productsCount: products.length,
-      hasMore,
-      status,
-      categoryId
-    });
+
 
     return { products, lastVisible, hasMore };
   } catch (error) {
@@ -385,11 +381,27 @@ export async function createProduct(
   return docRef.id;
 }
 
-// Update product
+// Update product; when images change, delete removed images from Storage
 export async function updateProduct(
   id: string,
   updates: Partial<Product>
 ): Promise<void> {
+  if (updates.images !== undefined) {
+    const existing = await getProductById(id);
+    if (existing) {
+      const newUrls = new Set(updates.images.map((img) => img.url));
+      for (const image of existing.images) {
+        if (!newUrls.has(image.url)) {
+          try {
+            await deleteProductImage(image.url);
+          } catch (error) {
+            console.error("Error deleting removed image from storage:", error);
+          }
+        }
+      }
+    }
+  }
+
   const docRef = doc(db, PRODUCTS_COLLECTION, id);
   await updateDoc(docRef, {
     ...updates,
@@ -397,22 +409,19 @@ export async function updateProduct(
   });
 }
 
-// Delete product
+// Delete product and all its image files from Storage
 export async function deleteProduct(id: string): Promise<void> {
   const product = await getProductById(id);
   if (!product) return;
 
-  // Delete images from storage
   for (const image of product.images) {
     try {
-      const imageRef = ref(storage, `products/${id}/${image.id}`);
-      await deleteObject(imageRef);
+      await deleteProductImage(image.url);
     } catch (error) {
-      console.error("Error deleting image:", error);
+      console.error("Error deleting image from storage:", error);
     }
   }
 
-  // Update category product count
   if (product.categoryId) {
     const categoryRef = doc(db, "categories", product.categoryId);
     await updateDoc(categoryRef, {
@@ -423,14 +432,30 @@ export async function deleteProduct(id: string): Promise<void> {
   await deleteDoc(doc(db, PRODUCTS_COLLECTION, id));
 }
 
-// Batch delete products
+// Batch delete products and their image files from Storage
 export async function deleteProducts(ids: string[]): Promise<void> {
-  const batch = writeBatch(db);
+  for (const id of ids) {
+    const product = await getProductById(id);
+    if (!product) continue;
+    for (const image of product.images) {
+      try {
+        await deleteProductImage(image.url);
+      } catch (error) {
+        console.error("Error deleting image from storage:", error);
+      }
+    }
+    if (product.categoryId) {
+      const categoryRef = doc(db, "categories", product.categoryId);
+      await updateDoc(categoryRef, {
+        productCount: increment(-1),
+      });
+    }
+  }
 
+  const batch = writeBatch(db);
   for (const id of ids) {
     batch.delete(doc(db, PRODUCTS_COLLECTION, id));
   }
-
   await batch.commit();
 }
 
@@ -458,8 +483,19 @@ export async function uploadProductImage(
 
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
 
+// Only delete from our Firebase Storage; external URLs (e.g. from import) are skipped
+function isFirebaseStorageUrl(url: string): boolean {
+  try {
+    return new URL(url).hostname.includes('firebasestorage.googleapis.com');
+  } catch {
+    return false;
+  }
+}
+
 // Delete product image by its download URL (or by productId + imageId fallback)
 export async function deleteProductImage(imageUrl: string): Promise<void> {
+  if (!isFirebaseStorageUrl(imageUrl)) return;
+
   const url = new URL(imageUrl);
   const pathPart = url.pathname.includes('/o/')
     ? url.pathname.split('/o/')[1]
@@ -570,6 +606,19 @@ export async function importProductsFromCSV(
         year: row.year,
         carBrand: row.carBrand,
         carModel: row.carModel,
+        // Кілька фото: в комірці URL через "|" (наприклад: url1|url2|url3)
+        images: row.imageUrl
+          ? row.imageUrl
+            .split(IMAGE_URL_DELIMITER)
+            .map((url) => url.trim())
+            .filter(Boolean)
+            .map((url, order) => ({
+              id: uuidv4(),
+              url,
+              alt: row.name,
+              order,
+            })) as ProductImage[]
+          : [],
         seo: {
           metaTitle: row.metaTitle || row.name,
           metaDescription:
@@ -580,11 +629,10 @@ export async function importProductsFromCSV(
           ogTitle: row.metaTitle || row.name,
           ogDescription:
             row.metaDescription || row.description?.substring(0, 160) || "",
-          ogImage: "",
+          ogImage: row.imageUrl?.split(IMAGE_URL_DELIMITER).map((u) => u.trim()).filter(Boolean)[0] || "",
           canonicalUrl: "",
           slug: row.slug || (row.partNumber ? row.partNumber.toLowerCase().replace(/[^a-z0-9]+/g, "-") : ""),
         } as ProductSEO,
-        images: [],
         createdBy: userId,
         updatedAt: Timestamp.now(),
       };
@@ -708,6 +756,11 @@ export async function exportProductsToCSV(): Promise<
     return {
       // Primary columns (matching import format)
       partNumber: product.partNumber || "",
+      // Усі фото в одній комірці через "|" (наприклад: url1|url2|url3)
+      imageUrl:
+        product.images?.length
+          ? product.images.map((img) => img.url).join(IMAGE_URL_DELIMITER)
+          : "",
       brand: product.brand || "",
       carBrand: product.carBrand || product.brand || "",
       name: product.name || "",

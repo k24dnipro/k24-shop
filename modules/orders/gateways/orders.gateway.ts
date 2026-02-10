@@ -4,6 +4,7 @@ import {
   getDocs,
   orderBy,
   query,
+  QueryDocumentSnapshot,
   Timestamp,
   where,
 } from 'firebase/firestore';
@@ -26,7 +27,7 @@ interface FirestoreOrderData {
   createdAt: Timestamp;
 }
 
-const convertToOrder = (doc: firebase.firestore.QueryDocumentSnapshot | any): Order => {
+const convertToOrder = (doc: QueryDocumentSnapshot): Order => {
   const data = doc.data() as FirestoreOrderData;
   return {
     id: doc.id,

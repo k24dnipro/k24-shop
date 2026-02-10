@@ -50,10 +50,10 @@ import {
 } from '@/modules/products/types';
 
 const statusColors: Record<string, string> = {
-  in_stock: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-  on_order: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  out_of_stock: 'bg-red-500/10 text-red-400 border-red-500/20',
-  discontinued: 'bg-zinc-500/10 text-zinc-400 border-zinc-500/20',
+  in_stock: 'text-emerald-400',
+  on_order: 'text-blue-400',
+  out_of_stock: 'text-red-400',
+  discontinued: 'text-zinc-400',
 };
 
 type SortOption = 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
@@ -369,17 +369,17 @@ function CatalogContent() {
                                     Немає фото
                                   </div>
                                 )}
-                                <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
-                                  <Badge variant="outline" className={`${statusClass} text-[12px] sm:text-xs px-1.5 py-0`}>
-                                    {getStatusLabel(product.status)}
-                                  </Badge>
-                                </div>
                               </div>
                               <CardContent className="pt-0 px-4 pb-4 flex-1 flex flex-col gap-3 min-h-0">
                                 <div className="flex-1 flex flex-col min-h-0 gap-2">
                                   <h3 className="text-[15px] sm:text-base font-semibold leading-snug text-white line-clamp-2 w-full">
                                     {product.name}
                                   </h3>
+                                  <span
+                                    className={`text-[12px] sm:text-xs ${statusClass}`}
+                                  >
+                                    {getStatusLabel(product.status)}
+                                  </span>
                                   <div className="flex items-start justify-between gap-2 sm:gap-3">
                                     <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] sm:text-xs text-zinc-400 flex-1 min-w-0">
                                       <span className="truncate">
@@ -488,17 +488,17 @@ function CatalogContent() {
                                     Немає фото
                                   </div>
                                 )}
-                                <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
-                                  <Badge variant="outline" className={`${statusClass} text-[12px] sm:text-xs px-1.5 py-0`}>
-                                    {getStatusLabel(product.status)}
-                                  </Badge>
-                                </div>
                               </div>
                               <CardContent className="pt-0 px-4 pb-4 flex-1 flex flex-col gap-3 min-h-0">
                                 <div className="flex-1 flex flex-col min-h-0 gap-2">
                                   <h3 className="text-[15px] sm:text-base font-semibold leading-snug text-white line-clamp-2 w-full">
                                     {product.name}
                                   </h3>
+                                  <span
+                                    className={`text-[12px] sm:text-xs ${statusClass}`}
+                                  >
+                                    {getStatusLabel(product.status)}
+                                  </span>
                                   <div className="flex items-start justify-between gap-2 sm:gap-3">
                                     <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] sm:text-xs text-zinc-400 flex-1 min-w-0">
                                       <span className="truncate">

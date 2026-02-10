@@ -9,7 +9,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import Image from 'next/image';
+import { ProductImage as ProductImageUi } from '@/components/ui/product-image';
 import { useRouter } from 'next/navigation';
 import {
   Controller,
@@ -176,14 +176,17 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
       }
 
       try {
-        await deleteProductImage(product.id, imageId);
+        const image = images.find((img) => img.id === imageId);
+        if (!image) return;
+
+        await deleteProductImage(image.url);
         setImages((prev) => prev.filter((img) => img.id !== imageId));
         toast.success("Фото видалено");
       } catch {
         toast.error("Помилка видалення фото");
       }
     },
-    [product?.id]
+    [product?.id, images]
   );
 
   const onFormSubmit = async (data: ProductFormData) => {
@@ -568,10 +571,11 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                       key={image.id}
                       className="relative group aspect-square rounded-lg overflow-hidden bg-zinc-800"
                     >
-                      <Image
+                      <ProductImageUi
                         src={image.url}
                         alt={image.alt}
                         fill
+                        sizes="(max-width: 768px) 50vw, 25vw"
                         className="object-cover"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">

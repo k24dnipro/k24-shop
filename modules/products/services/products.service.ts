@@ -456,13 +456,40 @@ export async function uploadProductImage(
   };
 }
 
-// Delete product image
-export async function deleteProductImage(
-  productId: string,
-  imageId: string
-): Promise<void> {
-  const storageRef = ref(storage, `products/${productId}/${imageId}`);
-  await deleteObject(storageRef);
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
+
+// Delete product image by its download URL (or by productId + imageId fallback)
+export async function deleteProductImage(imageUrl: string): Promise<void> {
+  const url = new URL(imageUrl);
+  const pathPart = url.pathname.includes('/o/')
+    ? url.pathname.split('/o/')[1]
+    : '';
+  const objectPathEncoded = pathPart || url.searchParams.get('name') || '';
+  const objectPath = decodeURIComponent(objectPathEncoded);
+
+  if (!objectPath) return;
+
+  const pathsToTry: string[] = [objectPath];
+  const hasExtension = /\.[a-z0-9]+$/i.test(objectPath);
+  if (!hasExtension) {
+    pathsToTry.push(
+      ...IMAGE_EXTENSIONS.map((ext) => objectPath + ext)
+    );
+  }
+
+  let lastError: unknown;
+  for (const path of pathsToTry) {
+    try {
+      const storageRef = ref(storage, path);
+      await deleteObject(storageRef);
+      return;
+    } catch (err) {
+      lastError = err;
+      const msg = err && typeof (err as Error).message === 'string' ? (err as Error).message : '';
+      if (!msg.includes('object-not-found') && !msg.includes('does not exist')) throw err;
+    }
+  }
+  throw lastError;
 }
 
 // Increment views

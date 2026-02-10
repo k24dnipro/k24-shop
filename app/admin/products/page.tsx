@@ -15,7 +15,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import Image from 'next/image';
+import { ProductImage } from '@/components/ui/product-image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/admin/dataTable';
@@ -144,7 +144,7 @@ export default function ProductsPage() {
         return (
           <div className="w-12 h-12 rounded-lg bg-zinc-800 overflow-hidden flex items-center justify-center">
             {firstImage ? (
-              <Image
+              <ProductImage
                 src={firstImage}
                 alt={row.original.name}
                 width={48}

@@ -9,7 +9,7 @@ import {
   ShoppingCart,
   Truck,
 } from 'lucide-react';
-import Image from 'next/image';
+import { ProductImage } from '@/components/ui/product-image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -243,10 +243,11 @@ export default function Home() {
                     <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col hover:border-k24-yellow/40 transition-colors cursor-pointer h-full pt-0 pb-0">
                       <div className="relative aspect-4/3 bg-zinc-950 shrink-0">
                         {product.images?.[0]?.url ? (
-                          <Image
+                          <ProductImage
                             src={product.images[0].url}
                             alt={product.name}
                             fill
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                             className="object-cover"
                           />
                         ) : (

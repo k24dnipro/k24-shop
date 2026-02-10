@@ -10,7 +10,7 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react';
-import Image from 'next/image';
+import { ProductImage } from '@/components/ui/product-image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Header } from '@/components/admin/header';
@@ -190,11 +190,14 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                         key={image.id}
                         className="relative aspect-square rounded-lg overflow-hidden bg-zinc-800"
                       >
-                        <Image
+                        <ProductImage
                           src={image.url}
                           alt={image.alt}
                           fill
+                          sizes="(min-width: 1024px) 25vw, (min-width: 768px) 33vw, 50vw"
                           className="object-cover"
+                          priority={index === 0}
+                          loading="eager"
                         />
                         {index === 0 && (
                           <div className="absolute top-2 left-2 bg-k24-yellow text-black text-xs px-2 py-1 rounded">

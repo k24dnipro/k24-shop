@@ -17,7 +17,6 @@ import {
   Phone,
   ShoppingCart,
 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -30,8 +29,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ProductImage } from '@/components/ui/product-image';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useCart } from '@/lib/hooks/useCart';
@@ -62,6 +66,8 @@ interface ProductClientProps {
 export function ProductClient({ product, categoryName }: ProductClientProps) {
   const router = useRouter();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showInquiryForm, setShowInquiryForm] = useState(false);
   const { categories } = useCategories();
   const { addItem } = useCart();
@@ -175,11 +181,18 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
             <div className="relative aspect-4/3 bg-zinc-950">
               {product.images.length > 0 ? (
                 <>
-                  <Image
+                  <ProductImage
                     src={product.images[currentImageIndex].url}
                     alt={product.images[currentImageIndex].alt}
                     fill
-                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    quality={85}
+                    priority
+                    className="object-cover cursor-zoom-in"
+                    onClick={() => {
+                      setLightboxIndex(currentImageIndex);
+                      setLightboxOpen(true);
+                    }}
                   />
                   {product.images.length > 1 && (
                     <>
@@ -229,10 +242,11 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
                         : 'border-zinc-800 hover:border-zinc-700'
                       }`}
                   >
-                    <Image
+                    <ProductImage
                       src={image.url}
                       alt={image.alt}
                       fill
+                      sizes="25vw"
                       className="object-cover"
                     />
                   </button>
@@ -433,6 +447,28 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
           )}
         </div>
       </div>
+
+      {/* Fullscreen image lightbox */}
+      <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>
+        <DialogContent
+          className="bg-black/90 border-zinc-800 w-full max-w-3xl sm:max-w-4xl lg:max-w-6xl xl:max-w-7xl p-2 sm:p-4"
+          showCloseButton
+        >
+          {product.images.length > 0 && (
+            <div className="relative w-full aspect-4/3 sm:aspect-video">
+              <ProductImage
+                src={product.images[lightboxIndex].url}
+                alt={product.images[lightboxIndex].alt}
+                fill
+                sizes="100vw"
+                quality={90}
+                priority
+                className="object-contain"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Description */}
       {product.description && (

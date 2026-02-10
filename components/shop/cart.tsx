@@ -8,7 +8,7 @@ import {
   ShoppingBag,
   Trash2,
 } from 'lucide-react';
-import Image from 'next/image';
+import { ProductImage } from '@/components/ui/product-image';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,9 +20,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { auth } from '@/firebase';
 import { useCart } from '@/lib/hooks/useCart';
 import { sendTelegramOrder } from '@/lib/services/telegram';
-import { auth } from '@/firebase';
 import { createOrderFromCart } from '@/modules/orders/services/orders.service';
 
 interface CartProps {
@@ -152,10 +152,11 @@ export function Cart({ open, onOpenChange }: CartProps) {
                     {/* Product Image */}
                     <div className="relative h-20 w-20 shrink-0 rounded-md overflow-hidden bg-zinc-800">
                       {item.product.images[0] ? (
-                        <Image
+                        <ProductImage
                           src={item.product.images[0].url}
                           alt={item.product.name}
                           fill
+                          sizes="80px"
                           className="object-cover"
                         />
                       ) : (

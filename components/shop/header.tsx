@@ -152,8 +152,8 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
             </Link>
           </nav>
 
-          {/* Spacer to push actions (акаунт, корзина) вправо */}
-          <div className="flex-1" />
+          {/* Spacer: on catalog page hidden on mobile so search gets full width; on other pages always show so cart/menu stay at right */}
+          <div className={cn("flex-1", isCatalogPage && "hidden lg:block")} />
 
           {/* Actions */}
           <div className="flex items-center gap-2 shrink-0">

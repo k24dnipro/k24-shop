@@ -17,14 +17,14 @@ export function ShopFooter() {
             <Link href="/" className="flex items-center gap-2">
               <Image
                 src="/logo.png"
-                alt="K24 Dnipro"
+                alt="K24 Parts"
                 width={140}
                 height={48}
                 className="h-12 w-auto rounded-md"
                 priority
               />
               <div className="flex flex-col">
-                <span className="text-lg font-bold text-white">K24 Shop</span>
+                <span className="text-lg font-bold text-white">K24 Parts</span>
                 <span className="text-xs text-zinc-500">Автозапчастини</span>
               </div>
             </Link>
@@ -108,7 +108,7 @@ export function ShopFooter() {
 
         <div className="border-t border-zinc-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-zinc-500 text-sm">
-            © {new Date().getFullYear()} K24 Shop. Всі права захищені.
+            © {new Date().getFullYear()} K24 Parts. Всі права захищені.
           </p>
         </div>
       </div>

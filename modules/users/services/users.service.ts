@@ -6,12 +6,8 @@ import {
   updateProfile,
   User as FirebaseUser,
 } from 'firebase/auth';
-import {
-  Timestamp,
-} from 'firebase/firestore';
-import {
-  auth,
-} from '@/firebase';
+import { Timestamp } from 'firebase/firestore';
+import { auth } from '@/firebase';
 import {
   DEFAULT_PERMISSIONS,
   User,

@@ -1,4 +1,4 @@
-# K24 Shop - CRM Адмін Панель
+# K24 Parts - CRM Адмін Панель
 
 Професійна CRM система для онлайн магазину автозапчастин з розбірок.
 
@@ -84,6 +84,8 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+# Для продакшну (SEO, sitemap, canonical):
+NEXT_PUBLIC_SITE_URL=https://k24.parts
 ```
 
 4. **Налаштування Firestore Rules**

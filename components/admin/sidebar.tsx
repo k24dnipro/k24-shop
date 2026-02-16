@@ -95,7 +95,7 @@ export function Sidebar() {
           {collapsed ? (
             <Image
               src="/logo.png"
-              alt="K24 Dnipro"
+              alt="K24 Parts"
               width={40}
               height={40}
               className="h-10 w-10 rounded-md object-contain"
@@ -104,7 +104,7 @@ export function Sidebar() {
           ) : (
             <Image
               src="/logo.png"
-              alt="K24 Dnipro"
+              alt="K24 Parts"
               width={140}
               height={48}
               className="h-10 w-auto rounded-md"
@@ -113,7 +113,7 @@ export function Sidebar() {
           )}
         </Link>
         {!collapsed && (
-          <div className="flex flex-col ml-2"><span className="text-sm font-bold text-white">K24 Shop</span>            <span className="text-xs text-zinc-500">Адмін панель</span>
+          <div className="flex flex-col ml-2"><span className="text-sm font-bold text-white">K24 Parts</span>            <span className="text-xs text-zinc-500">Адмін панель</span>
           </div>
         )}
       </div>

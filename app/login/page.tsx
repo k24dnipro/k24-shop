@@ -171,7 +171,7 @@ export default function LoginPage() {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold text-white">
-            K24 Shop
+            K24 Parts
           </CardTitle>
           <CardDescription className="text-zinc-500">
             Адмін-панель магазину автозапчастин

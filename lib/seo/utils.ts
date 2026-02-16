@@ -84,7 +84,7 @@ export function generateProductStructuredData(product: Product, siteUrl: string)
       itemCondition: itemCondition,
       seller: {
         '@type': 'Organization',
-        name: 'K24 Shop',
+        name: 'K24 Parts',
         address: {
           '@type': 'PostalAddress',
           addressLocality: 'Дніпро',
@@ -149,7 +149,7 @@ export function generateOrganizationStructuredData(siteUrl: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
-    name: 'K24 Shop',
+    name: 'K24 Parts',
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
     address: {

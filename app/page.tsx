@@ -77,7 +77,7 @@ export default function Home() {
   const rootCategories = categories.filter(c => !c.parentId).slice(0, 8);
 
   // Use a constant to avoid hydration mismatch
-  const siteUrl = 'https://k24-shop.com';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
   const organizationData = generateOrganizationStructuredData(siteUrl);
 
   return (
@@ -116,8 +116,11 @@ export default function Home() {
                   <div className="absolute -inset-1 bg-linear-to-r from-k24-yellow to-yellow-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-200"></div>
                   <div className="relative flex">
                     <Input
-                      type="text"
+                      id="hero-search"
+                      name="q"
+                      type="search"
                       placeholder="Назва, бренд, артикул або OEM..."
+                      autoComplete="off"
                       className="h-14 pl-12 pr-4 bg-zinc-950 border-none text-lg shadow-xl focus-visible:ring-k24-yellow transition-all placeholder:text-sm"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -322,7 +325,7 @@ export default function Home() {
         <section className="py-16 bg-zinc-900 border-t border-zinc-800">
           <div className="container mx-auto px-4">
             <div className="max-w-4xl mx-auto text-center space-y-6">
-              <h2 className="text-3xl font-bold text-white">Про магазин K24 Shop</h2>
+              <h2 className="text-3xl font-bold text-white">Про магазин K24 Parts</h2>
               <p className="text-zinc-400 leading-relaxed">
                 Наш магазин спеціалізується на продажу автозапчастин для будь-яких марок автомобілів.
                 Ми пропонуємо широкий асортимент оригінальних деталей та якісних аналогів.

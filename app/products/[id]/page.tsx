@@ -14,7 +14,7 @@ import {
 // ISR: ревалідація кожні 5 хвилин (300 секунд)
 export const revalidate = 300;
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24-shop.com';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     if (!product) {
       return {
         title: 'Товар не знайдено',
-        description: 'Запитуваний товар не знайдено на сайті K24 Shop',
+        description: 'Запитуваний товар не знайдено на сайті K24 Parts',
       };
     }
 
@@ -33,10 +33,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const category = categories.find(c => c.id === product.categoryId);
     const categoryName = category?.name || 'Автозапчастини';
 
-    const metaTitle = product.seo?.metaTitle || `${product.name} - ${categoryName} | K24 Shop Дніпро`;
+    const metaTitle = product.seo?.metaTitle || `${product.name} - ${categoryName} | K24 Parts Дніпро`;
     const metaDescription = product.seo?.metaDescription || 
       `${product.name} ${product.brand ? `(${product.brand})` : ''}. Артикул: ${product.partNumber || 'N/A'}. ` +
-      `Ціна: ${product.price} грн. Доставка по Україні. Купити в K24 Shop Дніпро.`;
+      `Ціна: ${product.price} грн. Доставка по Україні. Купити в K24 Parts Дніпро.`;
 
     const imageUrl = product.images?.[0]?.url || `${siteUrl}/logo.png`;
     const productUrl = `${siteUrl}/products/${product.id}`;
@@ -51,7 +51,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         categoryName,
         ...(product.seo?.metaKeywords || []),
         'автозапчастини Дніпро',
-        'K24 Shop',
+        'K24 Parts',
         'купити запчастини',
       ].filter(Boolean),
       openGraph: {
@@ -67,7 +67,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
             alt: product.name,
           },
         ],
-        siteName: 'K24 Shop',
+        siteName: 'K24 Parts',
       },
       twitter: {
         card: 'summary_large_image',
@@ -92,7 +92,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   } catch (error) {
     console.error('Error generating metadata:', error);
     return {
-      title: 'Товар | K24 Shop',
+      title: 'Товар | K24 Parts',
       description: 'Автозапчастини в Дніпрі',
     };
   }

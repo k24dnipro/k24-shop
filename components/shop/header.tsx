@@ -70,7 +70,7 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
           <Link href="/" className="flex items-center shrink-0">
             <Image
               src="/logo.png"
-              alt="K24 Dnipro"
+              alt="K24 Parts"
               width={140}
               height={48}
               className="h-12 w-auto rounded-md"
@@ -84,9 +84,13 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
               <div className="relative flex-1 min-w-0">
                 <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
                 <Input
+                  id="catalog-search"
+                  name="q"
+                  type="search"
                   value={localSearch}
                   onChange={(e) => setLocalSearch(e.target.value)}
                   placeholder="Пошук за назвою, брендом, артикулом або OEM..."
+                  autoComplete="off"
                   className="w-full pl-8 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 focus-visible:ring-k24-yellow text-sm h-9 sm:h-10"
                 />
               </div>

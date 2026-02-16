@@ -4,7 +4,7 @@ import {
 } from '@/modules/categories/services/categories.service';
 import { getProducts } from '@/modules/products/services/products.service';
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24-shop.com';
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
 
 // ISR для sitemap - ревалідація кожні 12 годин
 export const revalidate = 43200; // 12 годин = 43200 секунд

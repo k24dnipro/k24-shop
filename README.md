@@ -90,59 +90,9 @@ NEXT_PUBLIC_SITE_URL=https://k24.parts
 
 4. **Налаштування Firestore Rules**
 
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Перевірка авторизації
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-    
-    // Перевірка ролі користувача
-    function hasRole(role) {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
-    }
-    
-    // Перевірка чи активний користувач
-    function isActive() {
-      return isAuthenticated() && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true;
-    }
+У проєкті є файл `firestore.rules` — скопіюй його вміст у [Firebase Console](https://console.firebase.google.com) → Firestore Database → Rules або задеплой правила: `firebase deploy --only firestore:rules`.
 
-    // Products
-    match /products/{productId} {
-      allow read: if isAuthenticated() && isActive();
-      allow create: if isAuthenticated() && isActive();
-      allow update: if isAuthenticated() && isActive();
-      allow delete: if hasRole('admin');
-    }
-
-    // Categories
-    match /categories/{categoryId} {
-      allow read: if isAuthenticated() && isActive();
-      allow write: if hasRole('admin');
-    }
-
-    // Users
-    match /users/{userId} {
-      allow read: if isAuthenticated() && isActive();
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (request.auth.uid == userId || hasRole('admin'));
-      allow delete: if hasRole('admin');
-    }
-
-    // Inquiries
-    match /inquiries/{inquiryId} {
-      allow read: if isAuthenticated() && isActive();
-      allow create: if true; // Public можуть створювати звернення
-      allow update: if isAuthenticated() && isActive();
-      allow delete: if hasRole('admin');
-    }
-  }
-}
-```
+Коротко: каталог (products, categories) — публічне читання, запис тільки для авторизованих активних користувачів; звернення та замовлення — створення без авторизації, читання/зміна тільки для персоналу; users/customers — згідно з ролями та власним документом.
 
 5. **Налаштування Storage Rules**
 

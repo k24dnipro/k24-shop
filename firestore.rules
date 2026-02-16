@@ -1,0 +1,63 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helpers ---
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isActive() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isActive == true;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    // --- products: public read (catalog), write only for authenticated active staff ---
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update: if isAuthenticated() && isActive();
+      allow delete: if isAuthenticated() && isActive();
+    }
+
+    // --- categories: public read, write only for authenticated active staff ---
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create, update, delete: if isAuthenticated() && isActive();
+    }
+
+    // --- users: only for app auth; first user or admin creates, users read/update own or admin ---
+    match /users/{userId} {
+      allow read: if isAuthenticated() && isActive();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // --- inquiries: anyone can create (storefront form), only staff read/update/delete ---
+    match /inquiries/{inquiryId} {
+      allow read, update, delete: if isAuthenticated() && isActive();
+      allow create: if true;
+    }
+
+    // --- orders: anyone can create (checkout), only staff read/update/delete ---
+    match /orders/{orderId} {
+      allow read, update, delete: if isAuthenticated() && isActive();
+      allow create: if true;
+    }
+
+    // --- customers: each doc is keyed by auth uid; user can read/write only own ---
+    match /customers/{customerId} {
+      allow read, write: if isAuthenticated() && request.auth.uid == customerId;
+    }
+  }
+}

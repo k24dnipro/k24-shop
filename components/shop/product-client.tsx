@@ -561,16 +561,15 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="pp-email" className="text-zinc-300">
-                Email *
+                Email
               </Label>
               <Input
                 id="pp-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
                 className="bg-zinc-900 border-zinc-800 text-white"
-                placeholder="your@email.com"
+                placeholder="your@email.com (не обов'язково)"
               />
             </div>
             <div className="space-y-2">

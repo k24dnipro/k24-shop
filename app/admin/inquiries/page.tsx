@@ -7,6 +7,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import {
+  Banknote,
   Clock,
   Loader2,
   Mail,
@@ -241,6 +242,12 @@ export default function InquiriesPage() {
                       <div className="flex items-center gap-2 text-sm">
                         <Package className="h-3 w-3 text-zinc-500" />
                         <span className="text-k24-yellow">{inquiry.productName}</span>
+                        {inquiry.proposedPrice != null && inquiry.proposedPrice > 0 && (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs">
+                            <Banknote className="h-3 w-3 mr-1" />
+                            {inquiry.proposedPrice.toLocaleString('uk-UA')} ₴
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-zinc-400 line-clamp-2 mt-2">
                         {inquiry.message}
@@ -342,6 +349,15 @@ export default function InquiriesPage() {
                 <Label className="text-zinc-500">Товар</Label>
                 <p className="text-white">{selectedInquiry.productName}</p>
               </div>
+
+              {selectedInquiry.proposedPrice != null && selectedInquiry.proposedPrice > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-zinc-500">Запропонована ціна</Label>
+                  <p className="text-emerald-400 font-semibold text-lg">
+                    {selectedInquiry.proposedPrice.toLocaleString('uk-UA')} ₴
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label className="text-zinc-500">Повідомлення</Label>

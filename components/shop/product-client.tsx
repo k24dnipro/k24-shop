@@ -7,6 +7,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import {
+  Banknote,
   Check,
   ChevronLeft,
   ChevronRight,
@@ -32,6 +33,9 @@ import {
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -69,6 +73,7 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showInquiryForm, setShowInquiryForm] = useState(false);
+  const [showPriceProposalDialog, setShowPriceProposalDialog] = useState(false);
   const { categories } = useCategories();
   const { addItem } = useCart();
 
@@ -77,6 +82,7 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [message, setMessage] = useState('');
+  const [proposedPrice, setProposedPrice] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   // Increment views on mount
@@ -137,6 +143,45 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
     } catch (error) {
       console.error('Inquiry submit error:', error);
       toast.error('Помилка відправки запиту. Спробуйте пізніше.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handlePriceProposalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const priceNum = proposedPrice.trim() ? parseInt(proposedPrice.replace(/\s/g, ''), 10) : NaN;
+    if (!priceNum || priceNum <= 0 || !Number.isFinite(priceNum)) {
+      toast.error('Вкажіть коректну запропоновану ціну');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const inquiryData = {
+        productId: product.id,
+        productName: product.name,
+        productPartNumber: product.partNumber,
+        productStatus: product.status,
+        customerName: name,
+        customerEmail: email,
+        customerPhone: phone,
+        message: message.trim() || 'Запропонована ціна',
+        proposedPrice: priceNum,
+      };
+      await createInquiry(inquiryData);
+      await sendTelegramInquiry(inquiryData);
+      toast.success('Пропозицію надіслано!', {
+        description: 'Ми зв\'яжемося з вами щодо ціни.',
+      });
+      setShowPriceProposalDialog(false);
+      setProposedPrice('');
+      setName('');
+      setEmail('');
+      setPhone('');
+      setMessage('');
+    } catch (error) {
+      console.error('Price proposal submit error:', error);
+      toast.error('Помилка відправки. Спробуйте пізніше.');
     } finally {
       setSubmitting(false);
     }
@@ -342,6 +387,15 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
                     {showInquiryForm ? 'Сховати форму' : 'Зробити запит'}
                   </Button>
                 )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowPriceProposalDialog(true)}
+                  className="w-full border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                >
+                  <Banknote className="mr-2 h-4 w-4" />
+                  Запропонувати ціну
+                </Button>
               </div>
 
               <div className="flex gap-2 text-xs text-zinc-500">
@@ -447,6 +501,110 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
           )}
         </div>
       </div>
+
+      {/* Price proposal dialog */}
+      <Dialog open={showPriceProposalDialog} onOpenChange={setShowPriceProposalDialog}>
+        <DialogContent className="bg-zinc-950 border-zinc-800 max-w-md">
+          <DialogHeader className="text-left">
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Banknote className="h-5 w-5 text-k24-yellow" />
+              Запропонувати ціну
+            </DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Вкажіть вашу ціну та контакти — ми зв&apos;яжемося з вами
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handlePriceProposalSubmit} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="pp-price" className="text-zinc-300">
+                Ваша ціна (грн) *
+              </Label>
+              <Input
+                id="pp-price"
+                name="proposedPrice"
+                type="number"
+                min={1}
+                step={1}
+                value={proposedPrice}
+                onChange={(e) => setProposedPrice(e.target.value)}
+                required
+                className="bg-zinc-900 border-zinc-800 text-white"
+                placeholder="Наприклад 1500"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pp-name" className="text-zinc-300">
+                Ім&apos;я *
+              </Label>
+              <Input
+                id="pp-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="bg-zinc-900 border-zinc-800 text-white"
+                placeholder="Ваше ім'я"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pp-phone" className="text-zinc-300">
+                Телефон *
+              </Label>
+              <Input
+                id="pp-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                className="bg-zinc-900 border-zinc-800 text-white"
+                placeholder="+380..."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pp-email" className="text-zinc-300">
+                Email *
+              </Label>
+              <Input
+                id="pp-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="bg-zinc-900 border-zinc-800 text-white"
+                placeholder="your@email.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pp-message" className="text-zinc-300">
+                Коментар
+              </Label>
+              <Textarea
+                id="pp-message"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                className="bg-zinc-900 border-zinc-800 text-white min-h-[80px]"
+                placeholder="Додаткова інформація (не обов'язково)"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-semibold"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Відправка...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Надіслати пропозицію
+                </>
+              )}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Fullscreen image lightbox */}
       <Dialog open={lightboxOpen} onOpenChange={setLightboxOpen}>

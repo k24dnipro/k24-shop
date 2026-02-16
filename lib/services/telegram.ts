@@ -109,45 +109,53 @@ export interface InquiryData {
   customerEmail: string;
   customerPhone: string;
   message: string;
+  /** Запропонована клієнтом ціна */
+  proposedPrice?: number;
 }
 
 /**
  * Format inquiry data into a readable Telegram message
  */
 export function formatInquiryMessage(inquiry: InquiryData): string {
-  let message = `📧 *Новий запит про товар*\n\n`;
-  
+  const isPriceProposal = inquiry.proposedPrice != null && inquiry.proposedPrice > 0;
+  let message = isPriceProposal
+    ? `💰 *Запропонована ціна*\n\n`
+    : `📧 *Новий запит про товар*\n\n`;
+
   // Product info
   message += `📦 *Товар:*\n`;
   message += `${inquiry.productName}\n`;
-    const productCode = inquiry.productPartNumber;
+  const productCode = inquiry.productPartNumber;
   if (productCode) {
     message += `Код товару: ${productCode}\n`;
   }
   if (inquiry.productStatus) {
     const statusLabels: Record<string, string> = {
-      'in_stock': 'В наявності',
-      'out_of_stock': 'Немає в наявності',
-      'on_order': 'Під замовлення',
-      'discontinued': 'Знято з виробництва',
+      in_stock: 'В наявності',
+      out_of_stock: 'Немає в наявності',
+      on_order: 'Під замовлення',
+      discontinued: 'Знято з виробництва',
     };
     const statusLabel = statusLabels[inquiry.productStatus] || inquiry.productStatus;
     message += `Статус: ${statusLabel}\n`;
   }
+  if (isPriceProposal) {
+    message += `\n💵 *Запропонована ціна: ${Number(inquiry.proposedPrice).toLocaleString('uk-UA')} ₴*\n`;
+  }
   message += `\n`;
-  
+
   // Customer info
   message += `👤 *Клієнт:*\n`;
   message += `Ім'я: ${inquiry.customerName}\n`;
   message += `Телефон: ${inquiry.customerPhone}\n`;
   message += `Email: ${inquiry.customerEmail}\n\n`;
-  
+
   // Message
   if (inquiry.message) {
     message += `💬 *Повідомлення:*\n`;
     message += `${inquiry.message}\n`;
   }
-  
+
   return message;
 }
 

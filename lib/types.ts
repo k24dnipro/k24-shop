@@ -76,10 +76,14 @@ export interface Inquiry {
   id: string;
   productId: string;
   productName: string;
+  productPartNumber?: string;
+  productStatus?: string;
   customerName: string;
   customerEmail: string;
   customerPhone: string;
   message: string;
+  /** Запропонована клієнтом ціна (заявка "Запропонувати ціну") */
+  proposedPrice?: number;
   status: 'new' | 'in_progress' | 'completed' | 'cancelled';
   createdAt: Date;
   updatedAt: Date;

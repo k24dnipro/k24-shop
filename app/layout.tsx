@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { CookieConsent } from '@/components/shop/cookie-consent';
 import { FloatingCart } from '@/components/shop/floating-cart';
 import { Providers } from '@/components/providers';
 
@@ -94,6 +95,7 @@ export default function RootLayout({
         <Providers>
           {children}
           <FloatingCart />
+          <CookieConsent />
         </Providers>
       </body>
     </html>

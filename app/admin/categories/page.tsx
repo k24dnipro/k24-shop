@@ -326,7 +326,7 @@ export default function CategoriesPage() {
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 max-w-lg">
+        <DialogContent className="bg-zinc-950 border-zinc-800 max-w-xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-white">
               {editingCategory ? 'Редагувати категорію' : 'Нова категорія'}
@@ -340,7 +340,8 @@ export default function CategoriesPage() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          {/* Scrollable form area so footer с кнопками завжди в межах вікна */}
+          <div className="space-y-4 py-4 overflow-y-auto pr-1">
             {editingCategory && (
               <div className="space-y-2">
                 <Label className="text-zinc-400">ID категорії</Label>
@@ -366,7 +367,7 @@ export default function CategoriesPage() {
               <Textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="bg-zinc-900 border-zinc-800 text-white"
+                className="bg-zinc-900 border-zinc-800 text-white wrap-break-word"
                 placeholder="Короткий опис категорії"
               />
             </div>
@@ -408,7 +409,7 @@ export default function CategoriesPage() {
                   <Textarea
                     value={formData.metaDescription}
                     onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
-                    className="bg-zinc-900 border-zinc-800 text-white"
+                    className="bg-zinc-900 border-zinc-800 text-white wrap-break-word"
                     placeholder="SEO опис"
                     rows={2}
                   />

@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,6 +68,8 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   const {
     products,
@@ -99,6 +102,11 @@ export default function ProductsPage() {
     return () => clearTimeout(timer);
   }, [searchTerm, search]);
 
+  // Reset selection when filters change
+  useEffect(() => {
+    setSelectedProductIds(new Set());
+  }, [categoryFilter, statusFilter]);
+
   const handleDelete = async () => {
     if (!productToDelete) return;
 
@@ -111,6 +119,31 @@ export default function ProductsPage() {
     } finally {
       setDeleteDialogOpen(false);
       setProductToDelete(null);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedProductIds);
+    if (ids.length === 0) return;
+
+    try {
+      const results = await Promise.allSettled(ids.map((id) => remove(id)));
+      const successCount = results.filter((r) => r.status === "fulfilled").length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0) {
+        toast.success(`Видалено ${successCount} товар(ів)`);
+      }
+      if (failCount > 0) {
+        toast.error(`Не вдалося видалити ${failCount} товар(ів)`);
+      }
+
+      setSelectedProductIds(new Set());
+      refresh();
+    } catch {
+      toast.error("Помилка масового видалення товарів");
+    } finally {
+      setBulkDeleteDialogOpen(false);
     }
   };
 
@@ -134,6 +167,57 @@ export default function ProductsPage() {
   };
 
   const columns: ColumnDef<Product>[] = [
+    {
+      id: "select",
+      header: () => {
+        if (products.length === 0) return null;
+        const allOnPageSelected = products.every((p) => selectedProductIds.has(p.id));
+
+        return (
+          <Checkbox
+            checked={allOnPageSelected}
+            aria-label="Вибрати всі на сторінці"
+            onCheckedChange={(checked) => {
+              setSelectedProductIds((prev) => {
+                const next = new Set(prev);
+                if (checked) {
+                  products.forEach((p) => next.add(p.id));
+                } else {
+                  products.forEach((p) => next.delete(p.id));
+                }
+                return next;
+              });
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        );
+      },
+      cell: ({ row }) => {
+        const id = row.original.id;
+        const isSelected = selectedProductIds.has(id);
+
+        return (
+          <Checkbox
+            checked={isSelected}
+            aria-label="Вибрати товар"
+            onCheckedChange={(checked) => {
+              setSelectedProductIds((prev) => {
+                const next = new Set(prev);
+                if (checked) {
+                  next.add(id);
+                } else {
+                  next.delete(id);
+                }
+                return next;
+              });
+            }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        );
+      },
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       accessorKey: "images",
       header: "",
@@ -345,16 +429,37 @@ export default function ProductsPage() {
             </Select>
           </div>
 
-          {/* Add button */}
-          {canCreate && (
-            <Button
-              onClick={() => router.push("/admin/products/new")}
-              className="bg-k24-yellow hover:bg-k24-yellow text-black w-full sm:w-auto"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Додати товар
-            </Button>
-          )}
+          {/* Actions */}
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto justify-end">
+            {canDelete && selectedProductIds.size > 0 && (
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  onClick={() => setSelectedProductIds(new Set())}
+                  className="border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600 w-full sm:w-auto"
+                >
+                  Зняти виділення ({selectedProductIds.size})
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => setBulkDeleteDialogOpen(true)}
+                  className="w-full sm:w-auto"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Видалити вибрані ({selectedProductIds.size})
+                </Button>
+              </div>
+            )}
+            {canCreate && (
+              <Button
+                onClick={() => router.push("/admin/products/new")}
+                className="bg-k24-yellow hover:bg-k24-yellow text-black w-full sm:w-auto"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Додати товар
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Table */}
@@ -391,6 +496,33 @@ export default function ProductsPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
+              disabled={mutationLoading}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {mutationLoading ? "Видалення..." : "Видалити"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
+      {/* Bulk delete confirmation dialog */}
+      <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
+        <AlertDialogContent className="bg-zinc-950 border-zinc-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">
+              Видалити вибрані товари?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              Ви впевнені, що хочете видалити {selectedProductIds.size} товар(ів)? Цю дію неможливо
+              скасувати.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800">
+              Скасувати
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkDelete}
               disabled={mutationLoading}
               className="bg-red-500 hover:bg-red-600 text-white"
             >

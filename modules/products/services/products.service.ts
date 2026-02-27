@@ -4,6 +4,7 @@ import {
   deleteDoc,
   doc,
   DocumentSnapshot,
+  getCountFromServer,
   getDoc,
   getDocs,
   increment,
@@ -809,29 +810,38 @@ export async function getProductsCount(options?: {
     q = query(q, where("status", "==", status));
   }
 
-  const snapshot = await getDocs(q);
-  return snapshot.size;
+  const snapshot = await getCountFromServer(q);
+  return snapshot.data().count;
 }
 
 // Get products by status count
 export async function getProductsByStatusCount(): Promise<
   Record<ProductStatus, number>
 > {
-  const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
-
   const counts: Record<ProductStatus, number> = {
     in_stock: 0,
     on_order: 0,
     out_of_stock: 0,
     discontinued: 0,
   };
+  
+  const statuses: ProductStatus[] = [
+    "in_stock",
+    "on_order",
+    "out_of_stock",
+    "discontinued",
+  ];
 
-  snapshot.docs.forEach((doc) => {
-    const status = doc.data().status as ProductStatus;
-    if (counts[status] !== undefined) {
-      counts[status]++;
-    }
-  });
+  await Promise.all(
+    statuses.map(async (status) => {
+      const q = query(
+        collection(db, PRODUCTS_COLLECTION),
+        where("status", "==", status)
+      );
+      const snapshot = await getCountFromServer(q);
+      counts[status] = snapshot.data().count;
+    })
+  );
 
   return counts;
 }

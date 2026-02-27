@@ -136,7 +136,7 @@ export function ShopSidebar({
           <button
             onClick={() => handleCategoryClick(category.id, hasChildren)}
             className={cn(
-              'group flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-sm font-medium transition-all text-left w-full',
+              'group flex items-start justify-between gap-3 rounded-lg px-2 py-2.5 text-sm font-medium transition-all text-left w-full',
               isActive
                 ? 'bg-k24-yellow/10 text-k24-yellow'
                 : isSearchActive && displayCount === 0
@@ -144,7 +144,7 @@ export function ShopSidebar({
                   : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
             )}
           >
-            <div className="flex items-center gap-3 flex-1 min-w-0 pr-2">
+            <div className="flex items-start gap-3 flex-1 min-w-0 pr-2">
               {hasChildren ? (
                 <div
                   onClick={(e) => {
@@ -168,7 +168,9 @@ export function ShopSidebar({
                   isActive ? 'text-k24-yellow' : 'text-zinc-500 group-hover:text-white'
                 )}
               />
-              <span className="truncate">{category.name}</span>
+              <span className="flex-1 whitespace-normal wrap-break-word">
+                {category.name}
+              </span>
             </div>
             <Badge
               variant="outline"
@@ -227,9 +229,11 @@ export function ShopSidebar({
                 : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
             )}
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-1 min-w-0 pr-2">
               <Package className="h-5 w-5 shrink-0" />
-              <span>{isSearchActive ? 'Усі результати' : 'Усі товари'}</span>
+              <span className="truncate">
+                {isSearchActive ? 'Усі результати' : 'Усі товари'}
+              </span>
             </div>
             {isSearchActive ? (
               <Badge
@@ -292,7 +296,7 @@ export function ShopSidebar({
   }
 
   return (
-    <aside className="hidden lg:flex w-72 flex-col border-r border-zinc-800 bg-zinc-950 ">
+    <aside className="hidden lg:flex w-80 flex-col border-r border-zinc-800 bg-zinc-950 ">
       {sidebarContent}
     </aside>
   );

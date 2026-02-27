@@ -115,7 +115,7 @@ export function Cart({ open, onOpenChange }: CartProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg bg-zinc-950 border-zinc-800 text-white flex flex-col p-0">
+      <SheetContent className="w-full sm:max-w-lg bg-zinc-950 border-zinc-800 text-white flex h-full max-h-screen flex-col p-0 overflow-y-auto">
         <SheetHeader className="px-6 py-4 border-b border-zinc-800">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-xl font-bold text-white flex items-center gap-2">

@@ -15,6 +15,7 @@ export interface OrderData {
       id: string;
       name: string;
       partNumber?: string;
+      // Храним базовую цену в USD, конвертируем в UAH при отображении.
       price: number;
       originalPrice?: number | null;
       brand?: string;
@@ -23,55 +24,6 @@ export interface OrderData {
   }>;
   totalPrice: number;
   totalItems: number;
-}
-
-/**
- * Format order data into a readable Telegram message
- */
-export function formatOrderMessage(order: OrderData): string {
-  const { customerInfo, items, totalPrice, totalItems } = order;
-
-  let message = `🛒 *Нове замовлення*\n\n`;
-  
-  // Customer info
-  message += `👤 *Клієнт:*\n`;
-  message += `Ім'я: ${customerInfo.name}\n`;
-  message += `Телефон: ${customerInfo.phone}\n`;
-  if (customerInfo.email) {
-    message += `Email: ${customerInfo.email}\n`;
-  }
-  if (customerInfo.comment) {
-    message += `Коментар: ${customerInfo.comment}\n`;
-  }
-  
-  message += `\n📦 *Товари:* (${totalItems} шт.)\n`;
-  message += `\`\`\`\n`;
-  
-  items.forEach((item, index) => {
-    const { product, quantity } = item;
-    const itemTotal = product.price * quantity;
-    message += `${index + 1}. ${product.name}\n`;
-    if (product.partNumber) {
-      message += `   Артикул: ${product.partNumber}\n`;
-    }
-    if (product.brand) {
-      message += `   Бренд: ${product.brand}\n`;
-    }
-    message += `   Ціна: ${product.price.toLocaleString('uk-UA')} ₴\n`;
-    if (product.originalPrice) {
-      message += `   Стара ціна: ${product.originalPrice.toLocaleString('uk-UA')} ₴\n`;
-    }
-    message += `   Кількість: ${quantity}\n`;
-    message += `   Сума: ${itemTotal.toLocaleString('uk-UA')} ₴\n`;
-    if (index < items.length - 1) {
-      message += `\n`;
-    }
-  });
-  
-  message += `\`\`\`\n`;
-  message += `💰 *Загальна сума: ${totalPrice.toLocaleString('uk-UA')} ₴*\n`;
-  
-  return message;
 }
 
 /**
@@ -111,52 +63,6 @@ export interface InquiryData {
   message: string;
   /** Запропонована клієнтом ціна */
   proposedPrice?: number;
-}
-
-/**
- * Format inquiry data into a readable Telegram message
- */
-export function formatInquiryMessage(inquiry: InquiryData): string {
-  const isPriceProposal = inquiry.proposedPrice != null && inquiry.proposedPrice > 0;
-  let message = isPriceProposal
-    ? `💰 *Запропонована ціна*\n\n`
-    : `📧 *Новий запит про товар*\n\n`;
-
-  // Product info
-  message += `📦 *Товар:*\n`;
-  message += `${inquiry.productName}\n`;
-  const productCode = inquiry.productPartNumber;
-  if (productCode) {
-    message += `Код товару: ${productCode}\n`;
-  }
-  if (inquiry.productStatus) {
-    const statusLabels: Record<string, string> = {
-      in_stock: 'В наявності',
-      out_of_stock: 'Немає в наявності',
-      on_order: 'Під замовлення',
-      discontinued: 'Знято з виробництва',
-    };
-    const statusLabel = statusLabels[inquiry.productStatus] || inquiry.productStatus;
-    message += `Статус: ${statusLabel}\n`;
-  }
-  if (isPriceProposal) {
-    message += `\n💵 *Запропонована ціна: ${Number(inquiry.proposedPrice).toLocaleString('uk-UA')} ₴*\n`;
-  }
-  message += `\n`;
-
-  // Customer info
-  message += `👤 *Клієнт:*\n`;
-  message += `Ім'я: ${inquiry.customerName}\n`;
-  message += `Телефон: ${inquiry.customerPhone}\n`;
-  message += `Email: ${inquiry.customerEmail}\n\n`;
-
-  // Message
-  if (inquiry.message) {
-    message += `💬 *Повідомлення:*\n`;
-    message += `${inquiry.message}\n`;
-  }
-
-  return message;
 }
 
 /**

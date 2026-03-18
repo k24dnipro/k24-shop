@@ -23,7 +23,9 @@ export default function ContactsPage() {
               </div>
               <div>
                 <h3 className="text-lg font-medium text-white mb-1">Адреса</h3>
-                <p className="text-zinc-400">вулиця Нижньодніпровська, Дніпро, 49000</p>
+                <p className="text-zinc-400">
+                  вулиця Василя Сухомлинського, 80А, Слобожанське, 52005
+                </p>
                 <p className="text-zinc-500 text-sm mt-1">Дніпропетровська область</p>
               </div>
             </div>

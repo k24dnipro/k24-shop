@@ -245,7 +245,7 @@ export default function InquiriesPage() {
                         {inquiry.proposedPrice != null && inquiry.proposedPrice > 0 && (
                           <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs">
                             <Banknote className="h-3 w-3 mr-1" />
-                            {inquiry.proposedPrice.toLocaleString('uk-UA')} ₴
+                            {inquiry.proposedPrice.toLocaleString('uk-UA')} $
                           </Badge>
                         )}
                       </div>
@@ -354,7 +354,7 @@ export default function InquiriesPage() {
                 <div className="space-y-2">
                   <Label className="text-zinc-500">Запропонована ціна</Label>
                   <p className="text-emerald-400 font-semibold text-lg">
-                    {selectedInquiry.proposedPrice.toLocaleString('uk-UA')} ₴
+                    {selectedInquiry.proposedPrice.toLocaleString('uk-UA')} $
                   </p>
                 </div>
               )}

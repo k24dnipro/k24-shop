@@ -263,7 +263,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex flex-col items-end">
                       <span className="text-sm font-medium text-k24-yellow">
-                        {product.price.toLocaleString()} ₴
+                        {product.price.toLocaleString()} $
                       </span>
                       <span className="text-xs text-zinc-500">
                         {formatDistanceToNow(product.createdAt, {

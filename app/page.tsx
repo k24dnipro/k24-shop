@@ -27,6 +27,7 @@ import { generateOrganizationStructuredData } from '@/lib/seo/utils';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
 import { useProducts } from '@/modules/products/hooks/use-products';
 import { Product } from '@/modules/products/types';
+import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 
 const statusColors: Record<string, string> = {
   in_stock: 'text-emerald-400',
@@ -86,7 +87,8 @@ export default function Home() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(organizationData),
+          // Prevent script-tag injection even if values come from env/DB
+          __html: JSON.stringify(organizationData).replace(/</g, '\\u003c'),
         }}
       />
       
@@ -293,11 +295,11 @@ export default function Home() {
                             </div>
                             <div className="text-right shrink-0">
                               <span className="text-base sm:text-lg text-k24-yellow font-bold block">
-                                {product.price.toLocaleString()} ₴
+                                <UsdToUahPrice usd={product.price} />
                               </span>
                               {product.originalPrice && (
                                 <span className="text-[13px] sm:text-sm text-zinc-500 line-through block">
-                                  {product.originalPrice.toLocaleString()} ₴
+                                  <UsdToUahPrice usd={product.originalPrice} />
                                 </span>
                               )}
                             </div>

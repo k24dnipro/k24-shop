@@ -308,7 +308,7 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label className="text-zinc-400">Ціна (₴) *</Label>
+                    <Label className="text-zinc-400">Ціна (USD) *</Label>
                     <Input
                       type="number"
                       {...register("price", {
@@ -326,7 +326,7 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-zinc-400">Стара ціна (₴)</Label>
+                    <Label className="text-zinc-400">Стара ціна (USD)</Label>
                     <Input
                       type="number"
                       {...register("originalPrice", { valueAsNumber: true })}

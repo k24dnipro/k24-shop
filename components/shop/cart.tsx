@@ -24,6 +24,7 @@ import { auth } from '@/firebase';
 import { useCart } from '@/lib/hooks/useCart';
 import { sendTelegramOrder } from '@/lib/services/telegram';
 import { createOrderFromCart } from '@/modules/orders/services/orders.service';
+import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 
 interface CartProps {
   open: boolean;
@@ -103,14 +104,6 @@ export function Cart({ open, onOpenChange }: CartProps) {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('uk-UA', {
-      style: 'currency',
-      currency: 'UAH',
-      minimumFractionDigits: 0,
-    }).format(price);
   };
 
   return (
@@ -206,7 +199,7 @@ export function Cart({ open, onOpenChange }: CartProps) {
                         {/* Price */}
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold text-k24-yellow">
-                            {formatPrice(item.product.price * item.quantity)}
+                            <UsdToUahPrice usd={item.product.price * item.quantity} />
                           </span>
                           <Button
                             variant="ghost"
@@ -272,7 +265,7 @@ export function Cart({ open, onOpenChange }: CartProps) {
               <div className="flex items-center justify-between">
                 <span className="text-lg font-semibold text-white">Всього:</span>
                 <span className="text-2xl font-bold text-k24-yellow">
-                  {formatPrice(getTotalPrice())}
+                  <UsdToUahPrice usd={getTotalPrice()} />
                 </span>
               </div>
 

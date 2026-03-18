@@ -1,6 +1,11 @@
 import { Product } from '@/modules/products/types';
 
-export function generateProductStructuredData(product: Product, siteUrl: string) {
+export function generateProductStructuredData(
+  product: Product,
+  siteUrl: string,
+  priceUah: number,
+  priceValidUntil?: string
+) {
   const availabilityMap: Record<string, string> = {
     'in_stock': 'https://schema.org/InStock',
     'out_of_stock': 'https://schema.org/OutOfStock',
@@ -47,7 +52,10 @@ export function generateProductStructuredData(product: Product, siteUrl: string)
         name: string;
         address: {
           '@type': string;
+          streetAddress?: string;
           addressLocality: string;
+          addressRegion?: string;
+          postalCode?: string;
           addressCountry: string;
         };
       };
@@ -78,8 +86,10 @@ export function generateProductStructuredData(product: Product, siteUrl: string)
       '@type': 'Offer',
       url: `${siteUrl}/products/${product.id}`,
       priceCurrency: 'UAH',
-      price: product.price.toString(),
-      priceValidUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      price: Math.ceil(priceUah).toString(),
+      priceValidUntil:
+        priceValidUntil ||
+        new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       availability: availability,
       itemCondition: itemCondition,
       seller: {
@@ -87,7 +97,10 @@ export function generateProductStructuredData(product: Product, siteUrl: string)
         name: 'K24 Parts',
         address: {
           '@type': 'PostalAddress',
-          addressLocality: 'Дніпро',
+          streetAddress: 'вулиця Василя Сухомлинського, 80А',
+          addressLocality: 'Слобожанське',
+          addressRegion: 'Дніпропетровська область',
+          postalCode: '52005',
           addressCountry: 'UA',
         },
       },
@@ -154,8 +167,10 @@ export function generateOrganizationStructuredData(siteUrl: string) {
     logo: `${siteUrl}/logo.png`,
     address: {
       '@type': 'PostalAddress',
-      addressLocality: 'Дніпро',
+      streetAddress: 'вулиця Василя Сухомлинського, 80А',
+      addressLocality: 'Слобожанське',
       addressRegion: 'Дніпропетровська область',
+      postalCode: '52005',
       addressCountry: 'UA',
     },
     sameAs: [

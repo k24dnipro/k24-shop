@@ -14,9 +14,10 @@ interface ProductWrapperProps {
   product: Product;
   categoryName: string;
   categories: Category[];
+  usdToUahRate?: number;
 }
 
-export function ProductWrapper({ product, categoryName, categories }: ProductWrapperProps) {
+export function ProductWrapper({ product, categoryName, categories, usdToUahRate }: ProductWrapperProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -30,7 +31,7 @@ export function ProductWrapper({ product, categoryName, categories }: ProductWra
         />
 
         <main className="flex-1 overflow-auto">
-          <ProductClient product={product} categoryName={categoryName} />
+          <ProductClient product={product} categoryName={categoryName} usdToUahRate={usdToUahRate} />
         </main>
       </div>
 

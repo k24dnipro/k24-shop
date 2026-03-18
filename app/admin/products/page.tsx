@@ -272,7 +272,7 @@ export default function ProductsPage() {
       header: "Ціна",
       cell: ({ row }) => (
         <span className="font-medium text-k24-yellow">
-          {row.original.price.toLocaleString()} ₴
+          {row.original.price.toLocaleString()} $
         </span>
       ),
     },

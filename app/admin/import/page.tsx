@@ -645,7 +645,7 @@ export default function ImportPage() {
                               </div>
                               <div className="flex items-center gap-4">
                                 <span className="text-zinc-400">
-                                  {row.price} ₴
+                                  {row.price} $
                                 </span>
                                 {row.status === "in_stock" || row.status === "on_order" ? (
                                   <span className="text-emerald-500 text-xs">

@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/lib/hooks/useCart';
+import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
 import {
   useProducts,
@@ -399,11 +400,11 @@ function CatalogContent() {
                                     </div>
                                     <div className="text-right shrink-0">
                                       <span className="text-base sm:text-lg text-k24-yellow font-bold block">
-                                        {product.price.toLocaleString()} ₴
+                                        <UsdToUahPrice usd={product.price} />
                                       </span>
                                       {product.originalPrice && (
                                         <span className="text-[13px] sm:text-sm text-zinc-500 line-through block">
-                                          {product.originalPrice.toLocaleString()} ₴
+                                          <UsdToUahPrice usd={product.originalPrice} />
                                         </span>
                                       )}
                                     </div>
@@ -518,11 +519,11 @@ function CatalogContent() {
                                     </div>
                                     <div className="text-right shrink-0">
                                       <span className="text-base sm:text-lg text-k24-yellow font-bold block">
-                                        {product.price.toLocaleString()} ₴
+                                        <UsdToUahPrice usd={product.price} />
                                       </span>
                                       {product.originalPrice && (
                                         <span className="text-[13px] sm:text-sm text-zinc-500 line-through block">
-                                          {product.originalPrice.toLocaleString()} ₴
+                                          <UsdToUahPrice usd={product.originalPrice} />
                                         </span>
                                       )}
                                     </div>

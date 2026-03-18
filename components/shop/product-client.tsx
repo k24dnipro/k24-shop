@@ -54,6 +54,7 @@ import {
   PRODUCT_CONDITIONS,
   PRODUCT_STATUSES,
 } from '@/modules/products/types';
+import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 
 const statusColors: Record<string, string> = {
   in_stock: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -65,9 +66,10 @@ const statusColors: Record<string, string> = {
 interface ProductClientProps {
   product: Product;
   categoryName: string;
+  usdToUahRate?: number;
 }
 
-export function ProductClient({ product, categoryName }: ProductClientProps) {
+export function ProductClient({ product, categoryName, usdToUahRate }: ProductClientProps) {
   const router = useRouter();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -321,11 +323,11 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
             <CardContent className="space-y-4">
               <div className="flex items-baseline gap-3">
                 <span className="text-3xl font-bold text-k24-yellow">
-                  {product.price.toLocaleString()} ₴
+                  <UsdToUahPrice usd={product.price} initialRate={usdToUahRate} />
                 </span>
                 {product.originalPrice && (
                   <span className="text-lg text-zinc-500 line-through">
-                    {product.originalPrice.toLocaleString()} ₴
+                    <UsdToUahPrice usd={product.originalPrice} initialRate={usdToUahRate} />
                   </span>
                 )}
               </div>
@@ -517,7 +519,7 @@ export function ProductClient({ product, categoryName }: ProductClientProps) {
           <form onSubmit={handlePriceProposalSubmit} className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label htmlFor="pp-price" className="text-zinc-300">
-                Ваша ціна (грн) *
+                Ваша ціна (USD) *
               </Label>
               <Input
                 id="pp-price"

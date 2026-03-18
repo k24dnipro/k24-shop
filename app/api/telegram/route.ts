@@ -5,9 +5,8 @@ import {
 import {
   formatInquiryMessage,
   formatOrderMessage,
-  InquiryData,
-  OrderData,
-} from '@/lib/services/telegram';
+} from '@/lib/services/telegram.server';
+import type { InquiryData, OrderData } from '@/lib/services/telegram';
 
 /**
  * POST /api/telegram
@@ -51,7 +50,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Format the message
-      message = formatOrderMessage(order);
+      message = await formatOrderMessage(order);
     } else if (type === 'inquiry') {
       const inquiry: InquiryData = data;
       
@@ -64,7 +63,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Format the message
-      message = formatInquiryMessage(inquiry);
+      message = await formatInquiryMessage(inquiry);
     } else {
       return NextResponse.json(
         { error: 'Invalid type. Must be "order" or "inquiry"' },

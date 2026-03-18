@@ -2,14 +2,16 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ShopHeader } from '@/components/shop/header';
 import { ProductWrapper } from '@/components/shop/product-wrapper';
+import { formatUAH } from '@/lib/currency/format';
+import { getUsdToUahRate } from '@/lib/currency/nbu.server';
 import {
   generateBreadcrumbStructuredData,
   generateProductStructuredData,
 } from '@/lib/seo/utils';
-import { getCategories } from '@/modules/categories/services/categories.service';
 import {
-  getProductById,
-} from '@/modules/products/services/products.service';
+  getCategories,
+} from '@/modules/categories/services/categories.service';
+import { getProductById } from '@/modules/products/services/products.service';
 
 // ISR: ревалідація кожні 5 хвилин (300 секунд)
 export const revalidate = 300;
@@ -34,9 +36,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const categoryName = category?.name || 'Автозапчастини';
 
     const metaTitle = product.seo?.metaTitle || `${product.name} - ${categoryName} | K24 Parts Дніпро`;
+    const { rate: usdToUahRate } = await getUsdToUahRate();
+    const priceLabel = formatUAH(product.price * usdToUahRate);
     const metaDescription = product.seo?.metaDescription || 
       `${product.name} ${product.brand ? `(${product.brand})` : ''}. Артикул: ${product.partNumber || 'N/A'}. ` +
-      `Ціна: ${product.price} грн. Доставка по Україні. Купити в K24 Parts Дніпро.`;
+      `Ціна: ${priceLabel} Доставка по Україні. Купити в K24 Parts Дніпро.`;
 
     const imageUrl = product.images?.[0]?.url || `${siteUrl}/logo.png`;
     const productUrl = `${siteUrl}/products/${product.id}`;
@@ -111,8 +115,19 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const category = categories.find(c => c.id === product.categoryId);
   const categoryName = category?.name || 'Автозапчастини';
 
+  const { rate: usdToUahRate, exchangedate } = await getUsdToUahRate();
+
+  const exchangedateIso = exchangedate
+    ? `${exchangedate.slice(0, 4)}-${exchangedate.slice(4, 6)}-${exchangedate.slice(6, 8)}`
+    : undefined;
+
   // Generate structured data
-  const productStructuredData = generateProductStructuredData(product, siteUrl);
+  const productStructuredData = generateProductStructuredData(
+    product,
+    siteUrl,
+    product.price * usdToUahRate,
+    exchangedateIso
+  );
   const breadcrumbStructuredData = generateBreadcrumbStructuredData([
     { name: 'Головна', url: siteUrl },
     { name: 'Каталог', url: `${siteUrl}/catalog` },
@@ -126,13 +141,14 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(productStructuredData),
+          // Prevent `</script>` injection via stored product fields
+          __html: JSON.stringify(productStructuredData).replace(/</g, '\\u003c'),
         }}
       />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(breadcrumbStructuredData),
+          __html: JSON.stringify(breadcrumbStructuredData).replace(/</g, '\\u003c'),
         }}
       />
       
@@ -142,6 +158,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         product={product}
         categoryName={categoryName}
         categories={categories}
+        usdToUahRate={usdToUahRate}
       />
     </div>
   );

@@ -87,7 +87,7 @@ export function ShopFooter() {
               <li className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-k24-yellow shrink-0 mt-0.5" />
                 <span className="text-zinc-400 text-sm">
-                  м. Дніпро, вул. Нижньодніпровська
+                  Слобожанське, вул. Василя Сухомлинського, 80А
                 </span>
               </li>
               <li className="flex items-start gap-3">

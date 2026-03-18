@@ -10,7 +10,6 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react';
-import { ProductImage } from '@/components/ui/product-image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Header } from '@/components/admin/header';
@@ -33,6 +32,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { ProductImage } from '@/components/ui/product-image';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -335,11 +335,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   <span className="text-zinc-500">Ціна</span>
                   <div className="text-right">
                     <span className="text-2xl font-bold text-white">
-                      {product.price.toLocaleString()} ₴
+                      {product.price.toLocaleString()} $
                     </span>
                     {product.originalPrice && (
                       <span className="block text-sm text-zinc-500 line-through">
-                        {product.originalPrice.toLocaleString()} ₴
+                        {product.originalPrice.toLocaleString()} $
                       </span>
                     )}
                   </div>

@@ -34,6 +34,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 
 interface LoginFormData {
   email: string;
@@ -346,7 +347,7 @@ export function AccountDialogContent() {
                         </span>
                       </div>
                       <div className="text-xs text-zinc-400">
-                        Товарів: {order.totalItems} • Сума: {order.totalPrice.toLocaleString()} ₴
+                        Товарів: {order.totalItems} • Сума: <UsdToUahPrice usd={order.totalPrice} />
                       </div>
                       <div className="text-xs text-zinc-500 line-clamp-1">
                         {order.items.map((i) => i.name).join(', ')}

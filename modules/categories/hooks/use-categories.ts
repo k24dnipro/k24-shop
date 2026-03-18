@@ -10,7 +10,7 @@ import {
   createCategory,
   deleteCategory,
   getCategoriesTree,
-  getCategoriesWithCounts,
+  getCategories,
   getCategoryById,
   reorderCategories,
   updateCategory,
@@ -25,8 +25,8 @@ export function useCategories() {
     setLoading(true);
     setError(null);
     try {
-      // Use getCategoriesWithCounts to get real-time accurate product counts
-      const data = await getCategoriesWithCounts();
+      // Use stored `productCount` to avoid scanning all products on every mount.
+      const data = await getCategories();
       setCategories(data);
     } catch (err: unknown) {
       const message =

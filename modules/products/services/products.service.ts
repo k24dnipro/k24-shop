@@ -43,6 +43,12 @@ import {
 
 const PRODUCTS_COLLECTION = "products";
 
+// Cache all products on the client to avoid repeating full-collection reads
+// during smart search. This massively reduces read ops for multiple searches.
+let allProductsCache: Product[] | null = null;
+let allProductsCacheFetchedAt = 0;
+const ALL_PRODUCTS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
 // Роздільник кількох URL фото в одній комірці таблиці (CSV/Excel)
 const IMAGE_URL_DELIMITER = "|";
 
@@ -227,8 +233,18 @@ async function searchProductsInternal(
   const searchWords = normalizedSearch.split(" ").filter(Boolean);
   const { categoryId, status } = options || {};
 
-  const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
-  let products = snapshot.docs.map(convertToProduct);
+  let products: Product[];
+  const now = Date.now();
+  const isCacheFresh = allProductsCache && now - allProductsCacheFetchedAt < ALL_PRODUCTS_CACHE_TTL_MS;
+
+  if (isCacheFresh && allProductsCache) {
+    products = allProductsCache;
+  } else {
+    const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
+    products = snapshot.docs.map(convertToProduct);
+    allProductsCache = products;
+    allProductsCacheFetchedAt = now;
+  }
 
   // Search by: name, brand, store article (partNumber), and original number (OEM).
   // Partial match on all fields; OEM is never ignored (each word can match inside OEM).
@@ -387,8 +403,38 @@ export async function updateProduct(
   id: string,
   updates: Partial<Product>
 ): Promise<void> {
+  // Load existing doc when we need to adjust category counts or manage images.
+  const needsExistingForCategoryChange = updates.categoryId !== undefined;
+  const needsExistingForImages = updates.images !== undefined;
+  const needsExisting = needsExistingForCategoryChange || needsExistingForImages;
+
+  const existing = needsExisting ? await getProductById(id) : null;
+
+  const oldCategoryId = existing?.categoryId;
+  const newCategoryId = updates.categoryId !== undefined ? updates.categoryId : oldCategoryId;
+
+  // If category changes, adjust stored `categories.productCount` incrementally.
+  if (existing) {
+    if (oldCategoryId && newCategoryId && oldCategoryId !== newCategoryId) {
+      await updateDoc(doc(db, 'categories', oldCategoryId), {
+        productCount: increment(-1),
+      });
+      await updateDoc(doc(db, 'categories', newCategoryId), {
+        productCount: increment(1),
+      });
+    } else if (!oldCategoryId && newCategoryId) {
+      await updateDoc(doc(db, 'categories', newCategoryId), {
+        productCount: increment(1),
+      });
+    } else if (oldCategoryId && !newCategoryId) {
+      await updateDoc(doc(db, 'categories', oldCategoryId), {
+        productCount: increment(-1),
+      });
+    }
+  }
+
+  // Handle image updates (delete removed images from Storage).
   if (updates.images !== undefined) {
-    const existing = await getProductById(id);
     if (existing) {
       const newUrls = new Set(updates.images.map((img) => img.url));
       for (const image of existing.images) {

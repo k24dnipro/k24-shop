@@ -54,6 +54,7 @@ import {
   PRODUCT_CONDITIONS,
   PRODUCT_STATUSES,
 } from '@/modules/products/types';
+import { auth } from '@/firebase';
 import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 
 const statusColors: Record<string, string> = {
@@ -89,7 +90,12 @@ export function ProductClient({ product, categoryName, usdToUahRate }: ProductCl
 
   // Increment views on mount
   useEffect(() => {
-    incrementProductViews(product.id).catch(console.error);
+    // Firestore rules allow update only for authenticated active staff.
+    // Avoid spamming console with permission errors for public storefront visitors.
+    if (!auth.currentUser) return;
+    incrementProductViews(product.id).catch(() => {
+      // ignore - shouldn't affect rendering
+    });
   }, [product.id]);
 
   const getStatusLabel = (status: string) => {

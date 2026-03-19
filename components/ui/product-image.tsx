@@ -26,7 +26,8 @@ export function ProductImage({
     if (
       !useUnoptimized &&
       typeof src === 'string' &&
-      src.includes('firebasestorage.googleapis.com')
+      // Firebase Storage URLs may come from different domains depending on bucket setup.
+      (src.includes('firebasestorage.googleapis.com') || src.includes('firebasestorage.app'))
     ) {
       setUseUnoptimized(true);
       setStatus('loading');

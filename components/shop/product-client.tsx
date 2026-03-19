@@ -21,6 +21,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,6 +43,7 @@ import { Label } from '@/components/ui/label';
 import { ProductImage } from '@/components/ui/product-image';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { auth } from '@/firebase';
 import { useCart } from '@/lib/hooks/useCart';
 import { sendTelegramInquiry } from '@/lib/services/telegram';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
@@ -54,8 +56,6 @@ import {
   PRODUCT_CONDITIONS,
   PRODUCT_STATUSES,
 } from '@/modules/products/types';
-import { auth } from '@/firebase';
-import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 
 const statusColors: Record<string, string> = {
   in_stock: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
@@ -619,6 +619,9 @@ export function ProductClient({ product, categoryName, usdToUahRate }: ProductCl
           className="bg-black/90 border-zinc-800 w-full max-w-3xl sm:max-w-4xl lg:max-w-6xl xl:max-w-7xl p-2 sm:p-4"
           showCloseButton
         >
+          <DialogHeader className="sr-only">
+            <DialogTitle>Зображення товару</DialogTitle>
+          </DialogHeader>
           {product.images.length > 0 && (
             <div className="relative w-full aspect-4/3 sm:aspect-video">
               <ProductImage

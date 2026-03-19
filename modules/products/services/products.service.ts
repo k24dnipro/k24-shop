@@ -595,8 +595,10 @@ export async function incrementProductInquiries(id: string): Promise<void> {
 export async function importProductsFromCSV(
   rows: CSVProductRow[],
   userId: string,
-  mode: 'smart' | 'strict' = 'smart'
+  mode: 'smart' | 'strict' = 'smart',
+  options?: { updateImages?: boolean }
 ): Promise<ImportResult> {
+  const updateImages = options?.updateImages ?? false;
   const result: ImportResult = {
     success: 0,
     updated: 0,
@@ -635,6 +637,29 @@ export async function importProductsFromCSV(
         // If prices are equal, keep the originalPrice from CSV or existing
       }
 
+      // Images:
+      // - By default we keep existing images for updates (price/originalPrice/etc.)
+      // - If updateImages=true we overwrite images using CSV `imageUrl`
+      // - For new products we still set images from CSV (if provided)
+      const shouldOverwriteImages = updateImages || !existingProduct;
+
+      const parsedImages: ProductImage[] = shouldOverwriteImages
+        ? row.imageUrl
+          ? row.imageUrl
+            .split(IMAGE_URL_DELIMITER)
+            .map((url) => url.trim())
+            .filter(Boolean)
+            .map((url, order) => ({
+              id: uuidv4(),
+              url,
+              alt: row.name,
+              order,
+            })) as ProductImage[]
+          : []
+        : existingProduct?.images ?? [];
+
+      const ogImageFromImages = parsedImages?.[0]?.url || '';
+
       const productData = {
         name: row.name,
         description: row.description || "",
@@ -654,18 +679,7 @@ export async function importProductsFromCSV(
         carBrand: row.carBrand,
         carModel: row.carModel,
         // Кілька фото: в комірці URL через "|" (наприклад: url1|url2|url3)
-        images: row.imageUrl
-          ? row.imageUrl
-            .split(IMAGE_URL_DELIMITER)
-            .map((url) => url.trim())
-            .filter(Boolean)
-            .map((url, order) => ({
-              id: uuidv4(),
-              url,
-              alt: row.name,
-              order,
-            })) as ProductImage[]
-          : [],
+        images: parsedImages,
         seo: {
           metaTitle: row.metaTitle || row.name,
           metaDescription:
@@ -676,7 +690,8 @@ export async function importProductsFromCSV(
           ogTitle: row.metaTitle || row.name,
           ogDescription:
             row.metaDescription || row.description?.substring(0, 160) || "",
-          ogImage: row.imageUrl?.split(IMAGE_URL_DELIMITER).map((u) => u.trim()).filter(Boolean)[0] || "",
+          // If we are not overwriting images, keep ogImage aligned with existing product images.
+          ogImage: ogImageFromImages,
           canonicalUrl: "",
           slug: row.slug || (row.partNumber ? row.partNumber.toLowerCase().replace(/[^a-z0-9]+/g, "-") : ""),
         } as ProductSEO,

@@ -260,6 +260,7 @@ export default function ImportPage() {
   const [progress, setProgress] = useState(0);
   const [defaultCategory, setDefaultCategory] = useState<string>(UNCATEGORIZED_CATEGORY_ID);
   const [importMode, setImportMode] = useState<'smart' | 'strict'>('smart');
+  const [updateImages, setUpdateImages] = useState(false);
 
   const canImport = hasPermission("canImportData");
 
@@ -367,7 +368,9 @@ export default function ImportPage() {
         categoryId: row.categoryId || defaultCategory,
       }));
 
-      const result = await importProductsFromCSV(dataToImport, user.id, importMode);
+      const result = await importProductsFromCSV(dataToImport, user.id, importMode, {
+        updateImages,
+      });
 
       clearInterval(progressInterval);
       setProgress(100);
@@ -575,6 +578,22 @@ export default function ImportPage() {
                       {importMode === 'smart' 
                         ? 'Додає нові товари та оновлює існуючі за кодом запчастини'
                         : 'Повне співвідношення: імпортує товари з таблиці і видаляє ті, яких немає'}
+                    </p>
+                  </div>
+
+                  {/* Images update option */}
+                  <div className="space-y-2 pt-2">
+                    <label className="flex items-center gap-3 text-sm font-medium text-zinc-400">
+                      <input
+                        type="checkbox"
+                        checked={updateImages}
+                        onChange={(e) => setUpdateImages(e.target.checked)}
+                        className="h-4 w-4 accent-k24-yellow"
+                      />
+                      Примусово оновлювати фото (imageUrl)
+                    </label>
+                    <p className="text-xs text-zinc-500">
+                      За замовчуванням фото не змінюються при оновленні існуючих товарів.
                     </p>
                   </div>
 

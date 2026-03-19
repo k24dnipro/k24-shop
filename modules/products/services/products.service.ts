@@ -49,6 +49,11 @@ let allProductsCache: Product[] | null = null;
 let allProductsCacheFetchedAt = 0;
 const ALL_PRODUCTS_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
+// Cache product counts to reduce repeated `AGGREGATE COUNT` reads
+// (e.g. sitemap/catalog crawlers or frequent re-renders).
+const PRODUCTS_COUNT_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const productsCountCache = new Map<string, { value: number; fetchedAt: number }>();
+
 // Роздільник кількох URL фото в одній комірці таблиці (CSV/Excel)
 const IMAGE_URL_DELIMITER = "|";
 
@@ -848,12 +853,35 @@ export async function exportProductsToCSV(): Promise<
   });
 }
 
+// Minimal data read for sitemap generation.
+// We only need `id` and `updatedAt` per product.
+export async function getProductsForSitemap(): Promise<
+  Array<{ id: string; updatedAt: Date | null }>
+> {
+  // NOTE: we don't use Firestore `select()` here because it's not available in the current SDK version.
+  // Reads are still per document, but we avoid additional logic and only return minimal fields.
+  const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
+
+  return snapshot.docs.map((doc) => {
+    const data = doc.data() as { updatedAt?: { toDate?: () => Date } | null } | undefined;
+    const updatedAt = data?.updatedAt?.toDate?.() ?? null;
+    return { id: doc.id, updatedAt };
+  });
+}
+
 // Get products count with optional filters (categoryId = parent or child category id)
 export async function getProductsCount(options?: {
   categoryId?: string;
   status?: ProductStatus;
 }): Promise<number> {
   const { categoryId, status } = options || {};
+
+  const cacheKey = `${categoryId ?? 'all'}|${status ?? 'all'}`;
+  const cached = productsCountCache.get(cacheKey);
+  const now = Date.now();
+  if (cached && now - cached.fetchedAt < PRODUCTS_COUNT_CACHE_TTL_MS) {
+    return cached.value;
+  }
 
   let q = query(collection(db, PRODUCTS_COLLECTION));
 
@@ -872,7 +900,9 @@ export async function getProductsCount(options?: {
   }
 
   const snapshot = await getCountFromServer(q);
-  return snapshot.data().count;
+  const value = snapshot.data().count;
+  productsCountCache.set(cacheKey, { value, fetchedAt: now });
+  return value;
 }
 
 // Get products by status count

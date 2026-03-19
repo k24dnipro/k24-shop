@@ -2,42 +2,55 @@ import { MetadataRoute } from 'next';
 import {
   getCategories,
 } from '@/modules/categories/services/categories.service';
-import { getProducts } from '@/modules/products/services/products.service';
+import {
+  getProductsForSitemap,
+} from '@/modules/products/services/products.service';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
 
-// ISR для sitemap - ревалідація кожні 12 годин
-export const revalidate = 43200; // 12 годин = 43200 секунд
+// ISR для sitemap
+// Довший revalidate + додатковий кеш нижче => менше шансів на повторні важкі reads
+export const revalidate = 86800; // 24 години
+
+// Додатковий вбудований кеш на рівні процесу (на випадок, якщо ISR не встигає/не кешує як очікується).
+let sitemapCache: { routes: MetadataRoute.Sitemap; fetchedAt: number } | null = null;
+const SITEMAP_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 23 години
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = Date.now();
+  if (sitemapCache && now - sitemapCache.fetchedAt < SITEMAP_CACHE_TTL_MS) {
+    return sitemapCache.routes;
+  }
+
+  const generatedAt = new Date();
   const routes: MetadataRoute.Sitemap = [
     {
       url: siteUrl,
-      lastModified: new Date(),
+      lastModified: generatedAt,
       changeFrequency: 'daily',
       priority: 1,
     },
     {
       url: `${siteUrl}/catalog`,
-      lastModified: new Date(),
+      lastModified: generatedAt,
       changeFrequency: 'daily',
       priority: 0.9,
     },
     {
       url: `${siteUrl}/about`,
-      lastModified: new Date(),
+      lastModified: generatedAt,
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
       url: `${siteUrl}/contacts`,
-      lastModified: new Date(),
+      lastModified: generatedAt,
       changeFrequency: 'monthly',
       priority: 0.7,
     },
     {
       url: `${siteUrl}/delivery`,
-      lastModified: new Date(),
+      lastModified: generatedAt,
       changeFrequency: 'monthly',
       priority: 0.7,
     },
@@ -51,30 +64,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .forEach((category) => {
         routes.push({
           url: `${siteUrl}/catalog?category=${category.id}`,
-          lastModified: new Date(),
+          lastModified: generatedAt,
           changeFrequency: 'weekly',
           priority: 0.8,
         });
       });
 
     // Додаємо всі товари (всі статуси включно з discontinued)
-    // ⚠️ ОБМЕЖЕННЯ: pageSize: 10000 - максимум 10k товарів в sitemap
-    // Google рекомендує до 50k URL в одному sitemap, але для продуктивності обмежуємо до 5k
-    // Якщо товарів більше 5k - потрібно буде розбити на кілька sitemap файлів або збільшити pageSize
-    const { products } = await getProducts({
-      pageSize: 10000, // ⚠️ ТУТ ОБМЕЖЕННЯ: максимум 10k товарів в sitemap
-      status: undefined, // Всі статуси (включно з discontinued)
-    });
-
-    // Додаємо всі товари без фільтрації по статусу
+    const products = await getProductsForSitemap();
     products.forEach((product) => {
       routes.push({
         url: `${siteUrl}/products/${product.id}`,
-        lastModified: product.updatedAt || new Date(),
+        lastModified: product.updatedAt || generatedAt,
         changeFrequency: 'weekly',
         priority: 0.8,
       });
     });
+
+    sitemapCache = {
+      routes,
+      fetchedAt: now,
+    };
   } catch (error) {
     console.error('Error generating sitemap:', error);
   }

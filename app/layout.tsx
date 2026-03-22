@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { GoogleAnalyticsProvider } from '@/components/analytics/google-analytics-provider';
 import { CookieConsent } from '@/components/shop/cookie-consent';
 import { FloatingCart } from '@/components/shop/floating-cart';
 import { Providers } from '@/components/providers';
@@ -11,6 +12,8 @@ const inter = Inter({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
+
+const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -96,6 +99,9 @@ export default function RootLayout({
           {children}
           <FloatingCart />
           <CookieConsent />
+          {gaMeasurementId ? (
+            <GoogleAnalyticsProvider gaId={gaMeasurementId} />
+          ) : null}
         </Providers>
       </body>
     </html>

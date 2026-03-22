@@ -1,8 +1,15 @@
 'use client';
 
 import CookieConsentLib from 'react-cookie-consent';
+import { COOKIE_CONSENT_CHANGE_EVENT } from '@/lib/analytics/events';
 
 const COOKIE_NAME = 'k24-cookie-consent';
+
+function notifyConsentChanged() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(COOKIE_CONSENT_CHANGE_EVENT));
+  }
+}
 
 export function CookieConsent() {
   return (
@@ -16,6 +23,8 @@ export function CookieConsent() {
       declineCookieValue="rejected"
       expires={365}
       disableStyles
+      onAccept={() => notifyConsentChanged()}
+      onDecline={() => notifyConsentChanged()}
       containerClasses="fixed bottom-0 left-0 right-0 z-[100] flex w-full max-w-[100vw] flex-col gap-4 border-t border-border bg-card/95 px-4 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.4)] backdrop-blur supports-[backdrop-filter]:bg-card/90 sm:flex-row sm:items-center sm:justify-center sm:gap-6 sm:px-6"
       contentClasses="max-w-2xl text-sm text-foreground sm:mr-4"
       buttonWrapperClasses="flex shrink-0 flex-wrap justify-center gap-2 sm:justify-start sm:gap-3"
@@ -25,7 +34,8 @@ export function CookieConsent() {
       ariaDeclineLabel="Відхилити cookie"
     >
       Цей сайт використовує файли cookie для покращення роботи, зручності та
-      аналітики. Продовжуючи перегляд, ви погоджуєтесь з використанням cookie.
+      аналітики (у тому числі Google Analytics). Продовжуючи перегляд, ви
+      погоджуєтесь з використанням cookie.
     </CookieConsentLib>
   );
 }

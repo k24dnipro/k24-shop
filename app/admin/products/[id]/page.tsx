@@ -35,6 +35,7 @@ import {
 import { ProductImage } from '@/components/ui/product-image';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { hasDisplayableUsdPrice } from '@/lib/currency/format';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
 import { useProduct } from '@/modules/products/hooks/use-products';
@@ -240,7 +241,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                       <span className="text-white">{product.brand || '-'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-zinc-500">Номер запчастини</span>
+                      <span className="text-zinc-500">Код деталі</span>
                       <span className="text-white">{product.partNumber || '-'}</span>
                     </div>
                     <div className="flex justify-between">
@@ -327,7 +328,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             <Card className="bg-zinc-900/50 border-zinc-800">
               <CardContent className="pt-6 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-zinc-500">Код запчастини</span>
+                  <span className="text-zinc-500">Код деталі</span>
                   <span className="font-mono text-k24-yellow">{product.partNumber || '—'}</span>
                 </div>
                 <Separator className="bg-zinc-800" />
@@ -337,9 +338,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     <span className="text-2xl font-bold text-white">
                       {product.price.toLocaleString()} $
                     </span>
-                    {product.originalPrice && (
+                    {hasDisplayableUsdPrice(product.originalPrice) && (
                       <span className="block text-sm text-zinc-500 line-through">
-                        {product.originalPrice.toLocaleString()} $
+                        {product.originalPrice!.toLocaleString()} $
                       </span>
                     )}
                   </div>

@@ -30,7 +30,7 @@ export async function parseExcelProductImport(file: File): Promise<CSVProductRow
           const r = row as Record<string, unknown>;
           
           // Support both Russian (original Excel) and Ukrainian (export) column names
-          const partNumber = getField(r, 'Код запчасти', 'Код запчастини', 'Номер запчастини');
+          const partNumber = getField(r, 'Код деталі', 'Код детали', 'Код запчасти', 'Код запчастини', 'Номер запчастини');
           const name = getField(r, 'Описание запчасти', 'Опис запчастини');
           const brand = getField(r, 'Производитель', 'Виробник');
           const price = getField(r, 'Цена', 'Ціна') || '0';

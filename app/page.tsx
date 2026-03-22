@@ -27,6 +27,7 @@ import { generateOrganizationStructuredData } from '@/lib/seo/utils';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
 import { useProducts } from '@/modules/products/hooks/use-products';
 import { Product } from '@/modules/products/types';
+import { hasDisplayableUsdPrice } from '@/lib/currency/format';
 import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 
 const statusColors: Record<string, string> = {
@@ -121,7 +122,7 @@ export default function Home() {
                       id="hero-search"
                       name="q"
                       type="search"
-                      placeholder="Назва, бренд, артикул або OEM..."
+                      placeholder="Назва, бренд, код деталі або OEM..."
                       autoComplete="off"
                       className="h-14 pl-12 pr-4 bg-zinc-950 border-none text-lg shadow-xl focus-visible:ring-k24-yellow transition-all placeholder:text-sm"
                       value={searchQuery}
@@ -281,7 +282,7 @@ export default function Home() {
                               <span className="truncate">
                                 <span className="sm:hidden font-mono text-zinc-300">{product.partNumber || '—'}</span>
                                 <span className="hidden sm:inline">
-                                  <span className="text-zinc-500">Артикул:</span>{' '}
+                                  <span className="text-zinc-500">Код деталі:</span>{' '}
                                   <span className="font-mono text-zinc-300">{product.partNumber || '—'}</span>
                                 </span>
                               </span>
@@ -297,9 +298,9 @@ export default function Home() {
                               <span className="text-base sm:text-lg text-k24-yellow font-bold block">
                                 <UsdToUahPrice usd={product.price} />
                               </span>
-                              {product.originalPrice && (
+                              {hasDisplayableUsdPrice(product.originalPrice) && (
                                 <span className="text-[13px] sm:text-sm text-zinc-500 line-through block">
-                                  <UsdToUahPrice usd={product.originalPrice} />
+                                  <UsdToUahPrice usd={product.originalPrice!} />
                                 </span>
                               )}
                             </div>

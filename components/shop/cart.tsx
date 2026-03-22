@@ -165,7 +165,7 @@ export function Cart({ open, onOpenChange }: CartProps) {
                         {item.product.name}
                       </h3>
                       <p className="text-xs text-zinc-500 mb-2">
-                        Артикул: {item.product.partNumber || '—'}
+                        Код деталі: {item.product.partNumber || '—'}
                       </p>
 
                       <div className="flex items-center justify-between mt-auto">

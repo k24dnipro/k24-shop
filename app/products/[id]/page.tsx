@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const { rate: usdToUahRate } = await getUsdToUahRate();
     const priceLabel = formatUAH(product.price * usdToUahRate);
     const metaDescription = product.seo?.metaDescription || 
-      `${product.name} ${product.brand ? `(${product.brand})` : ''}. Артикул: ${product.partNumber || 'N/A'}. ` +
+      `${product.name} ${product.brand ? `(${product.brand})` : ''}. Код деталі: ${product.partNumber || 'N/A'}. ` +
       `Ціна: ${priceLabel} Доставка по Україні. Купити в K24 Parts Дніпро.`;
 
     const imageUrl = product.images?.[0]?.url || `${siteUrl}/logo.png`;

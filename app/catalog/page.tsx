@@ -38,6 +38,7 @@ import {
 } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCart } from '@/lib/hooks/useCart';
+import { hasDisplayableUsdPrice } from '@/lib/currency/format';
 import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
 import {
@@ -386,7 +387,7 @@ function CatalogContent() {
                                       <span className="truncate">
                                         <span className="sm:hidden font-mono text-zinc-300">{product.partNumber || '—'}</span>
                                         <span className="hidden sm:inline">
-                                          <span className="text-zinc-500">Артикул:</span>{' '}
+                                          <span className="text-zinc-500">Код деталі:</span>{' '}
                                           <span className="font-mono text-zinc-300">{product.partNumber || '—'}</span>
                                         </span>
                                       </span>
@@ -402,9 +403,9 @@ function CatalogContent() {
                                       <span className="text-base sm:text-lg text-k24-yellow font-bold block">
                                         <UsdToUahPrice usd={product.price} />
                                       </span>
-                                      {product.originalPrice && (
+                                      {hasDisplayableUsdPrice(product.originalPrice) && (
                                         <span className="text-[13px] sm:text-sm text-zinc-500 line-through block">
-                                          <UsdToUahPrice usd={product.originalPrice} />
+                                          <UsdToUahPrice usd={product.originalPrice!} />
                                         </span>
                                       )}
                                     </div>
@@ -505,7 +506,7 @@ function CatalogContent() {
                                       <span className="truncate">
                                         <span className="sm:hidden font-mono text-zinc-300">{product.partNumber || '—'}</span>
                                         <span className="hidden sm:inline">
-                                          <span className="text-zinc-500">Артикул:</span>{' '}
+                                          <span className="text-zinc-500">Код деталі:</span>{' '}
                                           <span className="font-mono text-zinc-300">{product.partNumber || '—'}</span>
                                         </span>
                                       </span>
@@ -521,9 +522,9 @@ function CatalogContent() {
                                       <span className="text-base sm:text-lg text-k24-yellow font-bold block">
                                         <UsdToUahPrice usd={product.price} />
                                       </span>
-                                      {product.originalPrice && (
+                                      {hasDisplayableUsdPrice(product.originalPrice) && (
                                         <span className="text-[13px] sm:text-sm text-zinc-500 line-through block">
-                                          <UsdToUahPrice usd={product.originalPrice} />
+                                          <UsdToUahPrice usd={product.originalPrice!} />
                                         </span>
                                       )}
                                     </div>

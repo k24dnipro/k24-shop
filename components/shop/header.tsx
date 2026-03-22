@@ -89,7 +89,7 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
                   type="search"
                   value={localSearch}
                   onChange={(e) => setLocalSearch(e.target.value)}
-                  placeholder="Пошук за назвою, брендом, артикулом або OEM..."
+                  placeholder="Пошук за назвою, брендом, кодом деталі або OEM..."
                   autoComplete="off"
                   className="w-full pl-8 bg-zinc-900 border-zinc-800 text-white placeholder:text-zinc-500 focus-visible:ring-k24-yellow text-sm h-9 sm:h-10"
                 />

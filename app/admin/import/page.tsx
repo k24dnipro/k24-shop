@@ -64,6 +64,7 @@ const RUSSIAN_HEADER_MAP: Record<string, string> = {
   // Russian
   "Код запчасти": "partNumber",
   "Номер запчасти": "partNumber",
+  "Код детали": "partNumber",
   Производитель: "brand",
   "Марка авто": "carBrand",
   "Описание запчасти": "name",
@@ -86,7 +87,8 @@ const RUSSIAN_HEADER_MAP: Record<string, string> = {
   "Фото URL": "imageUrl",
   "Фото": "imageUrl",
   "Посилання на фото": "imageUrl",
-  // Ukrainian — щоб таблиця з українськими колонками імпортувалась без помилки «немає коду запчастини»
+  // Ukrainian — щоб таблиця з українськими колонками імпортувалась без помилки «немає коду деталі»
+  "Код деталі": "partNumber",
   "Код запчастини": "partNumber",
   "Номер запчастини": "partNumber",
   Виробник: "brand",
@@ -267,7 +269,7 @@ export default function ImportPage() {
   const validateRows = (rows: CSVProductRow[]) => {
     const errors: string[] = [];
     rows.forEach((row, index) => {
-      if (!row.partNumber) errors.push(`Рядок ${index + 2}: Відсутній код запчастини`);
+      if (!row.partNumber) errors.push(`Рядок ${index + 2}: Відсутній код деталі`);
       if (!row.name) errors.push(`Рядок ${index + 2}: Відсутня назва`);
       if (!row.price) errors.push(`Рядок ${index + 2}: Відсутня ціна`);
     });
@@ -576,7 +578,7 @@ export default function ImportPage() {
                     </Select>
                     <p className="text-xs text-zinc-500">
                       {importMode === 'smart' 
-                        ? 'Додає нові товари та оновлює існуючі за кодом запчастини'
+                        ? 'Додає нові товари та оновлює існуючі за кодом деталі'
                         : 'Повне співвідношення: імпортує товари з таблиці і видаляє ті, яких немає'}
                     </p>
                   </div>

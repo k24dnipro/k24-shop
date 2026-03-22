@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ChevronDown,
   ChevronRight,
@@ -44,6 +45,7 @@ export function ShopSidebar({
   totalSearchCount = 0,
   selectedCategoryActualCount,
 }: ShopSidebarProps) {
+  const router = useRouter();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Build category tree from flat array
@@ -88,11 +90,18 @@ export function ShopSidebar({
   };
 
   const handleCategoryClick = (categoryId: string, hasChildren: boolean = false) => {
-    if (hasChildren) {
-      toggleCategory(categoryId);
-    }
     if (onCategorySelect) {
+      if (hasChildren) {
+        toggleCategory(categoryId);
+      }
       onCategorySelect(categoryId);
+    } else {
+      // Сторінки без локального стану каталогу (наприклад, картка товару): перехід у каталог
+      if (categoryId === 'all') {
+        router.push('/catalog');
+      } else {
+        router.push(`/catalog?category=${encodeURIComponent(categoryId)}`);
+      }
     }
     if (isMobile && onClose) {
       onClose();

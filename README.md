@@ -174,7 +174,7 @@ partNumber,name,description,price,originalPrice,categoryId,status,brand,compatib
 ```
 
 ### Обов'язкові поля:
-- `partNumber` - унікальний код запчастини
+- `partNumber` - унікальний код деталі
 - `name` - назва товару
 - `price` - ціна
 

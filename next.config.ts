@@ -2,6 +2,8 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   images: {
+    // Allow quality prop used by next/image (e.g. ProductImage default 85)
+    qualities: [75, 85, 90],
     remotePatterns: [
       {
         protocol: 'https',

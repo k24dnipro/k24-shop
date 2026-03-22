@@ -26,6 +26,10 @@ import {
 } from 'firebase/storage';
 import { v4 as uuidv4 } from 'uuid';
 import {
+  normalizeOptionalUsd,
+  sanitizeUsdPrice,
+} from '@/lib/currency/format';
+import {
   db,
   storage,
 } from '@/firebase';
@@ -57,6 +61,30 @@ const productsCountCache = new Map<string, { value: number; fetchedAt: number }>
 // Роздільник кількох URL фото в одній комірці таблиці (CSV/Excel)
 const IMAGE_URL_DELIMITER = "|";
 
+const CATEGORIES_COLLECTION = 'categories';
+
+/**
+ * Increment/decrement `categories.productCount` only if that category document exists.
+ * Avoids FirebaseError: No document to update (orphan IDs, deleted categories, bad imports).
+ */
+async function adjustCategoryProductCount(
+  categoryId: string | null | undefined,
+  delta: number
+): Promise<void> {
+  if (!categoryId) return;
+  const categoryRef = doc(db, CATEGORIES_COLLECTION, categoryId);
+  const snap = await getDoc(categoryRef);
+  if (!snap.exists()) {
+    console.warn(
+      `[products] categories/${categoryId} is missing; skip productCount ${delta >= 0 ? '+' : ''}${delta}`
+    );
+    return;
+  }
+  await updateDoc(categoryRef, {
+    productCount: increment(delta),
+  });
+}
+
 // Convert Firestore document to Product
 const convertToProduct = (doc: DocumentSnapshot): Product => {
   const data = doc.data();
@@ -65,6 +93,8 @@ const convertToProduct = (doc: DocumentSnapshot): Product => {
   return {
     ...data,
     id: doc.id,
+    price: sanitizeUsdPrice(data.price),
+    originalPrice: normalizeOptionalUsd(data.originalPrice),
     createdAt: data.createdAt?.toDate() || new Date(),
     updatedAt: data.updatedAt?.toDate() || new Date(),
   } as Product;
@@ -251,7 +281,7 @@ async function searchProductsInternal(
     allProductsCacheFetchedAt = now;
   }
 
-  // Search by: name, brand, store article (partNumber), and original number (OEM).
+  // Search by: name, brand, part code (partNumber), and original number (OEM).
   // Partial match on all fields; OEM is never ignored (each word can match inside OEM).
   const trimmedTerm = searchTerm.trim();
   if (trimmedTerm) {
@@ -394,10 +424,7 @@ export async function createProduct(
 
   // Update category product count
   if (productData.categoryId) {
-    const categoryRef = doc(db, "categories", productData.categoryId);
-    await updateDoc(categoryRef, {
-      productCount: increment(1),
-    });
+    await adjustCategoryProductCount(productData.categoryId, 1);
   }
 
   return docRef.id;
@@ -421,20 +448,12 @@ export async function updateProduct(
   // If category changes, adjust stored `categories.productCount` incrementally.
   if (existing) {
     if (oldCategoryId && newCategoryId && oldCategoryId !== newCategoryId) {
-      await updateDoc(doc(db, 'categories', oldCategoryId), {
-        productCount: increment(-1),
-      });
-      await updateDoc(doc(db, 'categories', newCategoryId), {
-        productCount: increment(1),
-      });
+      await adjustCategoryProductCount(oldCategoryId, -1);
+      await adjustCategoryProductCount(newCategoryId, 1);
     } else if (!oldCategoryId && newCategoryId) {
-      await updateDoc(doc(db, 'categories', newCategoryId), {
-        productCount: increment(1),
-      });
+      await adjustCategoryProductCount(newCategoryId, 1);
     } else if (oldCategoryId && !newCategoryId) {
-      await updateDoc(doc(db, 'categories', oldCategoryId), {
-        productCount: increment(-1),
-      });
+      await adjustCategoryProductCount(oldCategoryId, -1);
     }
   }
 
@@ -475,10 +494,7 @@ export async function deleteProduct(id: string): Promise<void> {
   }
 
   if (product.categoryId) {
-    const categoryRef = doc(db, "categories", product.categoryId);
-    await updateDoc(categoryRef, {
-      productCount: increment(-1),
-    });
+    await adjustCategoryProductCount(product.categoryId, -1);
   }
 
   await deleteDoc(doc(db, PRODUCTS_COLLECTION, id));
@@ -497,10 +513,7 @@ export async function deleteProducts(ids: string[]): Promise<void> {
       }
     }
     if (product.categoryId) {
-      const categoryRef = doc(db, "categories", product.categoryId);
-      await updateDoc(categoryRef, {
-        productCount: increment(-1),
-      });
+      await adjustCategoryProductCount(product.categoryId, -1);
     }
   }
 

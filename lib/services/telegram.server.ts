@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { getUsdToUahRate } from '@/lib/currency/nbu.server';
-import { formatUAH } from '@/lib/currency/format';
+import { formatUAH, hasDisplayableUsdPrice } from '@/lib/currency/format';
 import type { InquiryData, OrderData } from '@/lib/services/telegram';
 
 function formatUsd(usd: number): string {
@@ -53,15 +53,16 @@ export async function formatOrderMessage(order: OrderData): Promise<string> {
 
     message += `${index + 1}. ${product.name}\n`;
     if (product.partNumber) {
-      message += `   Артикул: ${product.partNumber}\n`;
+      message += `   Код деталі: ${product.partNumber}\n`;
     }
     if (product.brand) {
       message += `   Бренд: ${product.brand}\n`;
     }
 
     message += `   Ціна: ${formatUAH(product.price * usdToUahRate)} (${formatUsd(product.price)} USD)\n`;
-    if (product.originalPrice != null) {
-      message += `   Стара ціна: ${formatUAH(product.originalPrice * usdToUahRate)} (${formatUsd(product.originalPrice)} USD)\n`;
+    const originalUsd = product.originalPrice;
+    if (hasDisplayableUsdPrice(originalUsd)) {
+      message += `   Стара ціна: ${formatUAH(originalUsd * usdToUahRate)} (${formatUsd(originalUsd)} USD)\n`;
     }
 
     message += `   Кількість: ${quantity}\n`;

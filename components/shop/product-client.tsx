@@ -19,8 +19,8 @@ import {
   ShoppingCart,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { hasDisplayableUsdPrice } from '@/lib/currency/format';
 import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,7 +46,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { auth } from '@/firebase';
 import { useCart } from '@/lib/hooks/useCart';
 import { sendTelegramInquiry } from '@/lib/services/telegram';
-import { useCategories } from '@/modules/categories/hooks/use-categories';
 import { createInquiry } from '@/modules/inquiries/services/inquiries.service';
 import {
   incrementProductViews,
@@ -71,13 +70,11 @@ interface ProductClientProps {
 }
 
 export function ProductClient({ product, categoryName, usdToUahRate }: ProductClientProps) {
-  const router = useRouter();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [showInquiryForm, setShowInquiryForm] = useState(false);
   const [showPriceProposalDialog, setShowPriceProposalDialog] = useState(false);
-  const { categories } = useCategories();
   const { addItem } = useCart();
 
   // Form state
@@ -193,10 +190,6 @@ export function ProductClient({ product, categoryName, usdToUahRate }: ProductCl
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleCategorySelect = (categoryId: string) => {
-    router.push(`/catalog?category=${categoryId}`);
   };
 
   const handleAddToCart = () => {
@@ -318,7 +311,7 @@ export function ProductClient({ product, categoryName, usdToUahRate }: ProductCl
                 <div className="space-y-2">
                   <CardTitle className="text-2xl text-white">{product.name}</CardTitle>
                   <CardDescription className="text-zinc-400">
-                    Артикул: {product.partNumber || '—'}
+                    Код деталі: {product.partNumber || '—'}
                   </CardDescription>
                 </div>
                 <Badge variant="outline" className={statusClass}>
@@ -331,9 +324,9 @@ export function ProductClient({ product, categoryName, usdToUahRate }: ProductCl
                 <span className="text-3xl font-bold text-k24-yellow">
                   <UsdToUahPrice usd={product.price} initialRate={usdToUahRate} />
                 </span>
-                {product.originalPrice && (
+                {hasDisplayableUsdPrice(product.originalPrice) && (
                   <span className="text-lg text-zinc-500 line-through">
-                    <UsdToUahPrice usd={product.originalPrice} initialRate={usdToUahRate} />
+                    <UsdToUahPrice usd={product.originalPrice!} initialRate={usdToUahRate} />
                   </span>
                 )}
               </div>

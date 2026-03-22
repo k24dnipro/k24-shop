@@ -6,9 +6,14 @@ import {
 } from 'react';
 import {
   Loader2,
+  Star,
   Upload,
   X,
 } from 'lucide-react';
+import {
+  normalizeOptionalUsd,
+  sanitizeUsdPrice,
+} from '@/lib/currency/format';
 import { ProductImage as ProductImageUi } from '@/components/ui/product-image';
 import { useRouter } from 'next/navigation';
 import {
@@ -189,12 +194,25 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
     [product?.id, images]
   );
 
+  /** Перше фото в списку = головне (каталог, OG, тощо) */
+  const handleMakeMainImage = useCallback((imageId: string) => {
+    setImages((prev) => {
+      const idx = prev.findIndex((img) => img.id === imageId);
+      if (idx <= 0) return prev;
+      const next = [...prev];
+      const [picked] = next.splice(idx, 1);
+      next.unshift(picked);
+      return next.map((img, i) => ({ ...img, order: i }));
+    });
+    toast.success("Головне фото оновлено");
+  }, []);
+
   const onFormSubmit = async (data: ProductFormData) => {
     const submitData = {
       name: data.name,
       description: data.description,
-      price: data.price,
-      originalPrice: data.originalPrice ?? null,
+      price: sanitizeUsdPrice(data.price),
+      originalPrice: normalizeOptionalUsd(data.originalPrice),
       categoryId: data.categoryId,
       subcategoryId: data.subcategoryId ?? null,
       status: data.status,
@@ -578,17 +596,30 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
                         sizes="(max-width: 768px) 50vw, 25vw"
                         className="object-cover"
                       />
-                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <div className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
-                          className="text-white hover:bg-red-500/20"
+                          className="text-white bg-black/40 hover:bg-red-500/40"
                           onClick={() => handleImageDelete(image.id)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
+                      {index > 0 && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          title="Зробити головним зображенням"
+                          className="absolute bottom-2 left-2 z-20 h-8 px-2 text-xs shadow-md bg-zinc-900/95 border-zinc-600 text-white hover:bg-k24-yellow hover:text-black hover:border-k24-yellow"
+                          onClick={() => handleMakeMainImage(image.id)}
+                        >
+                          <Star className="h-3.5 w-3.5 mr-1 shrink-0" />
+                          <span className="hidden sm:inline">Зробити головним</span>
+                        </Button>
+                      )}
                       {index === 0 && (
                         <div className="absolute top-2 left-2 bg-k24-yellow text-black text-xs px-2 py-1 rounded">
                           Головне

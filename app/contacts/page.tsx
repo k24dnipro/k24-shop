@@ -6,6 +6,10 @@ import {
   Phone,
 } from 'lucide-react';
 import { ShopFooter } from '@/components/shop/footer';
+import {
+  SITE_PHONE_PRIMARY_TEL,
+  SITE_PHONE_SECONDARY_TEL,
+} from '@/lib/constants/contact';
 import { ShopHeader } from '@/components/shop/header';
 
 export default function ContactsPage() {
@@ -37,8 +41,8 @@ export default function ContactsPage() {
               <div>
                 <h3 className="text-lg font-medium text-white mb-1">Телефони</h3>
                 <div className="space-y-1">
-                  <p className="text-zinc-400"><a href="tel:+380987774401" className="hover:text-k24-yellow transition-colors">+38 (098) 777-44-01</a></p>
-                  <p className="text-zinc-400"><a href="tel:+380979590505" className="hover:text-k24-yellow transition-colors">+38 (097) 959-05-05</a></p>
+                  <p className="text-zinc-400"><a href={SITE_PHONE_PRIMARY_TEL} className="hover:text-k24-yellow transition-colors">+38 (098) 777-44-01</a></p>
+                  <p className="text-zinc-400"><a href={SITE_PHONE_SECONDARY_TEL} className="hover:text-k24-yellow transition-colors">+38 (097) 959-05-05</a></p>
                 </div>
               </div>
             </div>

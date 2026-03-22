@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Category } from '@/lib/types';
+import { SITE_PHONE_PRIMARY_TEL } from '@/lib/constants/contact';
 import { cn } from '@/lib/utils';
 
 interface ShopSidebarProps {
@@ -293,7 +294,7 @@ export function ShopSidebar({
             className="w-full bg-k24-yellow hover:bg-k24-yellow text-black text-xs"
             asChild
           >
-            <a href="tel:+380">Зателефонувати</a>
+            <a href={SITE_PHONE_PRIMARY_TEL}>Зателефонувати</a>
           </Button>
         </div>
       </div>

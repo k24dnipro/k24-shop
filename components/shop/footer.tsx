@@ -6,6 +6,10 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import {
+  SITE_PHONE_PRIMARY_TEL,
+  SITE_PHONE_SECONDARY_TEL,
+} from '@/lib/constants/contact';
 
 export function ShopFooter() {
   return (
@@ -93,10 +97,10 @@ export function ShopFooter() {
               <li className="flex items-start gap-3">
                 <Phone className="h-5 w-5 text-k24-yellow shrink-0 mt-0.5" />
                 <div className="flex flex-col gap-1">
-                  <a href="tel:+380987774401" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
+                  <a href={SITE_PHONE_PRIMARY_TEL} className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
                     +38 (098) 777-44-01
                   </a>
-                  <a href="tel:+380979590505" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
+                  <a href={SITE_PHONE_SECONDARY_TEL} className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
                     +38 (097) 959-05-05
                   </a>
                 </div>

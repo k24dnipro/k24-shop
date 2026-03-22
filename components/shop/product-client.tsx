@@ -43,6 +43,7 @@ import { Label } from '@/components/ui/label';
 import { ProductImage } from '@/components/ui/product-image';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { SITE_PHONE_PRIMARY_TEL } from '@/lib/constants/contact';
 import { auth } from '@/firebase';
 import { useCart } from '@/lib/hooks/useCart';
 import { sendTelegramInquiry } from '@/lib/services/telegram';
@@ -681,13 +682,16 @@ export function ProductClient({ product, categoryName, usdToUahRate }: ProductCl
                 Зв&apos;яжіться з нами і ми з радістю допоможемо
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button
+                asChild
                 variant="outline"
                 className="border-k24-yellow/30 bg-k24-yellow/10 text-k24-yellow hover:bg-k24-yellow/20 hover:border-k24-yellow/50"
               >
-                <Phone className="mr-2 h-4 w-4" />
-                Подзвонити
+                <a href={SITE_PHONE_PRIMARY_TEL}>
+                  <Phone className="mr-2 h-4 w-4" />
+                  Подзвонити
+                </a>
               </Button>
             </div>
           </div>

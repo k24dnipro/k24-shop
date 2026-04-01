@@ -2,7 +2,11 @@
 
 import {
   Suspense,
+  useCallback,
   useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -14,7 +18,15 @@ import {
 } from 'lucide-react';
 import { ProductImage } from '@/components/ui/product-image';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import {
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from 'next/navigation';
+import {
+  getCatalogBatchCount,
+  setCatalogBatchInUrl,
+} from '@/lib/shop/catalog-navigation';
 import { toast } from 'sonner';
 import { NoIndexFilter } from '@/components/seo/noindex-filter';
 import { ShopHeader } from '@/components/shop/header';
@@ -60,6 +72,9 @@ const statusColors: Record<string, string> = {
 
 type SortOption = 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
 
+const CATALOG_PAGE_SIZE = 12;
+const CATALOG_SCROLL_KEY = 'k24-catalog-main-scroll';
+
 export default function CatalogPage() {
   return (
     <Suspense fallback={<div className="flex h-screen items-center justify-center bg-zinc-950 text-zinc-400">Завантаження...</div>}>
@@ -69,10 +84,21 @@ export default function CatalogPage() {
 }
 
 function CatalogContent() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
+  const mainScrollRef = useRef<HTMLElement | null>(null);
+  const scrollRestoredForHrefRef = useRef<string | null>(null);
 
   const initialSearch = searchParams.get('q') || '';
   const initialCategory = searchParams.get('category') || 'all';
+  const batchFromUrl = getCatalogBatchCount(searchParams);
+  const catalogHrefKey = useMemo(
+    () => `${pathname}?${searchParams.toString()}`,
+    [pathname, searchParams]
+  );
+  const catalogHrefKeyRef = useRef(catalogHrefKey);
+  catalogHrefKeyRef.current = catalogHrefKey;
 
   const [inputSearchTerm, setInputSearchTerm] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
@@ -118,12 +144,126 @@ function CatalogContent() {
   const { categories, loading: categoriesLoading } = useCategories();
   const { addItem } = useCart();
 
+  const resetCatalogBatchInUrl = useCallback(() => {
+    setCatalogBatchInUrl(router, pathname, searchParams, 1);
+  }, [router, pathname, searchParams]);
+
   // Run search when URL has ?q= (e.g. navigated from product page or shared link)
   useEffect(() => {
     if (initialSearch.trim()) {
       performSearch(initialSearch);
     }
   }, [initialSearch, performSearch]);
+
+  const loadedBrowseBatches = Math.max(
+    1,
+    Math.ceil((products.length || 0) / CATALOG_PAGE_SIZE)
+  );
+  const loadedSearchBatches = Math.max(
+    1,
+    Math.ceil((searchResults.length || 0) / CATALOG_PAGE_SIZE)
+  );
+
+  // URL ?batch=N (back/forward): доки завантажено менше порцій — підвантажуємо далі
+  useEffect(() => {
+    if (isSearchActive) return;
+    if (loading) return;
+    if (loadedBrowseBatches >= batchFromUrl) return;
+    if (!hasMore) return;
+    loadMore();
+  }, [
+    isSearchActive,
+    loading,
+    loadedBrowseBatches,
+    batchFromUrl,
+    hasMore,
+    loadMore,
+  ]);
+
+  useEffect(() => {
+    if (!isSearchActive) return;
+    if (searchLoading) return;
+    if (loadedSearchBatches >= batchFromUrl) return;
+    if (!searchHasMore) return;
+    loadMoreSearch();
+  }, [
+    isSearchActive,
+    searchLoading,
+    loadedSearchBatches,
+    batchFromUrl,
+    searchHasMore,
+    loadMoreSearch,
+  ]);
+
+  // Зберігаємо скрол основної колонки (overflow-auto), щоб «Назад» з картки повертав туди ж
+  useEffect(() => {
+    const el = mainScrollRef.current;
+    if (!el) return;
+    let t: ReturnType<typeof setTimeout>;
+    const onScroll = () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        try {
+          sessionStorage.setItem(
+            CATALOG_SCROLL_KEY,
+            JSON.stringify({
+              href: catalogHrefKeyRef.current,
+              top: el.scrollTop,
+            })
+          );
+        } catch {
+          /* ignore */
+        }
+      }, 120);
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      clearTimeout(t);
+      el.removeEventListener('scroll', onScroll);
+    };
+  }, []);
+
+  const browseReadyForScrollRestore =
+    !isSearchActive && !loading && loadedBrowseBatches >= batchFromUrl;
+  const searchReadyForScrollRestore =
+    isSearchActive && !searchLoading && loadedSearchBatches >= batchFromUrl;
+
+  useLayoutEffect(() => {
+    if (!browseReadyForScrollRestore && !searchReadyForScrollRestore) return;
+    if (scrollRestoredForHrefRef.current === catalogHrefKey) return;
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(CATALOG_SCROLL_KEY);
+    } catch {
+      return;
+    }
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as { href?: string; top?: number };
+      if (parsed.href !== catalogHrefKey || typeof parsed.top !== 'number') return;
+      const el = mainScrollRef.current;
+      if (el) {
+        el.scrollTop = parsed.top;
+        scrollRestoredForHrefRef.current = catalogHrefKey;
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [
+    catalogHrefKey,
+    browseReadyForScrollRestore,
+    searchReadyForScrollRestore,
+  ]);
+
+  const handleLoadMoreBrowse = useCallback(() => {
+    setCatalogBatchInUrl(router, pathname, searchParams, batchFromUrl + 1);
+    loadMore();
+  }, [router, pathname, searchParams, batchFromUrl, loadMore]);
+
+  const handleLoadMoreSearch = useCallback(() => {
+    setCatalogBatchInUrl(router, pathname, searchParams, batchFromUrl + 1);
+    loadMoreSearch();
+  }, [router, pathname, searchParams, batchFromUrl, loadMoreSearch]);
 
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
@@ -142,6 +282,8 @@ function CatalogContent() {
 
   // Handle category selection
   const handleCategorySelect = (categoryId: string) => {
+    resetCatalogBatchInUrl();
+    scrollRestoredForHrefRef.current = null;
     setSelectedCategory(categoryId);
     // Don't clear search when selecting category - allow filtering search results by category
     if (!isSearchActive) {
@@ -153,8 +295,22 @@ function CatalogContent() {
   const handleHeaderSearch = (query: string) => {
     setInputSearchTerm(query);
     if (query.trim()) {
+      resetCatalogBatchInUrl();
+      scrollRestoredForHrefRef.current = null;
       performSearch(query);
     }
+  };
+
+  const handleStatusFilterChange = (value: string) => {
+    resetCatalogBatchInUrl();
+    scrollRestoredForHrefRef.current = null;
+    setStatusFilter(value);
+  };
+
+  const handleSortChange = (value: SortOption) => {
+    resetCatalogBatchInUrl();
+    scrollRestoredForHrefRef.current = null;
+    setSortBy(value);
   };
 
   const getStatusLabel = (status: string) => {
@@ -192,7 +348,7 @@ function CatalogContent() {
         />
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto">
+        <main ref={mainScrollRef} className="flex-1 overflow-auto">
           <div className="container mx-auto px-4 py-6 space-y-6">
             {/* Hero section */}
             <div className="flex flex-col gap-3">
@@ -227,7 +383,7 @@ function CatalogContent() {
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
               <div className="flex flex-wrap gap-3 w-full sm:w-auto">
                 {/* Status Filter */}
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
                   <SelectTrigger className="w-full sm:w-48 bg-zinc-900/50 border-zinc-800 text-white">
                     <Filter className="mr-2 h-4 w-4 text-zinc-500" />
                     <SelectValue placeholder="Статус" />
@@ -252,7 +408,7 @@ function CatalogContent() {
                 </Select>
 
                 {/* Sort */}
-                <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                <Select value={sortBy} onValueChange={(value) => handleSortChange(value as SortOption)}>
                   <SelectTrigger className="w-full sm:w-48 bg-zinc-900/50 border-zinc-800 text-white">
                     <ArrowUpDown className="mr-2 h-4 w-4 text-zinc-500" />
                     <SelectValue placeholder="Сортування" />
@@ -307,6 +463,8 @@ function CatalogContent() {
                       size="sm"
                       className="border-zinc-800 text-zinc-300 hover:border-k24-yellow hover:text-white"
                       onClick={() => {
+                        resetCatalogBatchInUrl();
+                        scrollRestoredForHrefRef.current = null;
                         setInputSearchTerm('');
                         clearSearch();
                       }}
@@ -320,7 +478,11 @@ function CatalogContent() {
                       size="sm"
                       className="border-zinc-800 text-zinc-300 hover:border-k24-yellow hover:text-white"
                       onClick={() => {
-                        if (selectedCategory !== 'all') handleCategorySelect('all');
+                        resetCatalogBatchInUrl();
+                        scrollRestoredForHrefRef.current = null;
+                        if (selectedCategory !== 'all') {
+                          setSelectedCategory('all');
+                        }
                         setStatusFilter('all');
                         setSortBy('date_desc');
                       }}
@@ -430,7 +592,7 @@ function CatalogContent() {
                     {searchHasMore && !searchLoading && (
                       <div className="flex flex-col items-center gap-2 mt-6">
                         <Button
-                          onClick={loadMoreSearch}
+                          onClick={handleLoadMoreSearch}
                           className="bg-k24-yellow hover:bg-k24-yellow text-black px-6"
                         >
                           Показати більше
@@ -549,7 +711,7 @@ function CatalogContent() {
                     {hasMore && !loading && (
                       <div className="flex flex-col items-center gap-2 mt-6">
                         <Button
-                          onClick={loadMore}
+                          onClick={handleLoadMoreBrowse}
                           className="bg-k24-yellow hover:bg-k24-yellow text-black px-6"
                         >
                           Показати більше

@@ -23,6 +23,30 @@ import {
   ProductStatus,
 } from '../types';
 
+/** Firestore cursor loads can race (e.g. catalog batch sync + «ще»); keep list keys unique. */
+function dedupeProductsById(items: Product[]): Product[] {
+  const seen = new Set<string>();
+  return items.filter((p) => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  });
+}
+
+function appendProductsUniqueById(prev: Product[], incoming: Product[]): Product[] {
+  if (incoming.length === 0) return prev;
+  const seen = new Set(prev.map((p) => p.id));
+  const added: Product[] = [];
+  for (const p of incoming) {
+    if (!seen.has(p.id)) {
+      seen.add(p.id);
+      added.push(p);
+    }
+  }
+  if (added.length === 0) return prev;
+  return [...prev, ...added];
+}
+
 interface UseProductsOptions {
   pageSize?: number;
   categoryId?: string;
@@ -67,9 +91,9 @@ export function useProducts(options: UseProductsOptions = {}) {
         });
 
         if (reset) {
-          setProducts(result.products);
+          setProducts(dedupeProductsById(result.products));
         } else {
-          setProducts((prev) => [...prev, ...result.products]);
+          setProducts((prev) => appendProductsUniqueById(prev, result.products));
         }
 
         lastDocRef.current = result.lastVisible || null;

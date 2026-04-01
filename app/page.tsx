@@ -9,26 +9,26 @@ import {
   ShoppingCart,
   Truck,
 } from 'lucide-react';
-import { ProductImage } from '@/components/ui/product-image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ShopFooter } from '@/components/shop/footer';
 import { ShopHeader } from '@/components/shop/header';
+import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { ProductImage } from '@/components/ui/product-image';
 import { Skeleton } from '@/components/ui/skeleton';
+import { hasDisplayableUsdPrice } from '@/lib/currency/format';
 import { useCart } from '@/lib/hooks/useCart';
 import { generateOrganizationStructuredData } from '@/lib/seo/utils';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
 import { useProducts } from '@/modules/products/hooks/use-products';
 import { Product } from '@/modules/products/types';
-import { hasDisplayableUsdPrice } from '@/lib/currency/format';
-import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 
 const statusColors: Record<string, string> = {
   in_stock: 'text-emerald-400',
@@ -97,10 +97,13 @@ export default function Home() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <div className="relative bg-zinc-900 border-b border-zinc-800">
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-size-[24px_24px]"></div>
-            <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-k24-yellow opacity-20 blur-[100px]"></div>
+        <div className="relative border-b border-zinc-800 overflow-hidden bg-zinc-950">
+          <div className="absolute inset-0" aria-hidden>
+            <div
+              className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+              style={{ backgroundImage: "url('/bg-main.jpg')" }}
+            />
+            <div className="absolute inset-0 bg-linear-to-b from-zinc-950/90 via-zinc-950/82 to-zinc-950/92" />
           </div>
 
           <div className="container mx-auto px-4 py-16 sm:py-24 relative z-10">
@@ -116,7 +119,7 @@ export default function Home() {
               {/* Main Search */}
               <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
                 <div className="relative group">
-                  <div className="absolute -inset-1 bg-linear-to-r from-k24-yellow to-yellow-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-200"></div>
+                  <div className="absolute bg-linear-to-r from-k24-yellow to-yellow-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-200"></div>
                   <div className="relative flex">
                     <Input
                       id="hero-search"
@@ -124,11 +127,11 @@ export default function Home() {
                       type="search"
                       placeholder="Назва, бренд, код деталі або OEM..."
                       autoComplete="off"
-                      className="h-14 pl-12 pr-4 bg-zinc-950 border-none text-lg shadow-xl focus-visible:ring-k24-yellow transition-all placeholder:text-sm"
+                      className="h-14 pl-12 pr-28 rounded-lg border-none text-lg shadow-xl focus-visible:ring-k24-yellow transition-all placeholder:text-sm bg-k24-yellow/50 backdrop-blur-md text-white placeholder:text-white/90"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-zinc-500" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-white/90 pointer-events-none" />
                     <Button
                       type="submit"
                       className="absolute right-2 top-2 bottom-2 bg-k24-yellow hover:bg-k24-yellow text-black font-semibold px-6"

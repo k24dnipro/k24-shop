@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { Suspense, use } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { uk } from 'date-fns/locale';
 import {
@@ -10,7 +10,12 @@ import {
   Pencil,
   Trash2,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  adminProductsListPageQuery,
+  adminProductsListPath,
+  pageIndexFromPageSearchParam,
+} from '@/lib/admin/products-navigation';
 import { toast } from 'sonner';
 import { Header } from '@/components/admin/header';
 import {
@@ -45,8 +50,26 @@ import {
 } from '@/modules/products/types';
 
 export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[40vh] items-center justify-center bg-zinc-950 text-zinc-400">
+          Завантаження...
+        </div>
+      }
+    >
+      <ProductDetailPageInner params={params} />
+    </Suspense>
+  );
+}
+
+function ProductDetailPageInner({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const listPageIndex = pageIndexFromPageSearchParam(searchParams);
+  const productsListPath = adminProductsListPath(listPageIndex);
+  const listPageQuery = adminProductsListPageQuery(listPageIndex);
   const { product, loading, remove } = useProduct(id);
   const { categories } = useCategories();
   const { hasPermission } = useAuth();
@@ -58,7 +81,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     try {
       await remove();
       toast.success('Товар видалено');
-      router.push('/admin/products');
+      router.push(productsListPath);
     } catch {
       toast.error('Помилка видалення товару');
     }
@@ -105,7 +128,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <div className="p-6">
           <Button
             variant="outline"
-            onClick={() => router.push('/admin/products')}
+            onClick={() => router.push(productsListPath)}
             className="border-zinc-800 text-zinc-400 hover:text-white"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -125,7 +148,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
-            onClick={() => router.push('/admin/products')}
+            onClick={() => router.push(productsListPath)}
             className="border-zinc-800 text-zinc-400 hover:text-white"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -135,7 +158,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex gap-2">
             {canEdit && (
               <Button
-                onClick={() => router.push(`/admin/products/${product.id}/edit`)}
+                onClick={() =>
+                  router.push(`/admin/products/${product.id}/edit${listPageQuery}`)
+                }
                 className="bg-k24-yellow hover:bg-k24-yellow text-black"
               >
                 <Pencil className="mr-2 h-4 w-4" />

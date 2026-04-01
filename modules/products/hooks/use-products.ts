@@ -546,14 +546,16 @@ interface UseProductsPaginatedOptions {
   pageSize?: number;
   categoryId?: string;
   status?: ProductStatus;
+  /** 0-based page index from URL; only applied on first mount (see useState initializer). */
+  initialPage?: number;
 }
 
 export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) {
-  const { pageSize = 20, categoryId, status } = options;
+  const { pageSize = 20, categoryId, status, initialPage: initialPageOption } = options;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
+  const [currentPage, setCurrentPage] = useState(() => initialPageOption ?? 0);
   const [totalCount, setTotalCount] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -566,6 +568,15 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
   // Store document snapshots for each page to enable efficient navigation
   const pageSnapshotsRef = useRef<Map<number, DocumentSnapshot>>(new Map());
   const lastDocRef = useRef<DocumentSnapshot | null>(null);
+  const prevFiltersRef = useRef<{ categoryId?: string; status?: ProductStatus } | null>(
+    null
+  );
+  const initialPageAtMountRef = useRef<number | null>(null);
+  if (initialPageAtMountRef.current === null) {
+    initialPageAtMountRef.current = initialPageOption ?? 0;
+  }
+  /** Monotonic id so stale async fetch completions cannot overwrite products or loading. */
+  const fetchGenerationRef = useRef(0);
 
   // Fetch total count
   const fetchCount = useCallback(async () => {
@@ -587,10 +598,12 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
       if (isSearchingRef.current) {
         return;
       }
-      
+
+      const fetchId = ++fetchGenerationRef.current;
+
       setLoading(true);
       setError(null);
-      
+
       try {
         // If searching, paginate search results client-side
         if (isSearching && searchTerm.trim()) {
@@ -598,12 +611,15 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
           const start = page * pageSize;
           const end = start + pageSize;
           const paginatedResults = allResults.slice(start, end);
-          
+
           setProducts(paginatedResults);
           setTotalCount(allResults.length);
           setHasMore(end < allResults.length);
           return;
         }
+
+        // Clear immediately so we never show page 1 (or any stale page) while fetching page N
+        setProducts([]);
 
         // For server-side pagination, we need to navigate to the requested page
         // If reset or going to page 0, start from beginning
@@ -640,6 +656,9 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
                 status,
                 lastDoc: currentDoc,
               });
+              if (fetchId !== fetchGenerationRef.current) {
+                return;
+              }
               if (result.products.length > 0 && result.lastVisible) {
                 currentDoc = result.lastVisible;
                 pageSnapshotsRef.current.set(i, currentDoc);
@@ -647,7 +666,7 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
                 break;
               }
             }
-            
+
             lastDoc = currentDoc;
           }
         }
@@ -659,19 +678,28 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
           lastDoc,
         });
 
+        if (fetchId !== fetchGenerationRef.current) {
+          return;
+        }
+
         setProducts(result.products);
         setHasMore(result.hasMore);
-        
+
         // Store snapshot for next page
         if (result.lastVisible) {
           pageSnapshotsRef.current.set(page, result.lastVisible);
         }
       } catch (err: unknown) {
+        if (fetchId !== fetchGenerationRef.current) {
+          return;
+        }
         const message =
           err instanceof Error ? err.message : "Помилка завантаження товарів";
         setError(message);
       } finally {
-        setLoading(false);
+        if (fetchId === fetchGenerationRef.current) {
+          setLoading(false);
+        }
       }
     },
     [pageSize, categoryId, status, isSearching, searchTerm]
@@ -728,21 +756,20 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
   const handlePageChange = useCallback(
     (newPage: number) => {
       setCurrentPage(newPage);
-      
+
       // If searching, paginate search results client-side
       if (isSearchingRef.current && searchResultsRef.current.length > 0) {
         const allResults = searchResultsRef.current;
         const start = newPage * pageSize;
         const end = start + pageSize;
         const paginatedResults = allResults.slice(start, end);
-        
+
         setProducts(paginatedResults);
         setTotalCount(allResults.length);
         setHasMore(end < allResults.length);
         return;
       }
-      
-      // Otherwise, fetch from server
+
       fetchProducts(newPage, newPage === 0);
     },
     [fetchProducts, pageSize]
@@ -750,18 +777,35 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
 
   // Initial fetch and when filters change (but not when searching)
   useEffect(() => {
-    // Only reset if not currently searching
-    if (!isSearchingRef.current) {
-      // Reset pagination when filters change
-      setCurrentPage(0);
-      searchResultsRef.current = [];
-      pageSnapshotsRef.current.clear();
-      lastDocRef.current = null;
-      setIsSearching(false);
-      setSearchTerm("");
-      fetchCount();
-      fetchProducts(0, true);
+    if (isSearchingRef.current) {
+      return;
     }
+
+    const prev = prevFiltersRef.current;
+    const isFirstMount = prev === null;
+
+    if (!isFirstMount) {
+      const filtersChanged =
+        prev.categoryId !== categoryId || prev.status !== status;
+      prevFiltersRef.current = { categoryId, status };
+
+      if (filtersChanged) {
+        setCurrentPage(0);
+        searchResultsRef.current = [];
+        pageSnapshotsRef.current.clear();
+        lastDocRef.current = null;
+        setIsSearching(false);
+        setSearchTerm("");
+        fetchCount();
+        fetchProducts(0, true);
+      }
+      return;
+    }
+
+    prevFiltersRef.current = { categoryId, status };
+    const pageToLoad = initialPageAtMountRef.current ?? 0;
+    fetchCount();
+    fetchProducts(pageToLoad, pageToLoad === 0);
   }, [categoryId, status, fetchCount, fetchProducts]);
 
   // Refresh function

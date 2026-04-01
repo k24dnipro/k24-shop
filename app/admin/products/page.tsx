@@ -1,7 +1,12 @@
 "use client";
 
 import {
+  Suspense,
+  useCallback,
   useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
@@ -16,7 +21,11 @@ import {
   X,
 } from 'lucide-react';
 import { ProductImage } from '@/components/ui/product-image';
-import { useRouter } from 'next/navigation';
+import {
+  usePathname,
+  useRouter,
+  useSearchParams,
+} from 'next/navigation';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/admin/dataTable';
 import { Header } from '@/components/admin/header';
@@ -47,6 +56,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  adminProductsListPageQuery,
+  pageIndexFromPageSearchParam,
+} from '@/lib/admin/products-navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useCategories } from '@/modules/categories/hooks/use-categories';
 import {
@@ -61,7 +74,23 @@ import {
 import { ColumnDef } from '@tanstack/react-table';
 
 export default function ProductsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[40vh] items-center justify-center bg-zinc-950 text-zinc-400">
+          Завантаження...
+        </div>
+      }
+    >
+      <ProductsPageContent />
+    </Suspense>
+  );
+}
+
+function ProductsPageContent() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { hasPermission } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -70,6 +99,14 @@ export default function ProductsPage() {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+
+  const pageIndexFromUrl = useMemo(
+    () => pageIndexFromPageSearchParam(searchParams),
+    [searchParams]
+  );
+
+  const expectedPageFromUrlRef = useRef<number | null>(null);
+  const prevDebouncedSearchRef = useRef<string | undefined>(undefined);
 
   const {
     products,
@@ -85,7 +122,11 @@ export default function ProductsPage() {
     categoryId: categoryFilter !== "all" ? categoryFilter : undefined,
     status:
       statusFilter !== "all" ? (statusFilter as ProductStatus) : undefined,
+    initialPage: pageIndexFromUrl,
   });
+
+  const listPageQuery = adminProductsListPageQuery(currentPage);
+
   const { categories } = useCategories();
   const { remove, loading: mutationLoading } = useProductMutations();
 
@@ -93,14 +134,87 @@ export default function ProductsPage() {
   const canDelete = hasPermission("canDeleteProducts");
   const canCreate = hasPermission("canCreateProducts");
 
+  const replacePageInUrl = useCallback(
+    (pageIndex: number) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (pageIndex <= 0) {
+        params.delete("page");
+      } else {
+        params.set("page", String(pageIndex + 1));
+      }
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname);
+    },
+    [pathname, router, searchParams]
+  );
+
+  const onPaginationChange = useCallback(
+    (newPage: number) => {
+      handlePageChange(newPage);
+      expectedPageFromUrlRef.current = newPage;
+      replacePageInUrl(newPage);
+    },
+    [handlePageChange, replacePageInUrl]
+  );
+
+  const handleCategoryFilterChange = useCallback(
+    (value: string) => {
+      expectedPageFromUrlRef.current = 0;
+      setCategoryFilter(value);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("page");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname);
+    },
+    [pathname, router, searchParams]
+  );
+
+  const handleStatusFilterChange = useCallback(
+    (value: string) => {
+      expectedPageFromUrlRef.current = 0;
+      setStatusFilter(value);
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("page");
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname);
+    },
+    [pathname, router, searchParams]
+  );
+
+  // Sync browser history / shared links → table page (back/forward, opening ?page=)
+  // useLayoutEffect: run before paint so loading state + overlay apply before stale rows flash
+  useLayoutEffect(() => {
+    const fromUrl = pageIndexFromPageSearchParam(searchParams);
+    if (expectedPageFromUrlRef.current !== null) {
+      if (expectedPageFromUrlRef.current === fromUrl) {
+        expectedPageFromUrlRef.current = null;
+      }
+      return;
+    }
+    if (fromUrl !== currentPage) {
+      handlePageChange(fromUrl);
+    }
+  }, [searchParams, currentPage, handlePageChange]);
+
   // Search with debounce
   useEffect(() => {
     const timer = setTimeout(() => {
       search(searchTerm);
+      const prev = prevDebouncedSearchRef.current;
+      if (prev !== undefined && prev !== searchTerm) {
+        expectedPageFromUrlRef.current = 0;
+        const params = new URLSearchParams(searchParams.toString());
+        if (params.has("page")) {
+          params.delete("page");
+          const qs = params.toString();
+          router.replace(qs ? `${pathname}?${qs}` : pathname);
+        }
+      }
+      prevDebouncedSearchRef.current = searchTerm;
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, search]);
+  }, [searchTerm, search, pathname, router, searchParams]);
 
   // Reset selection when filters change
   useEffect(() => {
@@ -309,7 +423,7 @@ export default function ProductsPage() {
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                router.push(`/admin/products/${row.original.id}`);
+                router.push(`/admin/products/${row.original.id}${listPageQuery}`);
               }}
               className="text-zinc-400 focus:text-white focus:bg-zinc-900"
             >
@@ -320,7 +434,7 @@ export default function ProductsPage() {
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
-                  router.push(`/admin/products/${row.original.id}/edit`);
+                  router.push(`/admin/products/${row.original.id}/edit${listPageQuery}`);
                 }}
                 className="text-zinc-400 focus:text-white focus:bg-zinc-900"
               >
@@ -380,7 +494,7 @@ export default function ProductsPage() {
             </div>
 
             {/* Category filter */}
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <Select value={categoryFilter} onValueChange={handleCategoryFilterChange}>
               <SelectTrigger className="w-full sm:w-48 bg-zinc-900/50 border-zinc-800 text-white">
                 <Filter className="mr-2 h-4 w-4 text-zinc-500" />
                 <SelectValue placeholder="Категорія" />
@@ -405,7 +519,7 @@ export default function ProductsPage() {
             </Select>
 
             {/* Status filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
               <SelectTrigger className="w-full sm:w-44 bg-zinc-900/50 border-zinc-800 text-white">
                 <SelectValue placeholder="Статус" />
               </SelectTrigger>
@@ -452,7 +566,7 @@ export default function ProductsPage() {
             )}
             {canCreate && (
               <Button
-                onClick={() => router.push("/admin/products/new")}
+                onClick={() => router.push(`/admin/products/new${listPageQuery}`)}
                 className="bg-k24-yellow hover:bg-k24-yellow text-black w-full sm:w-auto"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -466,11 +580,13 @@ export default function ProductsPage() {
         <DataTable
           columns={columns}
           data={products}
-          onRowClick={(product) => router.push(`/admin/products/${product.id}`)}
+          onRowClick={(product) =>
+            router.push(`/admin/products/${product.id}${listPageQuery}`)
+          }
           serverSidePagination={{
             currentPage,
             totalPages,
-            onPageChange: handlePageChange,
+            onPageChange: onPaginationChange,
             totalCount,
             pageSize: 20,
           }}

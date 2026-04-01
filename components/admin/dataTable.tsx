@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
@@ -9,6 +9,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Loader2,
   Search,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -64,8 +65,14 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState({});
 
+  // Never feed stale rows to the table while server page is loading (parent state can lag one frame)
+  const tableData = useMemo(
+    () => (loading && serverSidePagination ? [] : data),
+    [loading, serverSidePagination, data]
+  );
+
   const table = useReactTable({
-    data,
+    data: tableData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: serverSidePagination ? undefined : getPaginationRowModel(),
@@ -107,7 +114,19 @@ export function DataTable<TData, TValue>({
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-zinc-800 overflow-hidden">
+      <div className="relative min-h-48 rounded-lg border border-zinc-800 overflow-hidden">
+        {loading && serverSidePagination && (
+          <div
+            className="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <div className="flex flex-col items-center gap-2 text-zinc-400">
+              <Loader2 className="h-8 w-8 animate-spin text-k24-yellow" aria-hidden />
+              <span className="text-sm">Завантаження...</span>
+            </div>
+          </div>
+        )}
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

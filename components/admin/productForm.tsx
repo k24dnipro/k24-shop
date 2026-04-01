@@ -87,9 +87,11 @@ interface ProductFormProps {
     >
   ) => Promise<string | void>;
   loading?: boolean;
+  /** If set, «Скасувати» navigates here instead of browser history back. */
+  cancelHref?: string;
 }
 
-export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductFormProps) {
   const router = useRouter();
   const { categories } = useCategories();
   const [images, setImages] = useState<ProductImage[]>(product?.images || []);
@@ -701,7 +703,9 @@ export function ProductForm({ product, onSubmit, loading }: ProductFormProps) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.back()}
+          onClick={() =>
+            cancelHref ? router.push(cancelHref) : router.back()
+          }
           className="border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900"
         >
           Скасувати

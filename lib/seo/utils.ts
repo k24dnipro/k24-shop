@@ -97,10 +97,9 @@ export function generateProductStructuredData(
         name: 'K24 Parts',
         address: {
           '@type': 'PostalAddress',
-          streetAddress: 'вулиця Василя Сухомлинського, 80А',
-          addressLocality: 'Слобожанське',
+          addressLocality: 'Підгороднє',
           addressRegion: 'Дніпропетровська область',
-          postalCode: '52005',
+          postalCode: '52001',
           addressCountry: 'UA',
         },
       },
@@ -167,10 +166,9 @@ export function generateOrganizationStructuredData(siteUrl: string) {
     logo: `${siteUrl}/logo.png`,
     address: {
       '@type': 'PostalAddress',
-      streetAddress: 'вулиця Василя Сухомлинського, 80А',
-      addressLocality: 'Слобожанське',
+      addressLocality: 'Підгороднє',
       addressRegion: 'Дніпропетровська область',
-      postalCode: '52005',
+      postalCode: '52001',
       addressCountry: 'UA',
     },
     sameAs: [

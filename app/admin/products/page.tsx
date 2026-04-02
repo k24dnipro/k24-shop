@@ -57,7 +57,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  adminProductsListPageQuery,
   pageIndexFromPageSearchParam,
 } from '@/lib/admin/products-navigation';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -92,8 +91,9 @@ function ProductsPageContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { hasPermission } = useAuth();
+  const categoryFromUrl = searchParams.get("category") || "all";
   const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>(categoryFromUrl);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -125,7 +125,21 @@ function ProductsPageContent() {
     initialPage: pageIndexFromUrl,
   });
 
-  const listPageQuery = adminProductsListPageQuery(currentPage);
+  const listPageQuery = useMemo(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (categoryFilter && categoryFilter !== "all") {
+      params.set("category", categoryFilter);
+    } else {
+      params.delete("category");
+    }
+    if (currentPage > 0) {
+      params.set("page", String(currentPage + 1));
+    } else {
+      params.delete("page");
+    }
+    const qs = params.toString();
+    return qs ? `?${qs}` : "";
+  }, [searchParams, categoryFilter, currentPage]);
 
   const { categories } = useCategories();
   const { remove, loading: mutationLoading } = useProductMutations();
@@ -163,6 +177,11 @@ function ProductsPageContent() {
       setCategoryFilter(value);
       const params = new URLSearchParams(searchParams.toString());
       params.delete("page");
+      if (value && value !== "all") {
+        params.set("category", value);
+      } else {
+        params.delete("category");
+      }
       const qs = params.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname);
     },
@@ -195,6 +214,16 @@ function ProductsPageContent() {
       handlePageChange(fromUrl);
     }
   }, [searchParams, currentPage, handlePageChange]);
+
+  // Sync category filter from URL (back/forward or shared link)
+  useEffect(() => {
+    const c = searchParams.get("category") || "all";
+    if (c !== categoryFilter) {
+      expectedPageFromUrlRef.current = 0;
+      setCategoryFilter(c);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Search with debounce
   useEffect(() => {

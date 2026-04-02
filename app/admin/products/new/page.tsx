@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import { Header } from '@/components/admin/header';
 import { ProductForm } from '@/components/admin/productForm';
 import {
-  adminProductsListPageQuery,
   adminProductsListPath,
   pageIndexFromPageSearchParam,
 } from '@/lib/admin/products-navigation';
@@ -33,7 +32,7 @@ function NewProductPageInner() {
   const searchParams = useSearchParams();
   const listPageIndex = pageIndexFromPageSearchParam(searchParams);
   const productsListPath = adminProductsListPath(listPageIndex);
-  const listPageQuery = adminProductsListPageQuery(listPageIndex);
+  const listPageQuery = searchParams.toString() ? `?${searchParams.toString()}` : "";
 
   const { create, loading } = useProductMutations();
   const { user } = useAuth();
@@ -62,7 +61,7 @@ function NewProductPageInner() {
         <ProductForm
           onSubmit={handleSubmit}
           loading={loading}
-          cancelHref={productsListPath}
+          cancelHref={`${productsListPath}${listPageQuery}`}
         />
       </div>
     </div>

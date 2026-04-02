@@ -26,6 +26,7 @@ import {
 import {
   getCatalogBatchCount,
   setCatalogBatchInUrl,
+  CATALOG_RETURN_HREF_KEY,
 } from '@/lib/shop/catalog-navigation';
 import { toast } from 'sonner';
 import { NoIndexFilter } from '@/components/seo/noindex-filter';
@@ -91,20 +92,43 @@ function CatalogContent() {
   const scrollRestoredForHrefRef = useRef<string | null>(null);
 
   const initialSearch = searchParams.get('q') || '';
-  const initialCategory = searchParams.get('category') || 'all';
+  const categoryFromUrl = searchParams.get('category');
+  const hasCategoryInUrl = categoryFromUrl != null && categoryFromUrl !== '';
+  const initialCategory = categoryFromUrl || 'all';
   const batchFromUrl = getCatalogBatchCount(searchParams);
-  const catalogHrefKey = useMemo(
-    () => `${pathname}?${searchParams.toString()}`,
-    [pathname, searchParams]
-  );
-  const catalogHrefKeyRef = useRef(catalogHrefKey);
-  catalogHrefKeyRef.current = catalogHrefKey;
+  const catalogHrefKeyRef = useRef<string>('');
 
   const [inputSearchTerm, setInputSearchTerm] = useState(initialSearch);
-  const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    // When the user selects category in the sidebar, URL may not be updated.
+    // On "Back" we restore the last chosen category from sessionStorage.
+    if (typeof window === 'undefined') return initialCategory;
+    if (hasCategoryInUrl) return initialCategory;
+
+    try {
+      const s = sessionStorage.getItem(CATALOG_RETURN_HREF_KEY);
+      if (!s?.startsWith('/catalog')) return initialCategory;
+      const u = new URL(s, window.location.origin);
+      const storedCategory = u.searchParams.get('category');
+      if (storedCategory && storedCategory !== '') return storedCategory;
+    } catch {
+      /* ignore */
+    }
+
+    return initialCategory;
+  });
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<SortOption>('date_desc');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    // Prevent old "return href" from overriding future catalog visits.
+    try {
+      sessionStorage.removeItem(CATALOG_RETURN_HREF_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   // Products hook for category browsing
   const {
@@ -140,6 +164,43 @@ function CatalogContent() {
   });
 
   const isSearchActive = !!activeSearchTerm;
+
+  // Build "current catalog href" including category/search/batch from component state.
+  // This matters because selecting a category via sidebar may not update URL, but we still want return links to keep the chosen category.
+  const catalogHrefKey = useMemo(() => {
+    const p = new URLSearchParams(searchParams.toString());
+
+    if (isSearchActive && activeSearchTerm.trim()) {
+      p.set('q', activeSearchTerm);
+    } else {
+      p.delete('q');
+    }
+
+    if (selectedCategory && selectedCategory !== 'all') {
+      p.set('category', selectedCategory);
+    } else {
+      p.delete('category');
+    }
+
+    if (batchFromUrl > 1) {
+      p.set('batch', String(batchFromUrl));
+    } else {
+      p.delete('batch');
+    }
+
+    const qs = p.toString();
+    return qs ? `${pathname}?${qs}` : pathname;
+  }, [
+    searchParams,
+    isSearchActive,
+    activeSearchTerm,
+    selectedCategory,
+    batchFromUrl,
+    pathname,
+  ]);
+  useEffect(() => {
+    catalogHrefKeyRef.current = catalogHrefKey;
+  }, [catalogHrefKey]);
 
   const { categories, loading: categoriesLoading } = useCategories();
   const { addItem } = useCart();
@@ -517,7 +578,17 @@ function CatalogContent() {
                         const firstImage = product.images?.[0]?.url;
                         const statusClass = statusColors[product.status] || statusColors.discontinued;
                         return (
-                          <Link key={product.id} href={`/products/${product.id}`}>
+                          <Link
+                            key={product.id}
+                            href={`/products/${product.id}`}
+                            onClick={() => {
+                              try {
+                                sessionStorage.setItem(CATALOG_RETURN_HREF_KEY, catalogHrefKey);
+                              } catch {
+                                /* ignore */
+                              }
+                            }}
+                          >
                             <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col hover:border-k24-yellow/40 transition-colors cursor-pointer h-full pt-0 pb-0">
                               <div className="relative aspect-4/3 bg-zinc-950 shrink-0">
                                 {firstImage ? (
@@ -636,7 +707,17 @@ function CatalogContent() {
                         const firstImage = product.images?.[0]?.url;
                         const statusClass = statusColors[product.status] || statusColors.discontinued;
                         return (
-                          <Link key={product.id} href={`/products/${product.id}`}>
+                          <Link
+                            key={product.id}
+                            href={`/products/${product.id}`}
+                            onClick={() => {
+                              try {
+                                sessionStorage.setItem(CATALOG_RETURN_HREF_KEY, catalogHrefKey);
+                              } catch {
+                                /* ignore */
+                              }
+                            }}
+                          >
                             <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col hover:border-k24-yellow/40 transition-colors cursor-pointer h-full pt-0 pb-0">
                               <div className="relative aspect-4/3 bg-zinc-950 shrink-0">
                                 {firstImage ? (

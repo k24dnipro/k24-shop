@@ -24,6 +24,7 @@ import { hasDisplayableUsdPrice } from '@/lib/currency/format';
 import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useShopCatalogHref } from '@/lib/shop/use-shop-catalog-href';
 import {
   Card,
   CardContent,
@@ -77,6 +78,7 @@ export function ProductClient({ product, categoryName, usdToUahRate }: ProductCl
   const [showInquiryForm, setShowInquiryForm] = useState(false);
   const [showPriceProposalDialog, setShowPriceProposalDialog] = useState(false);
   const { addItem } = useCart();
+  const catalogHref = useShopCatalogHref();
 
   // Form state
   const [name, setName] = useState('');
@@ -213,7 +215,7 @@ export function ProductClient({ product, categoryName, usdToUahRate }: ProductCl
     <div className="container mx-auto px-4 py-6 space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-zinc-400">
-        <Link href="/catalog" className="hover:text-k24-yellow transition">
+        <Link href={catalogHref} className="hover:text-k24-yellow transition">
           Каталог
         </Link>
         <span>/</span>

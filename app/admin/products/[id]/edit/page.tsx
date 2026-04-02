@@ -9,8 +9,6 @@ import { ProductForm } from '@/components/admin/productForm';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  adminProductsListPath,
-  adminProductsListPageQuery,
   pageIndexFromPageSearchParam,
 } from '@/lib/admin/products-navigation';
 import { Product } from '@/lib/types';
@@ -37,9 +35,9 @@ function EditProductPageInner({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const listPageIndex = pageIndexFromPageSearchParam(searchParams);
-  const productsListPath = adminProductsListPath(listPageIndex);
-  const listPageQuery = adminProductsListPageQuery(listPageIndex);
+  pageIndexFromPageSearchParam(searchParams);
+  const listPageQuery = searchParams.toString() ? `?${searchParams.toString()}` : "";
+  const productsListHref = `/admin/products${listPageQuery}`;
   const cancelHref = `/admin/products/${id}${listPageQuery}`;
 
   const { product, loading: productLoading } = useProduct(id);
@@ -74,7 +72,7 @@ function EditProductPageInner({ params }: { params: Promise<{ id: string }> }) {
         <div className="p-6">
           <Button
             variant="outline"
-            onClick={() => router.push(productsListPath)}
+            onClick={() => router.push(productsListHref)}
             className="border-zinc-800 text-zinc-400 hover:text-white"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

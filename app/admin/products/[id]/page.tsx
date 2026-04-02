@@ -11,11 +11,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  adminProductsListPageQuery,
-  adminProductsListPath,
-  pageIndexFromPageSearchParam,
-} from '@/lib/admin/products-navigation';
+import { pageIndexFromPageSearchParam } from '@/lib/admin/products-navigation';
 import { toast } from 'sonner';
 import { Header } from '@/components/admin/header';
 import {
@@ -67,9 +63,10 @@ function ProductDetailPageInner({ params }: { params: Promise<{ id: string }> })
   const { id } = use(params);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const listPageIndex = pageIndexFromPageSearchParam(searchParams);
-  const productsListPath = adminProductsListPath(listPageIndex);
-  const listPageQuery = adminProductsListPageQuery(listPageIndex);
+  // Ensure legacy `?page=` stays accepted; query itself is preserved for back links.
+  pageIndexFromPageSearchParam(searchParams);
+  const listPageQuery = searchParams.toString() ? `?${searchParams.toString()}` : "";
+  const productsListHref = `/admin/products${listPageQuery}`;
   const { product, loading, remove } = useProduct(id);
   const { categories } = useCategories();
   const { hasPermission } = useAuth();
@@ -81,7 +78,7 @@ function ProductDetailPageInner({ params }: { params: Promise<{ id: string }> })
     try {
       await remove();
       toast.success('Товар видалено');
-      router.push(productsListPath);
+      router.push(productsListHref);
     } catch {
       toast.error('Помилка видалення товару');
     }
@@ -128,7 +125,7 @@ function ProductDetailPageInner({ params }: { params: Promise<{ id: string }> })
         <div className="p-6">
           <Button
             variant="outline"
-            onClick={() => router.push(productsListPath)}
+            onClick={() => router.push(productsListHref)}
             className="border-zinc-800 text-zinc-400 hover:text-white"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -148,7 +145,7 @@ function ProductDetailPageInner({ params }: { params: Promise<{ id: string }> })
         <div className="flex items-center justify-between">
           <Button
             variant="outline"
-            onClick={() => router.push(productsListPath)}
+            onClick={() => router.push(productsListHref)}
             className="border-zinc-800 text-zinc-400 hover:text-white"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

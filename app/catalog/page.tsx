@@ -24,9 +24,10 @@ import {
   useSearchParams,
 } from 'next/navigation';
 import {
+  CATALOG_BATCH_PARAM,
+  CATALOG_RETURN_HREF_KEY,
   getCatalogBatchCount,
   setCatalogBatchInUrl,
-  CATALOG_RETURN_HREF_KEY,
 } from '@/lib/shop/catalog-navigation';
 import { toast } from 'sonner';
 import { NoIndexFilter } from '@/components/seo/noindex-filter';
@@ -91,14 +92,13 @@ function CatalogContent() {
   const mainScrollRef = useRef<HTMLElement | null>(null);
   const scrollRestoredForHrefRef = useRef<string | null>(null);
 
-  const initialSearch = searchParams.get('q') || '';
+  const qParamRaw = searchParams.get('q') ?? '';
   const categoryFromUrl = searchParams.get('category');
   const hasCategoryInUrl = categoryFromUrl != null && categoryFromUrl !== '';
   const initialCategory = categoryFromUrl || 'all';
   const batchFromUrl = getCatalogBatchCount(searchParams);
   const catalogHrefKeyRef = useRef<string>('');
 
-  const [inputSearchTerm, setInputSearchTerm] = useState(initialSearch);
   const [selectedCategory, setSelectedCategory] = useState<string>(() => {
     // When the user selects category in the sidebar, URL may not be updated.
     // On "Back" we restore the last chosen category from sessionStorage.
@@ -163,6 +163,13 @@ function CatalogContent() {
     sortBy: sortBy,
   });
 
+  const performSearchRef = useRef(performSearch);
+  const clearSearchRef = useRef(clearSearch);
+  useEffect(() => {
+    performSearchRef.current = performSearch;
+    clearSearchRef.current = clearSearch;
+  });
+
   const isSearchActive = !!activeSearchTerm;
 
   // Build "current catalog href" including category/search/batch from component state.
@@ -209,12 +216,29 @@ function CatalogContent() {
     setCatalogBatchInUrl(router, pathname, searchParams, 1);
   }, [router, pathname, searchParams]);
 
-  // Run search when URL has ?q= (e.g. navigated from product page or shared link)
+  /** Уникаємо повторного performSearch/clearSearch, якщо q в URL уже застосовано */
+  const appliedCatalogQRef = useRef<string | null>(null);
+
+  // Пошук із URL: перший захід, «Назад»/«Вперед», перехід з головної з ?q=
+  // Тільки [qParamRaw] у deps — інакше performSearch/clearSearch після завантаження перезапускають ефект.
   useEffect(() => {
-    if (initialSearch.trim()) {
-      performSearch(initialSearch);
+    if (appliedCatalogQRef.current === qParamRaw) return;
+    appliedCatalogQRef.current = qParamRaw;
+    const trimmed = qParamRaw.trim();
+    if (trimmed) {
+      void performSearchRef.current(trimmed);
+    } else {
+      clearSearchRef.current();
     }
-  }, [initialSearch, performSearch]);
+  }, [qParamRaw]);
+
+  const replaceCatalogQueryInUrl = useCallback(
+    (next: URLSearchParams) => {
+      const qs = next.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname);
+    },
+    [router, pathname]
+  );
 
   const loadedBrowseBatches = Math.max(
     1,
@@ -346,21 +370,21 @@ function CatalogContent() {
     resetCatalogBatchInUrl();
     scrollRestoredForHrefRef.current = null;
     setSelectedCategory(categoryId);
-    // Don't clear search when selecting category - allow filtering search results by category
-    if (!isSearchActive) {
-      setInputSearchTerm('');
-    }
   };
 
-  // Handle search from header
-  const handleHeaderSearch = (query: string) => {
-    setInputSearchTerm(query);
-    if (query.trim()) {
-      resetCatalogBatchInUrl();
+  // Handle search from header — зберігаємо q в URL, щоб «Назад» з товару не губив запит
+  const handleHeaderSearch = useCallback(
+    (query: string) => {
+      const trimmed = query.trim();
+      if (!trimmed) return;
       scrollRestoredForHrefRef.current = null;
-      performSearch(query);
-    }
-  };
+      const p = new URLSearchParams(searchParams.toString());
+      p.set('q', trimmed);
+      p.delete(CATALOG_BATCH_PARAM);
+      replaceCatalogQueryInUrl(p);
+    },
+    [searchParams, replaceCatalogQueryInUrl]
+  );
 
   const handleStatusFilterChange = (value: string) => {
     resetCatalogBatchInUrl();
@@ -390,7 +414,7 @@ function CatalogContent() {
       {/* Header */}
       <ShopHeader
         onSearch={handleHeaderSearch}
-        searchValue={isSearchActive ? activeSearchTerm : inputSearchTerm}
+        searchValue={isSearchActive ? activeSearchTerm : qParamRaw}
         onMobileMenuToggle={() => setMobileMenuOpen(true)}
       />
 
@@ -524,10 +548,11 @@ function CatalogContent() {
                       size="sm"
                       className="border-zinc-800 text-zinc-300 hover:border-k24-yellow hover:text-white"
                       onClick={() => {
-                        resetCatalogBatchInUrl();
                         scrollRestoredForHrefRef.current = null;
-                        setInputSearchTerm('');
-                        clearSearch();
+                        const p = new URLSearchParams(searchParams.toString());
+                        p.delete('q');
+                        p.delete(CATALOG_BATCH_PARAM);
+                        replaceCatalogQueryInUrl(p);
                       }}
                     >
                       Скинути пошук

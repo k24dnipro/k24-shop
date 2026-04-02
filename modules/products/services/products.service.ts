@@ -281,7 +281,7 @@ async function searchProductsInternal(
     allProductsCacheFetchedAt = now;
   }
 
-  // Search by: name, brand, part code (partNumber), and original number (OEM).
+  // Search by: name, brand (виробник деталі), part code, OEM, марка/модель авто.
   // Partial match on all fields; OEM is never ignored (each word can match inside OEM).
   const trimmedTerm = searchTerm.trim();
   if (trimmedTerm) {
@@ -294,13 +294,17 @@ async function searchProductsInternal(
         const normalizedPartNumber = normalizeForSearch(product.partNumber);
         const normalizedBrand = normalizeForSearch(product.brand);
         const normalizedOem = normalizeForSearch(product.oem);
+        const normalizedCarBrand = normalizeForSearch(product.carBrand);
+        const normalizedCarModel = normalizeForSearch(product.carModel);
 
         return searchWords.every(
           (word) =>
             normalizedName.includes(word) ||
             normalizedPartNumber.includes(word) ||
             normalizedBrand.includes(word) ||
-            normalizedOem.includes(word)
+            normalizedOem.includes(word) ||
+            normalizedCarBrand.includes(word) ||
+            normalizedCarModel.includes(word)
         );
       });
     }

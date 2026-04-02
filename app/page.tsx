@@ -125,7 +125,7 @@ export default function Home() {
                       id="hero-search"
                       name="q"
                       type="search"
-                      placeholder="Назва, бренд, код деталі або OEM..."
+                      placeholder="Назва, бренд, код, OEM, марка або модель авто..."
                       autoComplete="off"
                       className="h-14 pl-12 pr-28 rounded-lg border-none text-lg shadow-xl focus-visible:ring-k24-yellow transition-all placeholder:text-sm bg-k24-yellow/50 backdrop-blur-md text-white placeholder:text-white/90"
                       value={searchQuery}

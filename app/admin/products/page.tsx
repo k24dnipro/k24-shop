@@ -12,6 +12,7 @@ import {
 import {
   Eye,
   Filter,
+  FolderTree,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -70,6 +71,7 @@ import {
   PRODUCT_STATUSES,
   ProductStatus,
 } from '@/modules/products/types';
+import { updateProduct } from '@/modules/products/services/products.service';
 import { ColumnDef } from '@tanstack/react-table';
 
 export default function ProductsPage() {
@@ -91,14 +93,18 @@ function ProductsPageContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { hasPermission } = useAuth();
+  const qParamRaw = searchParams.get("q") ?? "";
   const categoryFromUrl = searchParams.get("category") || "all";
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(qParamRaw);
   const [categoryFilter, setCategoryFilter] = useState<string>(categoryFromUrl);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [bulkCategoryDialogOpen, setBulkCategoryDialogOpen] = useState(false);
+  const [pendingBulkCategoryId, setPendingBulkCategoryId] = useState<string>("");
+  const [bulkCategoryLoading, setBulkCategoryLoading] = useState(false);
 
   const pageIndexFromUrl = useMemo(
     () => pageIndexFromPageSearchParam(searchParams),
@@ -107,6 +113,10 @@ function ProductsPageContent() {
 
   const expectedPageFromUrlRef = useRef<number | null>(null);
   const prevDebouncedSearchRef = useRef<string | undefined>(undefined);
+  /** Останнє q з URL, яке вже відобразили в полі пошуку */
+  const appliedUrlQRef = useRef<string | null>(null);
+  /** Після router.replace з debounce — не перезаписувати searchTerm з URL */
+  const skipSearchTermSyncFromUrlRef = useRef(false);
 
   const {
     products,
@@ -123,10 +133,24 @@ function ProductsPageContent() {
     status:
       statusFilter !== "all" ? (statusFilter as ProductStatus) : undefined,
     initialPage: pageIndexFromUrl,
+    initialSearchQuery: qParamRaw,
+  });
+
+  const searchRef = useRef(search);
+  const searchParamsRef = useRef(searchParams);
+  useEffect(() => {
+    searchRef.current = search;
+    searchParamsRef.current = searchParams;
   });
 
   const listPageQuery = useMemo(() => {
     const params = new URLSearchParams(searchParams.toString());
+    const qTrim = searchTerm.trim();
+    if (qTrim) {
+      params.set("q", qTrim);
+    } else {
+      params.delete("q");
+    }
     if (categoryFilter && categoryFilter !== "all") {
       params.set("category", categoryFilter);
     } else {
@@ -139,7 +163,7 @@ function ProductsPageContent() {
     }
     const qs = params.toString();
     return qs ? `?${qs}` : "";
-  }, [searchParams, categoryFilter, currentPage]);
+  }, [searchParams, searchTerm, categoryFilter, currentPage]);
 
   const { categories } = useCategories();
   const { remove, loading: mutationLoading } = useProductMutations();
@@ -148,9 +172,20 @@ function ProductsPageContent() {
   const canDelete = hasPermission("canDeleteProducts");
   const canCreate = hasPermission("canCreateProducts");
 
+  const mergeListQueryParams = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    const qt = searchTerm.trim();
+    if (qt) {
+      params.set("q", qt);
+    } else {
+      params.delete("q");
+    }
+    return params;
+  }, [searchParams, searchTerm]);
+
   const replacePageInUrl = useCallback(
     (pageIndex: number) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = mergeListQueryParams();
       if (pageIndex <= 0) {
         params.delete("page");
       } else {
@@ -159,7 +194,7 @@ function ProductsPageContent() {
       const qs = params.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname);
     },
-    [pathname, router, searchParams]
+    [pathname, router, mergeListQueryParams]
   );
 
   const onPaginationChange = useCallback(
@@ -175,7 +210,7 @@ function ProductsPageContent() {
     (value: string) => {
       expectedPageFromUrlRef.current = 0;
       setCategoryFilter(value);
-      const params = new URLSearchParams(searchParams.toString());
+      const params = mergeListQueryParams();
       params.delete("page");
       if (value && value !== "all") {
         params.set("category", value);
@@ -185,19 +220,19 @@ function ProductsPageContent() {
       const qs = params.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname);
     },
-    [pathname, router, searchParams]
+    [pathname, router, mergeListQueryParams]
   );
 
   const handleStatusFilterChange = useCallback(
     (value: string) => {
       expectedPageFromUrlRef.current = 0;
       setStatusFilter(value);
-      const params = new URLSearchParams(searchParams.toString());
+      const params = mergeListQueryParams();
       params.delete("page");
       const qs = params.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname);
     },
-    [pathname, router, searchParams]
+    [pathname, router, mergeListQueryParams]
   );
 
   // Sync browser history / shared links → table page (back/forward, opening ?page=)
@@ -225,25 +260,56 @@ function ProductsPageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Search with debounce
+  // Пошуковий запит з URL (назад/вперед, прямий лінк з ?q=)
+  useLayoutEffect(() => {
+    if (skipSearchTermSyncFromUrlRef.current) {
+      skipSearchTermSyncFromUrlRef.current = false;
+      appliedUrlQRef.current = qParamRaw;
+      return;
+    }
+    if (appliedUrlQRef.current === qParamRaw) return;
+    appliedUrlQRef.current = qParamRaw;
+    setSearchTerm(qParamRaw);
+  }, [qParamRaw]);
+
+  // Search with debounce + збереження q в URL.
+  // Не залежимо від `search` / mergeListQueryParams у deps — інакше після кожного fetch оновлюються
+  // колбеки в useProductsPaginated і таймер перезапускається безкінечно (спіннер не зникає).
   useEffect(() => {
     const timer = setTimeout(() => {
-      search(searchTerm);
       const prev = prevDebouncedSearchRef.current;
-      if (prev !== undefined && prev !== searchTerm) {
+      const searchChanged = prev !== undefined && prev !== searchTerm;
+      void searchRef.current(searchTerm, {
+        pageIndex: searchChanged
+          ? 0
+          : pageIndexFromPageSearchParam(searchParamsRef.current),
+      });
+      if (searchChanged) {
         expectedPageFromUrlRef.current = 0;
-        const params = new URLSearchParams(searchParams.toString());
-        if (params.has("page")) {
-          params.delete("page");
-          const qs = params.toString();
-          router.replace(qs ? `${pathname}?${qs}` : pathname);
-        }
       }
       prevDebouncedSearchRef.current = searchTerm;
+
+      const params = new URLSearchParams(searchParamsRef.current.toString());
+      const trimmed = searchTerm.trim();
+      if (trimmed) {
+        params.set("q", trimmed);
+      } else {
+        params.delete("q");
+      }
+      if (searchChanged) {
+        params.delete("page");
+      }
+      const nextQs = params.toString();
+      const curQs = searchParamsRef.current.toString();
+      if (nextQs === curQs) {
+        return;
+      }
+      skipSearchTermSyncFromUrlRef.current = true;
+      router.replace(nextQs ? `${pathname}?${nextQs}` : pathname);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, search, pathname, router, searchParams]);
+  }, [searchTerm, pathname, router]);
 
   // Reset selection when filters change
   useEffect(() => {
@@ -262,6 +328,46 @@ function ProductsPageContent() {
     } finally {
       setDeleteDialogOpen(false);
       setProductToDelete(null);
+    }
+  };
+
+  const handleBulkAssignCategory = async () => {
+    if (!pendingBulkCategoryId) return;
+    const ids = Array.from(selectedProductIds);
+    if (ids.length === 0) return;
+
+    setBulkCategoryLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          updateProduct(id, {
+            categoryId: pendingBulkCategoryId,
+            subcategoryId: null,
+          })
+        )
+      );
+      const successCount = results.filter((r) => r.status === "fulfilled").length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0) {
+        toast.success(
+          `Категорію оновлено для ${successCount} товар(ів)`
+        );
+      }
+      if (failCount > 0) {
+        toast.error(`Не вдалося оновити ${failCount} товар(ів)`);
+      }
+
+      refresh();
+      if (successCount > 0) {
+        setSelectedProductIds(new Set());
+        setBulkCategoryDialogOpen(false);
+        setPendingBulkCategoryId("");
+      }
+    } catch {
+      toast.error("Помилка масового призначення категорії");
+    } finally {
+      setBulkCategoryLoading(false);
     }
   };
 
@@ -574,7 +680,7 @@ function ProductsPageContent() {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto justify-end">
-            {canDelete && selectedProductIds.size > 0 && (
+            {(canEdit || canDelete) && selectedProductIds.size > 0 && (
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
@@ -583,14 +689,29 @@ function ProductsPageContent() {
                 >
                   Зняти виділення ({selectedProductIds.size})
                 </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => setBulkDeleteDialogOpen(true)}
-                  className="w-full sm:w-auto"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Видалити вибрані ({selectedProductIds.size})
-                </Button>
+                {canEdit && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setPendingBulkCategoryId("");
+                      setBulkCategoryDialogOpen(true);
+                    }}
+                    className="border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600 w-full sm:w-auto"
+                  >
+                    <FolderTree className="mr-2 h-4 w-4" />
+                    Категорія для вибраних ({selectedProductIds.size})
+                  </Button>
+                )}
+                {canDelete && (
+                  <Button
+                    variant="destructive"
+                    onClick={() => setBulkDeleteDialogOpen(true)}
+                    className="w-full sm:w-auto"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Видалити вибрані ({selectedProductIds.size})
+                  </Button>
+                )}
               </div>
             )}
             {canCreate && (
@@ -650,6 +771,61 @@ function ProductsPageContent() {
         </AlertDialogContent>
       </AlertDialog>
       
+      {/* Bulk assign category dialog */}
+      <AlertDialog
+        open={bulkCategoryDialogOpen}
+        onOpenChange={(open) => {
+          setBulkCategoryDialogOpen(open);
+          if (!open) setPendingBulkCategoryId("");
+        }}
+      >
+        <AlertDialogContent className="bg-zinc-950 border-zinc-800">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-white">
+              Призначити категорію
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-400">
+              Оберіть категорію для {selectedProductIds.size} вибраного(их) товар(ів). Підкатегорію буде
+              скинуто.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <Select
+              value={pendingBulkCategoryId || undefined}
+              onValueChange={setPendingBulkCategoryId}
+            >
+              <SelectTrigger className="w-full bg-zinc-900/50 border-zinc-800 text-white">
+                <SelectValue placeholder="Оберіть категорію" />
+              </SelectTrigger>
+              <SelectContent className="bg-zinc-950 border-zinc-800">
+                {categories.map((cat) => (
+                  <SelectItem
+                    key={cat.id}
+                    value={cat.id}
+                    className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                  >
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-zinc-900 border-zinc-800 text-white hover:bg-zinc-800">
+              Скасувати
+            </AlertDialogCancel>
+            <Button
+              type="button"
+              onClick={() => void handleBulkAssignCategory()}
+              disabled={!pendingBulkCategoryId || bulkCategoryLoading}
+              className="bg-k24-yellow hover:bg-k24-yellow text-black"
+            >
+              {bulkCategoryLoading ? "Збереження..." : "Застосувати"}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Bulk delete confirmation dialog */}
       <AlertDialog open={bulkDeleteDialogOpen} onOpenChange={setBulkDeleteDialogOpen}>
         <AlertDialogContent className="bg-zinc-950 border-zinc-800">

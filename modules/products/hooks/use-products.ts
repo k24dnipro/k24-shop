@@ -572,10 +572,18 @@ interface UseProductsPaginatedOptions {
   status?: ProductStatus;
   /** 0-based page index from URL; only applied on first mount (see useState initializer). */
   initialPage?: number;
+  /** Якщо з URL є `q` — не робимо початковий server-side fetch сторінки (інакше з’являться «чужі» товари до пошуку). */
+  initialSearchQuery?: string;
 }
 
 export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) {
-  const { pageSize = 20, categoryId, status, initialPage: initialPageOption } = options;
+  const {
+    pageSize = 20,
+    categoryId,
+    status,
+    initialPage: initialPageOption,
+    initialSearchQuery = "",
+  } = options;
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -731,7 +739,10 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
 
   // Search products
   const search = useCallback(
-    async (term: string) => {
+    async (
+      term: string,
+      opts?: { pageIndex?: number }
+    ) => {
       const trimmedTerm = term.trim();
       const searching = trimmedTerm.length > 0;
       
@@ -742,6 +753,7 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
       
       if (!trimmedTerm) {
         // Reset to page 0 when clearing search
+        fetchGenerationRef.current += 1;
         setCurrentPage(0);
         searchResultsRef.current = [];
         pageSnapshotsRef.current.clear();
@@ -753,19 +765,29 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
         return;
       }
 
+      // Скасувати «звичайний» fetch сторінки, який міг уже піти в мережу
+      fetchGenerationRef.current += 1;
+
       setLoading(true);
       setError(null);
-      setCurrentPage(0); // Reset to first page when searching
       try {
         const results = await searchProducts(trimmedTerm, { categoryId, status });
         // Store all search results for client-side pagination
         searchResultsRef.current = results;
-        
-        // Show first page of search results
-        const paginatedResults = results.slice(0, pageSize);
+
+        const maxPageIdx = Math.max(
+          0,
+          Math.ceil(results.length / pageSize) - 1
+        );
+        const requested =
+          opts?.pageIndex !== undefined ? opts.pageIndex : 0;
+        const pageIdx = Math.min(Math.max(0, requested), maxPageIdx);
+        setCurrentPage(pageIdx);
+        const start = pageIdx * pageSize;
+        const paginatedResults = results.slice(start, start + pageSize);
         setProducts(paginatedResults);
         setTotalCount(results.length);
-        setHasMore(results.length > pageSize);
+        setHasMore(start + pageSize < results.length);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Помилка пошуку";
         setError(message);
@@ -782,7 +804,11 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
       setCurrentPage(newPage);
 
       // If searching, paginate search results client-side
-      if (isSearchingRef.current && searchResultsRef.current.length > 0) {
+      if (isSearchingRef.current) {
+        if (searchResultsRef.current.length === 0) {
+          // Пошук ще вантажиться — не падати в server-side fetch по «сторінці 11» без фільтра
+          return;
+        }
         const allResults = searchResultsRef.current;
         const start = newPage * pageSize;
         const end = start + pageSize;
@@ -828,15 +854,47 @@ export function useProductsPaginated(options: UseProductsPaginatedOptions = {}) 
 
     prevFiltersRef.current = { categoryId, status };
     const pageToLoad = initialPageAtMountRef.current ?? 0;
+    const qInit = initialSearchQuery.trim();
+    if (qInit) {
+      fetchGenerationRef.current += 1;
+      isSearchingRef.current = true;
+      setIsSearching(true);
+      setSearchTerm(initialSearchQuery);
+      setLoading(true);
+      setError(null);
+      void (async () => {
+        try {
+          const results = await searchProducts(qInit, { categoryId, status });
+          searchResultsRef.current = results;
+          const maxPageIdx = Math.max(
+            0,
+            Math.ceil(results.length / pageSize) - 1
+          );
+          const pageIdx = Math.min(pageToLoad, maxPageIdx);
+          setCurrentPage(pageIdx);
+          const start = pageIdx * pageSize;
+          setProducts(results.slice(start, start + pageSize));
+          setTotalCount(results.length);
+          setHasMore(start + pageSize < results.length);
+        } catch (err: unknown) {
+          const message =
+            err instanceof Error ? err.message : "Помилка пошуку";
+          setError(message);
+        } finally {
+          setLoading(false);
+        }
+      })();
+      return;
+    }
+
     fetchCount();
     fetchProducts(pageToLoad, pageToLoad === 0);
-  }, [categoryId, status, fetchCount, fetchProducts]);
+  }, [categoryId, status, fetchCount, fetchProducts, initialSearchQuery, pageSize]);
 
   // Refresh function
   const refresh = useCallback(() => {
     if (isSearching && searchTerm.trim()) {
-      // Re-run search
-      search(searchTerm);
+      search(searchTerm, { pageIndex: currentPage });
     } else {
       pageSnapshotsRef.current.clear();
       lastDocRef.current = null;

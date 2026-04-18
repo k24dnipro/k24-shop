@@ -162,6 +162,7 @@ async function main() {
         : 0;
       return {
         id: doc.id,
+        name: typeof data.name === 'string' ? data.name : '',
         sku: typeof data.sku === 'string' ? data.sku : '',
         partNumber: typeof data.partNumber === 'string' ? data.partNumber : '',
         createdAt,
@@ -171,7 +172,7 @@ async function main() {
     .sort((a, b) => a.createdAt - b.createdAt);
 
   // Спершу резервуємо ті, що вже мають коректний sku (нормалізований).
-  const productUpdates = []; // { ref, oldSku, newSku, productId }
+  const productUpdates = []; // { ref, oldSku, newSku, productId, name, partNumber, source }
   const codeUpdates = [];    // { sku, productId } — створити мітку
   const codeReleases = [];   // sku — мітку прибрати, бо вказує на чужий productId
 
@@ -199,17 +200,18 @@ async function main() {
         // sku не у канонічному форматі — нормалізуємо.
         const newSku = pickFreeSku(norm, taken);
         taken.add(newSku);
-        productUpdates.push({ ref: p.ref, oldSku: existing, newSku, productId: p.id });
+        const suffixed = newSku !== norm;
+        productUpdates.push({ ref: p.ref, oldSku: existing, newSku, productId: p.id, name: p.name, partNumber: p.partNumber, source: 'normalized', suffixed });
         codeUpdates.push({ sku: newSku, productId: p.id });
         stats.normalized++;
-        if (newSku !== norm) stats.conflictResolved++;
+        if (suffixed) stats.conflictResolved++;
         continue;
       }
       if (taken.has(norm) && codesByProduct.get(p.id) !== norm) {
         // sku зайнятий кимось іншим — підбираємо інший.
         const newSku = pickFreeSku(norm, taken);
         taken.add(newSku);
-        productUpdates.push({ ref: p.ref, oldSku: existing, newSku, productId: p.id });
+        productUpdates.push({ ref: p.ref, oldSku: existing, newSku, productId: p.id, name: p.name, partNumber: p.partNumber, source: 'conflict', suffixed: true });
         codeUpdates.push({ sku: newSku, productId: p.id });
         stats.conflictResolved++;
         continue;
@@ -221,14 +223,15 @@ async function main() {
     if (baseFromPart) {
       const newSku = pickFreeSku(baseFromPart, taken);
       taken.add(newSku);
-      productUpdates.push({ ref: p.ref, oldSku: '', newSku, productId: p.id });
+      const suffixed = newSku !== baseFromPart;
+      productUpdates.push({ ref: p.ref, oldSku: '', newSku, productId: p.id, name: p.name, partNumber: p.partNumber, source: 'fromPartNumber', suffixed });
       codeUpdates.push({ sku: newSku, productId: p.id });
       stats.generatedFromPartNumber++;
-      if (newSku !== baseFromPart) stats.conflictResolved++;
+      if (suffixed) stats.conflictResolved++;
     } else {
       const newSku = pickFreeSku('', taken);
       taken.add(newSku);
-      productUpdates.push({ ref: p.ref, oldSku: '', newSku, productId: p.id });
+      productUpdates.push({ ref: p.ref, oldSku: '', newSku, productId: p.id, name: p.name, partNumber: p.partNumber, source: 'manual', suffixed: false });
       codeUpdates.push({ sku: newSku, productId: p.id });
       stats.generatedManual++;
     }
@@ -252,10 +255,48 @@ async function main() {
   console.log(`  нових міток у productCodes: ${codeUpdates.length}`);
   console.log(`  міток-сиріт до видалення  : ${codeReleases.length}`);
 
-  if (productUpdates.length > 0) {
-    console.log('\nПриклад перших 20 змін:');
-    productUpdates.slice(0, 20).forEach((u, i) => {
-      console.log(`  ${i + 1}. ${u.productId}: "${u.oldSku || '∅'}" → "${u.newSku}"`);
+  const truncate = (s, n) => {
+    const v = String(s || '');
+    return v.length > n ? v.slice(0, n - 1) + '…' : v;
+  };
+  const printGroup = (title, items) => {
+    if (items.length === 0) return;
+    console.log(`\n${title} (${items.length}):`);
+    items.forEach((u, i) => {
+      const idx = String(i + 1).padStart(String(items.length).length, ' ');
+      const name = truncate(u.name || '∅', 60).padEnd(60, ' ');
+      const part = truncate(u.partNumber || '∅', 24).padEnd(24, ' ');
+      const oldS = u.oldSku ? `"${u.oldSku}" → ` : '';
+      console.log(`  ${idx}. [${u.productId}] ${name} | partNumber: ${part} | sku: ${oldS}"${u.newSku}"`);
+    });
+  };
+
+  printGroup(
+    'Згенеровано з partNumber',
+    productUpdates.filter((u) => u.source === 'fromPartNumber')
+  );
+  printGroup(
+    'Згенеровано MAN-XXXXXXXX (немає partNumber)',
+    productUpdates.filter((u) => u.source === 'manual')
+  );
+  printGroup(
+    'Нормалізовано існуючий sku',
+    productUpdates.filter((u) => u.source === 'normalized')
+  );
+  printGroup(
+    'Розв\'язано колізію (зайнятий sku)',
+    productUpdates.filter((u) => u.source === 'conflict')
+  );
+  printGroup(
+    'Із суфіксом колізії (partNumber повторюється — додано -2/-3/…)',
+    productUpdates.filter((u) => u.suffixed)
+  );
+
+  if (codeReleases.length > 0) {
+    console.log(`\nМітки-сироти до видалення (${codeReleases.length}):`);
+    codeReleases.forEach((sku, i) => {
+      const idx = String(i + 1).padStart(String(codeReleases.length).length, ' ');
+      console.log(`  ${idx}. ${sku}`);
     });
   }
 

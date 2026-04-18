@@ -29,6 +29,14 @@ service cloud.firestore {
       allow delete: if isAuthenticated() && isActive();
     }
 
+    // --- productCodes: реєстр унікальних SKU. Читання дозволене всім (для
+    //     debounced-перевірки унікальності в адмін-формі); писати/видаляти
+    //     можуть лише активні співробітники у транзакції з products.
+    match /productCodes/{sku} {
+      allow read: if true;
+      allow create, update, delete: if isAuthenticated() && isActive();
+    }
+
     // --- categories: public read, write only for authenticated active staff ---
     match /categories/{categoryId} {
       allow read: if true;

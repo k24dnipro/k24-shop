@@ -77,7 +77,7 @@ export function generateProductStructuredData(
     name: product.name,
     description: product.description || product.name,
     image: product.images?.map(img => img.url) || [imageUrl],
-    sku: product.partNumber || product.id,
+    sku: product.sku || product.partNumber || product.id,
     brand: {
       '@type': 'Brand',
       name: product.brand || 'Unknown',

@@ -66,6 +66,9 @@ interface ProductFormData {
   subcategoryId: string | null;
   status: ProductStatus;
   brand: string;
+  /** Унікальний артикул в нашій системі. Якщо порожній — згенерується. */
+  sku: string;
+  /** Код деталі від постачальника. Може повторюватись для варіацій. */
   partNumber: string;
   oem: string | null;
   compatibility: string;
@@ -113,6 +116,7 @@ export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductF
       subcategoryId: product?.subcategoryId ?? null,
       status: product?.status || "in_stock",
       brand: product?.brand || "",
+      sku: product?.sku || "",
       partNumber: product?.partNumber || "",
       oem: product?.oem ?? null,
       compatibility: product?.compatibility?.join(", ") || "",
@@ -219,7 +223,8 @@ export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductF
       subcategoryId: data.subcategoryId ?? null,
       status: data.status,
       brand: data.brand,
-      partNumber: data.partNumber,
+      sku: data.sku?.trim() || "",
+      partNumber: data.partNumber?.trim() || "",
       oem: data.oem ?? null,
       compatibility: data.compatibility
         ? data.compatibility
@@ -467,6 +472,32 @@ export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductF
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
+                  <Label className="text-zinc-400">Код товару</Label>
+                  <Input
+                    {...register("sku")}
+                    className="bg-zinc-800 border-zinc-700 text-white font-mono"
+                    placeholder="Авто-генерація, якщо порожньо"
+                  />
+                  <p className="text-xs text-zinc-500">
+                    Унікальний код товару в нашій системі. Якщо лишити порожнім —
+                    буде згенерований автоматично з коду деталі або як <code className="text-zinc-400">MAN-XXXXXXXX</code>.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-zinc-400">Код деталі</Label>
+                  <Input
+                    {...register("partNumber")}
+                    className="bg-zinc-800 border-zinc-700 text-white font-mono"
+                    placeholder="Каталожний номер постачальника"
+                  />
+                  <p className="text-xs text-zinc-500">
+                    Код деталі від постачальника. Може повторюватись для
+                    різних варіацій (колір, сторона тощо). Не є унікальним.
+                  </p>
+                </div>
+
+                <div className="space-y-2">
                   <Label className="text-zinc-400">Бренд</Label>
                   <Input
                     {...register("brand")}
@@ -509,7 +540,7 @@ export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductF
                   <Input
                     {...register("oem")}
                     className="bg-zinc-800 border-zinc-700 text-white"
-                    placeholder="Оригінальний номер виробника"
+                    placeholder="Оригінальний номер виробника авто"
                   />
                 </div>
 

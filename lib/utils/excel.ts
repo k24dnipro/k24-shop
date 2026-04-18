@@ -29,6 +29,9 @@ export async function parseExcelProductImport(file: File): Promise<CSVProductRow
         const rows: CSVProductRow[] = jsonData.map((row: unknown) => {
           const r = row as Record<string, unknown>;
           
+          // SKU — наш унікальний артикул товару. Підтримуємо різні написання,
+          // включно з тим, що використовується у нашому експорті.
+          const sku = getField(r, 'Артикул', 'Артикул (SKU)', 'SKU', 'Код товару', 'Код товара', 'sku');
           // Support both Russian (original Excel) and Ukrainian (export) column names
           const partNumber = getField(r, 'Код деталі', 'Код детали', 'Код запчасти', 'Код запчастини', 'Номер запчастини');
           const name = getField(r, 'Описание запчасти', 'Опис запчастини');
@@ -69,6 +72,7 @@ export async function parseExcelProductImport(file: File): Promise<CSVProductRow
           const finalCondition = condition || (isUsed ? 'used' : 'new');
 
           return {
+            sku: sku || null,
             partNumber,
             name,
             description,

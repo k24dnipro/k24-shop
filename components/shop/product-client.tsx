@@ -313,8 +313,19 @@ export function ProductClient({ product, categoryName, usdToUahRate }: ProductCl
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
                   <CardTitle className="text-2xl text-white">{product.name}</CardTitle>
-                  <CardDescription className="text-zinc-400">
-                    Код деталі: {product.partNumber || '—'}
+                  <CardDescription className="text-zinc-400 space-y-0.5">
+                    {product.sku && (
+                      <div>
+                        Код товару:{' '}
+                        <span className="font-mono text-zinc-200">{product.sku}</span>
+                      </div>
+                    )}
+                    {product.partNumber && (
+                      <div>
+                        Код деталі:{' '}
+                        <span className="font-mono text-zinc-300">{product.partNumber}</span>
+                      </div>
+                    )}
                   </CardDescription>
                 </div>
                 <Badge variant="outline" className={statusClass}>

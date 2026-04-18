@@ -56,11 +56,22 @@ import {
 
 // Sample CSV template
 // Кілька фото в колонці imageUrl — через "|" (наприклад: url1|url2|url3)
-const CSV_TEMPLATE = `partNumber,imageUrl,name,description,price,originalPrice,categoryId,subcategoryId,status,brand,oem,compatibility,condition,carBrand,carModel,metaTitle,metaDescription,metaKeywords,slug
-63117442647,https://example.com/images/fara-1.jpg|https://example.com/images/fara-2.jpg,Фара передня ліва,Оригінальна фара для BMW X5,5000,6000,cat_001,sub_001,in_stock,BMW,63117442647,"BMW X5 2018-2022,BMW X6 2019-2022",used,BMW,X5,Фара BMW X5 купити,Оригінальна фара для BMW X5 в наявності,фара bmw x5 купити київ,fara-bmw-x5`;
+//
+// Перша колонка — `sku` (унікальний артикул товару в нашій системі). Якщо
+// порожнє — буде згенеровано автоматично з partNumber (нормалізовано) або
+// як `MAN-<8 символів>` для рядків без коду деталі.
+const CSV_TEMPLATE = `sku,partNumber,imageUrl,name,description,price,originalPrice,categoryId,subcategoryId,status,brand,oem,compatibility,condition,carBrand,carModel,metaTitle,metaDescription,metaKeywords,slug
+BMW-FARA-X5-LH,63117442647,https://example.com/images/fara-1.jpg|https://example.com/images/fara-2.jpg,Фара передня ліва,Оригінальна фара для BMW X5,5000,6000,cat_001,sub_001,in_stock,BMW,63117442647,"BMW X5 2018-2022,BMW X6 2019-2022",used,BMW,X5,Фара BMW X5 купити,Оригінальна фара для BMW X5 в наявності,фара bmw x5 купити київ,fara-bmw-x5`;
 
 // Map Russian/Ukrainian CSV headers to English field names
 const RUSSIAN_HEADER_MAP: Record<string, string> = {
+  // SKU (новий унікальний артикул товару). Підтримуємо різні написання,
+  // включно з тим, що ми використовуємо у власному експорті.
+  "Артикул": "sku",
+  "Артикул (SKU)": "sku",
+  "SKU": "sku",
+  "Код товару": "sku",
+  "Код товара": "sku",
   // Russian
   "Код запчасти": "partNumber",
   "Номер запчасти": "partNumber",
@@ -269,7 +280,8 @@ export default function ImportPage() {
   const validateRows = (rows: CSVProductRow[]) => {
     const errors: string[] = [];
     rows.forEach((row, index) => {
-      if (!row.partNumber) errors.push(`Рядок ${index + 2}: Відсутній код деталі`);
+      // SKU і partNumber тепер опціональні: якщо обидва порожні — буде
+      // згенеровано MAN-<8>. Обов'язкові тільки name і price.
       if (!row.name) errors.push(`Рядок ${index + 2}: Відсутня назва`);
       if (!row.price) errors.push(`Рядок ${index + 2}: Відсутня ціна`);
     });

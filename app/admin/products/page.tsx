@@ -492,10 +492,19 @@ function ProductsPageContent() {
       },
     },
     {
+      accessorKey: "sku",
+      header: "Код товару",
+      cell: ({ row }) => (
+        <span className="font-mono text-sm text-white">
+          {row.original.sku || '—'}
+        </span>
+      ),
+    },
+    {
       accessorKey: "partNumber",
       header: "Код деталі",
       cell: ({ row }) => (
-        <span className="font-mono text-sm text-zinc-300">
+        <span className="font-mono text-sm text-zinc-400">
           {row.original.partNumber || '—'}
         </span>
       ),

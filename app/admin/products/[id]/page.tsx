@@ -259,12 +259,16 @@ function ProductDetailPageInner({ params }: { params: Promise<{ id: string }> })
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-3">
                     <div className="flex justify-between">
+                      <span className="text-zinc-500">Код товару</span>
+                      <span className="font-mono text-white">{product.sku || '-'}</span>
+                    </div>
+                    <div className="flex justify-between">
                       <span className="text-zinc-500">Бренд</span>
                       <span className="text-white">{product.brand || '-'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Код деталі</span>
-                      <span className="text-white">{product.partNumber || '-'}</span>
+                      <span className="font-mono text-white">{product.partNumber || '-'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-zinc-500">Стан</span>
@@ -350,8 +354,13 @@ function ProductDetailPageInner({ params }: { params: Promise<{ id: string }> })
             <Card className="bg-zinc-900/50 border-zinc-800">
               <CardContent className="pt-6 space-y-4">
                 <div className="flex justify-between items-center">
+                  <span className="text-zinc-500">Код товару</span>
+                  <span className="font-mono text-k24-yellow">{product.sku || '—'}</span>
+                </div>
+                <Separator className="bg-zinc-800" />
+                <div className="flex justify-between items-center">
                   <span className="text-zinc-500">Код деталі</span>
-                  <span className="font-mono text-k24-yellow">{product.partNumber || '—'}</span>
+                  <span className="font-mono text-zinc-300">{product.partNumber || '—'}</span>
                 </div>
                 <Separator className="bg-zinc-800" />
                 <div className="flex justify-between items-center">

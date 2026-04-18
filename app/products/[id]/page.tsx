@@ -51,6 +51,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       keywords: [
         product.name,
         product.brand || '',
+        product.sku || '',
         product.partNumber || '',
         categoryName,
         ...(product.seo?.metaKeywords || []),

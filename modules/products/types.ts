@@ -21,6 +21,12 @@ export interface ProductSEO {
 
 export interface Product {
   id: string;
+  /**
+   * Унікальний артикул товару в нашій системі (SKU). Використовується як
+   * primary key для оновлень/імпорту/експорту. Унікальність гарантується
+   * транзакційно через колекцію `productCodes/{sku}`.
+   */
+  sku: string;
   name: string;
   description: string;
   price: number;
@@ -32,6 +38,11 @@ export interface Product {
   seo: ProductSEO;
   // Auto parts specific fields
   brand: string;
+  /**
+   * Код деталі від постачальника (каталожний номер). МОЖЕ повторюватись
+   * для різних варіацій того ж товару (колір, сторона тощо). Не є
+   * первинним ключем — для цього є `sku`.
+   */
   partNumber: string;
   oem?: string | null;
   compatibility: string[];
@@ -49,6 +60,12 @@ export interface Product {
 }
 
 export interface CSVProductRow {
+  /**
+   * Унікальний артикул товару (SKU). Якщо порожній — буде згенерований
+   * автоматично під час імпорту: з `partNumber` (якщо унікальний) або
+   * `MAN-<8 символів>` для записів без `partNumber`.
+   */
+  sku?: string | null;
   partNumber: string;
   name: string;
   description: string;

@@ -1,7 +1,5 @@
 import {
-  addDoc,
   collection,
-  deleteDoc,
   doc,
   DocumentSnapshot,
   getCountFromServer,
@@ -12,6 +10,7 @@ import {
   or,
   orderBy,
   query,
+  runTransaction,
   startAfter,
   Timestamp,
   updateDoc,
@@ -44,6 +43,15 @@ import {
   ProductSEO,
   ProductStatus,
 } from '../types';
+import {
+  claimSkuInTransaction,
+  releaseSkuInTransaction,
+  reserveUniqueSku,
+} from './product-codes';
+import {
+  generateSku,
+  normalizeSku,
+} from './sku';
 
 const PRODUCTS_COLLECTION = "products";
 
@@ -400,16 +408,34 @@ export async function getProductById(id: string): Promise<Product | null> {
   return convertToProduct(docSnap);
 }
 
-// Get product by part number
+// Get product by part number. УВАГА: `partNumber` НЕ є унікальним. Використовуйте
+// тільки для зворотної сумісності зі старими CSV-файлами, де SKU не було.
+// Для нової логіки використовуйте `getProductBySku`.
 export async function getProductByPartNumber(partNumber: string): Promise<Product | null> {
+  const matches = await getProductsByPartNumber(partNumber);
+  return matches[0] ?? null;
+}
+
+// Get all products with given part number. Може повернути 0..N документів.
+export async function getProductsByPartNumber(partNumber: string): Promise<Product[]> {
   const q = query(collection(db, PRODUCTS_COLLECTION), where("partNumber", "==", partNumber));
   const snapshot = await getDocs(q);
+  return snapshot.docs.map(convertToProduct);
+}
 
+// Get product by SKU (наш унікальний артикул). Повертає 0 або 1 документ.
+export async function getProductBySku(sku: string): Promise<Product | null> {
+  const normalized = normalizeSku(sku);
+  if (!normalized) return null;
+  const q = query(collection(db, PRODUCTS_COLLECTION), where("sku", "==", normalized));
+  const snapshot = await getDocs(q);
   if (snapshot.empty) return null;
   return convertToProduct(snapshot.docs[0]);
 }
 
-// Create new product
+// Create new product. Атомарно резервує `sku` у `productCodes/{sku}` —
+// гарантія унікальності артикула. Якщо `sku` не передано або є колізія,
+// підбирається вільний кандидат (`base`, `base-2`, `base-3`, …).
 export async function createProduct(
   productData: Omit<
     Product,
@@ -417,39 +443,71 @@ export async function createProduct(
   >
 ): Promise<string> {
   const now = Timestamp.now();
+  const newDocRef = doc(collection(db, PRODUCTS_COLLECTION));
 
-  const docRef = await addDoc(collection(db, PRODUCTS_COLLECTION), {
-    ...productData,
-    views: 0,
-    inquiries: 0,
-    createdAt: now,
-    updatedAt: now,
-  });
+  const requestedSku = normalizeSku(productData.sku || '');
+  const baseSku = requestedSku || generateSku({ partNumber: productData.partNumber });
+  const finalSku = await reserveUniqueSku({ productId: newDocRef.id, base: baseSku });
 
-  // Update category product count
+  try {
+    await runTransaction(db, async (tx) => {
+      // Подвійна перевірка: переконатись, що мітка все ще наша.
+      await claimSkuInTransaction(tx, finalSku, newDocRef.id);
+      tx.set(newDocRef, {
+        ...productData,
+        sku: finalSku,
+        views: 0,
+        inquiries: 0,
+        createdAt: now,
+        updatedAt: now,
+      });
+    });
+  } catch (err) {
+    // Якщо запис не вдався — звільняємо мітку, інакше лишиться "сирота".
+    await safeReleaseCode(finalSku, newDocRef.id);
+    throw err;
+  }
+
   if (productData.categoryId) {
     await adjustCategoryProductCount(productData.categoryId, 1);
   }
 
-  return docRef.id;
+  return newDocRef.id;
 }
 
-// Update product; when images change, delete removed images from Storage
+async function safeReleaseCode(sku: string, productId: string): Promise<void> {
+  try {
+    await runTransaction(db, async (tx) => {
+      await releaseSkuInTransaction(tx, sku, productId);
+    });
+  } catch (releaseErr) {
+    console.warn(`[products] Не вдалось звільнити sku=${sku}:`, releaseErr);
+  }
+}
+
+// Update product; when images change, delete removed images from Storage.
+// Якщо змінюється `sku`, нова мітка резервується атомарно у `productCodes`,
+// стара звільняється у тій же транзакції (або у наступному кроці, якщо
+// колізії довелось обходити суфіксами).
 export async function updateProduct(
   id: string,
   updates: Partial<Product>
 ): Promise<void> {
-  // Load existing doc when we need to adjust category counts or manage images.
-  const needsExistingForCategoryChange = updates.categoryId !== undefined;
-  const needsExistingForImages = updates.images !== undefined;
-  const needsExisting = needsExistingForCategoryChange || needsExistingForImages;
+  const skuRequested =
+    updates.sku !== undefined ? normalizeSku(updates.sku || '') : undefined;
+
+  // Завжди підвантажуємо існуючий документ, якщо потрібно знати поточний sku
+  // (щоб коректно звільнити стару мітку), категорію або фото.
+  const needsExisting =
+    updates.categoryId !== undefined ||
+    updates.images !== undefined ||
+    skuRequested !== undefined;
 
   const existing = needsExisting ? await getProductById(id) : null;
 
   const oldCategoryId = existing?.categoryId;
   const newCategoryId = updates.categoryId !== undefined ? updates.categoryId : oldCategoryId;
 
-  // If category changes, adjust stored `categories.productCount` incrementally.
   if (existing) {
     if (oldCategoryId && newCategoryId && oldCategoryId !== newCategoryId) {
       await adjustCategoryProductCount(oldCategoryId, -1);
@@ -461,30 +519,60 @@ export async function updateProduct(
     }
   }
 
-  // Handle image updates (delete removed images from Storage).
-  if (updates.images !== undefined) {
-    if (existing) {
-      const newUrls = new Set(updates.images.map((img) => img.url));
-      for (const image of existing.images) {
-        if (!newUrls.has(image.url)) {
-          try {
-            await deleteProductImage(image.url);
-          } catch (error) {
-            console.error("Error deleting removed image from storage:", error);
-          }
+  if (updates.images !== undefined && existing) {
+    const newUrls = new Set(updates.images.map((img) => img.url));
+    for (const image of existing.images) {
+      if (!newUrls.has(image.url)) {
+        try {
+          await deleteProductImage(image.url);
+        } catch (error) {
+          console.error("Error deleting removed image from storage:", error);
         }
       }
     }
   }
 
+  const oldSku = existing?.sku || '';
+  let finalSku: string | undefined = skuRequested;
+
+  // Якщо запит на зміну sku є і він фактично відрізняється від поточного —
+  // резервуємо нову мітку. У разі колізії підберемо вільний суфікс, як це
+  // робить `reserveUniqueSku`.
+  if (skuRequested !== undefined && skuRequested !== oldSku) {
+    if (!skuRequested) {
+      throw new Error('SKU не може бути порожнім при оновленні товару');
+    }
+    finalSku = await reserveUniqueSku({ productId: id, base: skuRequested });
+  }
+
   const docRef = doc(db, PRODUCTS_COLLECTION, id);
-  await updateDoc(docRef, {
-    ...updates,
-    updatedAt: Timestamp.now(),
-  });
+
+  try {
+    await runTransaction(db, async (tx) => {
+      if (finalSku !== undefined && finalSku !== oldSku) {
+        await claimSkuInTransaction(tx, finalSku, id);
+        if (oldSku) {
+          await releaseSkuInTransaction(tx, oldSku, id);
+        }
+      }
+      tx.update(docRef, {
+        ...updates,
+        ...(finalSku !== undefined ? { sku: finalSku } : {}),
+        updatedAt: Timestamp.now(),
+      });
+    });
+  } catch (err) {
+    // Якщо транзакція впала після успішного reserveUniqueSku — нова мітка
+    // лишилась би сиротою. Знімемо її.
+    if (finalSku !== undefined && finalSku !== oldSku) {
+      await safeReleaseCode(finalSku, id);
+    }
+    throw err;
+  }
 }
 
-// Delete product and all its image files from Storage
+// Delete product and all its image files from Storage. Звільняємо мітку у
+// `productCodes/{sku}` у тій самій транзакції, що й видалення документа.
 export async function deleteProduct(id: string): Promise<void> {
   const product = await getProductById(id);
   if (!product) return;
@@ -501,14 +589,26 @@ export async function deleteProduct(id: string): Promise<void> {
     await adjustCategoryProductCount(product.categoryId, -1);
   }
 
-  await deleteDoc(doc(db, PRODUCTS_COLLECTION, id));
+  const docRef = doc(db, PRODUCTS_COLLECTION, id);
+  await runTransaction(db, async (tx) => {
+    if (product.sku) {
+      await releaseSkuInTransaction(tx, product.sku, id);
+    }
+    tx.delete(docRef);
+  });
 }
 
-// Batch delete products and their image files from Storage
+// Batch delete products and their image files from Storage.
+// Видалення йде через batch (як і раніше), мітки в `productCodes` чистимо
+// окремими транзакціями (інакше batch не може координуватись із read-залежним
+// release). Помилки звільнення лише логуються — мітка-сирота не блокує жодну
+// функціональність, її прибере наступний запуск backfill-скрипта.
 export async function deleteProducts(ids: string[]): Promise<void> {
+  const products: Product[] = [];
   for (const id of ids) {
     const product = await getProductById(id);
     if (!product) continue;
+    products.push(product);
     for (const image of product.images) {
       try {
         await deleteProductImage(image.url);
@@ -526,6 +626,11 @@ export async function deleteProducts(ids: string[]): Promise<void> {
     batch.delete(doc(db, PRODUCTS_COLLECTION, id));
   }
   await batch.commit();
+
+  for (const product of products) {
+    if (!product.sku) continue;
+    await safeReleaseCode(product.sku, product.id);
+  }
 }
 
 // Upload product image
@@ -613,7 +718,19 @@ export async function incrementProductInquiries(id: string): Promise<void> {
   });
 }
 
-// Import products from CSV
+// Import products from CSV.
+//
+// Логіка matching'у:
+//   1) Якщо в рядку є `sku` — шукаємо існуючий товар саме по ньому (точний key).
+//   2) Інакше fallback на `partNumber`. Якщо знайдено рівно один — оновлюємо
+//      його; якщо знайдено кілька — записуємо помилку у result і пропускаємо
+//      рядок (явно, щоб не зруйнувати дані).
+//   3) Якщо нічого не знайдено — створюємо новий товар. SKU генерується з
+//      `partNumber` (нормалізованого) або як `MAN-<8>` для рядків без коду.
+//
+// Запис ведеться через писаний пакет (writeBatch), а резервація SKU — через
+// окремі транзакції до пакета. Це дає атомарну гарантію унікальності й при
+// цьому залишає батч-режим для самого товару (швидкість + єдиний commit).
 export async function importProductsFromCSV(
   rows: CSVProductRow[],
   userId: string,
@@ -633,11 +750,33 @@ export async function importProductsFromCSV(
   let batchCount = 0;
   const maxBatchSize = 500;
 
+  // Sku, які вже зайняті в межах поточного імпорту (щоб не "змагалися" два
+  // рядки з одним і тим же сгенерованим артикулом).
+  const claimedInThisRun = new Set<string>();
+
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     try {
-      // Check if product exists by part number
-      const existingProduct = row.partNumber ? await getProductByPartNumber(row.partNumber) : null;
+      const requestedSku = normalizeSku(row.sku || '');
+      let existingProduct: Product | null = null;
+
+      if (requestedSku) {
+        existingProduct = await getProductBySku(requestedSku);
+      } else if (row.partNumber) {
+        // Back-compat: старі CSV без колонки SKU. Дозволяємо upsert по
+        // partNumber, тільки якщо матч однозначний.
+        const matches = await getProductsByPartNumber(row.partNumber);
+        if (matches.length === 1) {
+          existingProduct = matches[0];
+        } else if (matches.length > 1) {
+          result.failed++;
+          result.errors.push({
+            row: i + 1,
+            message: `Знайдено ${matches.length} товарів з кодом деталі "${row.partNumber}". Додайте колонку SKU, щоб обрати конкретний товар.`,
+          });
+          continue;
+        }
+      }
 
       const newPrice = parseFloat(row.price) || 0;
 
@@ -731,15 +870,43 @@ export async function importProductsFromCSV(
       });
 
       if (existingProduct) {
-        // Update existing product
+        // Оновлення. Якщо в рядку явно вказано інший SKU, ніж у існуючого
+        // товару — спробуємо змінити мітку (рідкісний кейс, але сумісно).
+        let nextSku = existingProduct.sku;
+        if (requestedSku && requestedSku !== existingProduct.sku) {
+          if (claimedInThisRun.has(requestedSku)) {
+            throw new Error(`SKU "${requestedSku}" уже використано в цьому імпорті`);
+          }
+          const newSku = await reserveUniqueSku({
+            productId: existingProduct.id,
+            base: requestedSku,
+          });
+          claimedInThisRun.add(newSku);
+          // Звільнимо стару мітку окремо (поза batch'ем).
+          if (existingProduct.sku) {
+            await safeReleaseCode(existingProduct.sku, existingProduct.id);
+          }
+          nextSku = newSku;
+        }
         const docRef = doc(db, PRODUCTS_COLLECTION, existingProduct.id);
-        batch.update(docRef, productData);
+        batch.update(docRef, { ...productData, sku: nextSku });
         result.updated++;
       } else {
-        // Create new product
-        const docRef = doc(collection(db, PRODUCTS_COLLECTION));
-        batch.set(docRef, {
+        // Створення нового. Резервуємо вільний SKU перед записом.
+        const newDocRef = doc(collection(db, PRODUCTS_COLLECTION));
+        const baseSku = requestedSku || generateSku({ partNumber: row.partNumber });
+        if (claimedInThisRun.has(baseSku)) {
+          // Колізія всередині того самого імпорту — `reserveUniqueSku` сам
+          // підбере наступний вільний суфікс.
+        }
+        const finalSku = await reserveUniqueSku({
+          productId: newDocRef.id,
+          base: baseSku,
+        });
+        claimedInThisRun.add(finalSku);
+        batch.set(newDocRef, {
           ...productData,
+          sku: finalSku,
           views: 0,
           inquiries: 0,
           createdAt: Timestamp.now(),
@@ -769,33 +936,40 @@ export async function importProductsFromCSV(
     await batch.commit();
   }
 
-  // In strict mode, delete products not in CSV
+  // In strict mode, delete products not in CSV.
+  // Тепер matching ведеться по `sku` (пріоритет) і `partNumber` (back-compat).
+  // Це уникає кейсу, коли товари без SKU несподівано стираються через те,
+  // що їх partNumber порожній.
   if (mode === 'strict') {
-    // Collect all part numbers from CSV
+    const csvSkus = new Set(
+      rows
+        .map((row) => normalizeSku(row.sku || ''))
+        .filter((s): s is string => Boolean(s))
+    );
     const csvPartNumbers = new Set(
       rows
         .map((row) => row.partNumber)
         .filter((pn): pn is string => Boolean(pn))
     );
 
-    // Get all products from database
     const allProductsSnapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
-    const productsToDelete: string[] = [];
+    const productsToDelete: { id: string; sku: string }[] = [];
 
-    // Find products not in CSV
     allProductsSnapshot.docs.forEach((doc) => {
       const product = convertToProduct(doc);
-      if (product.partNumber && !csvPartNumbers.has(product.partNumber)) {
-        productsToDelete.push(doc.id);
+      const skuMatch = product.sku && csvSkus.has(product.sku);
+      const pnMatch = product.partNumber && csvPartNumbers.has(product.partNumber);
+      // Залишаємо товар, якщо він метчиться хоч за SKU, хоч за partNumber.
+      if (!skuMatch && !pnMatch) {
+        productsToDelete.push({ id: doc.id, sku: product.sku || '' });
       }
     });
 
-    // Delete products in batches
     if (productsToDelete.length > 0) {
       let deleteBatch = writeBatch(db);
       let deleteBatchCount = 0;
 
-      for (const productId of productsToDelete) {
+      for (const { id: productId } of productsToDelete) {
         const docRef = doc(db, PRODUCTS_COLLECTION, productId);
         deleteBatch.delete(docRef);
         deleteBatchCount++;
@@ -808,9 +982,13 @@ export async function importProductsFromCSV(
         }
       }
 
-      // Commit remaining deletions
       if (deleteBatchCount > 0) {
         await deleteBatch.commit();
+      }
+
+      // Звільняємо мітки `productCodes` для видалених товарів.
+      for (const { id, sku } of productsToDelete) {
+        if (sku) await safeReleaseCode(sku, id);
       }
     }
   }
@@ -838,7 +1016,9 @@ export async function exportProductsToCSV(): Promise<
     const isUsed = product.condition === "used" ? 1 : 0;
 
     return {
-      // Primary columns (matching import format)
+      // Primary key — наш унікальний артикул. Завжди йде першою колонкою.
+      sku: product.sku || "",
+      // Код деталі від постачальника (може повторюватись).
       partNumber: product.partNumber || "",
       // Усі фото в одній комірці через "|" (наприклад: url1|url2|url3)
       imageUrl:

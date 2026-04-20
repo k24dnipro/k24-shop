@@ -18,7 +18,7 @@ function escapeXml(unsafe: string | null | undefined): string {
     .replace(/'/g, '&apos;');
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     const db = getAdminDb();
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
@@ -36,6 +36,7 @@ export async function GET(request: Request) {
 
     snapshot.forEach((doc) => {
       const data = doc.data() as Partial<Product>;
+      const sku = typeof data.sku === 'string' ? data.sku.trim() : '';
       
       const status = data.status;
       let availability = 'out_of_stock';
@@ -54,7 +55,7 @@ export async function GET(request: Request) {
       const hasIdentifier = Boolean(data.partNumber || data.oem);
 
       xml += `    <item>
-      <g:id>${escapeXml(doc.id)}</g:id>
+      <g:id>${escapeXml(sku || doc.id)}</g:id>
       <g:title>${escapeXml(data.name?.substring(0, 150))}</g:title>
       <g:description>${escapeXml(data.description?.substring(0, 5000) || data.name)}</g:description>
       <g:link>${siteUrl}/products/${doc.id}</g:link>

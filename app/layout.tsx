@@ -97,6 +97,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="uk" className="dark">
+      {gtmMeasurementId ? (
+        <GoogleTagManager gtmId={gtmMeasurementId} gtmScriptUrl="https://www.googletagmanager.com/ns.html?id=GTM-PXGC3KK5" />
+      ) : null}
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
           {children}
@@ -104,9 +107,6 @@ export default function RootLayout({
           <CookieConsent />
           {gaMeasurementId ? (
             <GoogleAnalyticsProvider gaId={gaMeasurementId} />
-          ) : null}
-          {gtmMeasurementId ? (
-            <GoogleTagManager gtmId={gtmMeasurementId} gtmScriptUrl="https://www.googletagmanager.com/ns.html?id=GTM-PXGC3KK5" />
           ) : null}
         </Providers>
       </body>

@@ -17,7 +17,9 @@ const inter = Inter({
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
 
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-const gtmMeasurementId = process.env.NEXT_PUBLIC_GTM_MEASUREMENT_ID;
+const gtmId =
+  process.env.NEXT_PUBLIC_GTM_MEASUREMENT_ID ||
+  'GTM-PXGC3KK5';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -96,11 +98,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="uk" className="dark">
-      {gtmMeasurementId ? (
-        <GoogleTagManager gtmId={gtmMeasurementId} gtmScriptUrl="https://www.googletagmanager.com/ns.html?id=GTM-PXGC3KK5" />
-      ) : null}
-      <body className={`${inter.variable} font-sans antialiased`}>
+    <html lang="uk" className="dark" suppressHydrationWarning>
+      <head>{gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}</head>
+      <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
         <Providers>
           {children}
           <FloatingCart />

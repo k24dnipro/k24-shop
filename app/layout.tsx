@@ -7,6 +7,7 @@ import {
 import { Providers } from '@/components/providers';
 import { CookieConsent } from '@/components/shop/cookie-consent';
 import { FloatingCart } from '@/components/shop/floating-cart';
+import { GoogleTagManager } from '@next/third-parties/google';
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -16,6 +17,7 @@ const inter = Inter({
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
 
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const gtmMeasurementId = process.env.NEXT_PUBLIC_GTM_MEASUREMENT_ID;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -114,6 +116,7 @@ export default function RootLayout({
           {gaMeasurementId ? (
             <GoogleAnalyticsProvider gaId={gaMeasurementId} />
           ) : null}
+          <GoogleTagManager gtmId={gtmMeasurementId} />
         </Providers>
       </body>
     </html>

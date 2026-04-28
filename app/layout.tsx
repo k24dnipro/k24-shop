@@ -5,10 +5,7 @@ import Head from 'next/head';
 import { Providers } from '@/components/providers';
 import { CookieConsent } from '@/components/shop/cookie-consent';
 import { FloatingCart } from '@/components/shop/floating-cart';
-import {
-  GoogleAnalytics,
-  GoogleTagManager,
-} from '@next/third-parties/google';
+import { GoogleTagManager } from '@next/third-parties/google';
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -114,7 +111,6 @@ export default function RootLayout({
           <FloatingCart />
           <CookieConsent />
           <GoogleTagManager gtmId={"GTM-PXGC3KK5"} />
-          <GoogleAnalytics gaId={"G-E8JZPEQKNK"} />
         </Providers>
       </body>
     </html>

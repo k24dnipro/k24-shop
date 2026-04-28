@@ -1,13 +1,14 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import Script from 'next/script';
-import {
-  GoogleAnalyticsProvider,
-} from '@/components/analytics/google-analytics-provider';
+import Head from 'next/head';
 import { Providers } from '@/components/providers';
 import { CookieConsent } from '@/components/shop/cookie-consent';
 import { FloatingCart } from '@/components/shop/floating-cart';
+import {
+  GoogleAnalytics,
+  GoogleTagManager,
+} from '@next/third-parties/google';
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -15,11 +16,6 @@ const inter = Inter({
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
-
-const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-const gtmId =
-  process.env.NEXT_PUBLIC_GTM_MEASUREMENT_ID ||
-  'GTM-PXGC3KK5';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -99,39 +95,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="uk" className="dark" suppressHydrationWarning>
-      <head>
-        {gtmId ? (
-          <Script
-            id="google-tag-manager"
-            strategy="beforeInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${gtmId}');`,
-            }}
-          />
-        ) : null}
-      </head>
+      <Head>
+        {/* Preconnect to external domains */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+
+        {/* DNS prefetch for performance */}
+        <link rel="dns-prefetch" href="//www.google-analytics.com" />
+        <link rel="dns-prefetch" href="//www.googletagmanager.com" />
+      </Head>
       <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
-        {gtmId ? (
-          <noscript>
-            <iframe
-              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
-              height="0"
-              width="0"
-              style={{ display: 'none', visibility: 'hidden' }}
-            />
-          </noscript>
-        ) : null}
         <Providers>
           {children}
           <FloatingCart />
           <CookieConsent />
-          {gaMeasurementId ? (
-            <GoogleAnalyticsProvider gaId={gaMeasurementId} />
-          ) : null}
+          <GoogleTagManager gtmId={"GTM-PXGC3KK5"} />
+          <GoogleAnalytics gaId={"G-E8JZPEQKNK"} />
         </Providers>
       </body>
     </html>

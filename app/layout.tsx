@@ -1,13 +1,13 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Script from 'next/script';
 import {
   GoogleAnalyticsProvider,
 } from '@/components/analytics/google-analytics-provider';
 import { Providers } from '@/components/providers';
 import { CookieConsent } from '@/components/shop/cookie-consent';
 import { FloatingCart } from '@/components/shop/floating-cart';
-import { GoogleTagManager } from '@next/third-parties/google';
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -99,8 +99,32 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="uk" className="dark" suppressHydrationWarning>
-      <head>{gtmId ? <GoogleTagManager gtmId={gtmId} /> : null}</head>
+      <head>
+        {gtmId ? (
+          <Script
+            id="google-tag-manager"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${gtmId}');`,
+            }}
+          />
+        ) : null}
+      </head>
       <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
+        {gtmId ? (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+              height="0"
+              width="0"
+              style={{ display: 'none', visibility: 'hidden' }}
+            />
+          </noscript>
+        ) : null}
         <Providers>
           {children}
           <FloatingCart />

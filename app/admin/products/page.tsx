@@ -11,6 +11,7 @@ import {
 } from 'react';
 import {
   Eye,
+  EyeOff,
   Filter,
   FolderTree,
   Loader2,
@@ -105,6 +106,7 @@ function ProductsPageContent() {
   const [bulkCategoryDialogOpen, setBulkCategoryDialogOpen] = useState(false);
   const [pendingBulkCategoryId, setPendingBulkCategoryId] = useState<string>("");
   const [bulkCategoryLoading, setBulkCategoryLoading] = useState(false);
+  const [bulkVisibilityLoading, setBulkVisibilityLoading] = useState(false);
 
   const pageIndexFromUrl = useMemo(
     () => pageIndexFromPageSearchParam(searchParams),
@@ -371,6 +373,44 @@ function ProductsPageContent() {
     }
   };
 
+  const handleBulkToggleVisibility = async (visible: boolean) => {
+    const ids = Array.from(selectedProductIds);
+    if (ids.length === 0) return;
+
+    setBulkVisibilityLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          updateProduct(id, {
+            isVisible: visible,
+          })
+        )
+      );
+      const successCount = results.filter((r) => r.status === "fulfilled").length;
+      const failCount = results.length - successCount;
+
+      if (successCount > 0) {
+        toast.success(
+          visible
+            ? `Відображення увімкнено для ${successCount} товар(ів)`
+            : `Відображення вимкнено для ${successCount} товар(ів)`
+        );
+      }
+      if (failCount > 0) {
+        toast.error(`Не вдалося оновити ${failCount} товар(ів)`);
+      }
+
+      refresh();
+      if (successCount > 0) {
+        setSelectedProductIds(new Set());
+      }
+    } catch {
+      toast.error("Помилка пакетного оновлення відображення");
+    } finally {
+      setBulkVisibilityLoading(false);
+    }
+  };
+
   const handleBulkDelete = async () => {
     const ids = Array.from(selectedProductIds);
     if (ids.length === 0) return;
@@ -513,7 +553,14 @@ function ProductsPageContent() {
       accessorKey: "name",
       header: "Назва",
       cell: ({ row }) => (
-        <span className="font-medium text-white">{row.original.name}</span>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-white">{row.original.name}</span>
+          {row.original.isVisible === false && (
+            <Badge variant="outline" className="bg-red-500/10 text-red-400 border-red-500/20 text-[10px] py-0 px-1.5 h-5 shrink-0">
+              Приховано
+            </Badge>
+          )}
+        </div>
       ),
     },
     {
@@ -611,118 +658,85 @@ function ProductsPageContent() {
 
       <div className="p-6 space-y-6">
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            {/* Search */}
-            <div className="relative w-full sm:w-80">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-              <Input
-                placeholder="Пошук за кодом деталі або назвою..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-500"
-              />
-              {productsLoading && (
-                <Loader2 className="absolute right-10 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500 animate-spin" />
-              )}
-              {searchTerm && !productsLoading && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 text-zinc-500 hover:text-white"
-                  onClick={() => setSearchTerm("")}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              )}
-            </div>
-
-            {/* Category filter */}
-            <Select value={categoryFilter} onValueChange={handleCategoryFilterChange}>
-              <SelectTrigger className="w-full sm:w-48 bg-zinc-900/50 border-zinc-800 text-white">
-                <Filter className="mr-2 h-4 w-4 text-zinc-500" />
-                <SelectValue placeholder="Категорія" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-zinc-800">
-                <SelectItem
-                  value="all"
-                  className="text-zinc-400 focus:text-white focus:bg-zinc-900"
-                >
-                  Всі категорії
-                </SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem
-                    key={cat.id}
-                    value={cat.id}
-                    className="text-zinc-400 focus:text-white focus:bg-zinc-900"
-                  >
-                    {cat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Status filter */}
-            <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
-              <SelectTrigger className="w-full sm:w-44 bg-zinc-900/50 border-zinc-800 text-white">
-                <SelectValue placeholder="Статус" />
-              </SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-zinc-800">
-                <SelectItem
-                  value="all"
-                  className="text-zinc-400 focus:text-white focus:bg-zinc-900"
-                >
-                  Всі статуси
-                </SelectItem>
-                {PRODUCT_STATUSES.map((status) => (
-                  <SelectItem
-                    key={status.value}
-                    value={status.value}
-                    className="text-zinc-400 focus:text-white focus:bg-zinc-900"
-                  >
-                    {status.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto justify-end">
-            {(canEdit || canDelete) && selectedProductIds.size > 0 && (
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedProductIds(new Set())}
-                  className="border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600 w-full sm:w-auto"
-                >
-                  Зняти виділення ({selectedProductIds.size})
-                </Button>
-                {canEdit && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setPendingBulkCategoryId("");
-                      setBulkCategoryDialogOpen(true);
-                    }}
-                    className="border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600 w-full sm:w-auto"
-                  >
-                    <FolderTree className="mr-2 h-4 w-4" />
-                    Категорія для вибраних ({selectedProductIds.size})
-                  </Button>
+        <div className="flex flex-col gap-4">
+          {/* Top Row: Search, Filters & Add Product Button */}
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              {/* Search */}
+              <div className="relative w-full sm:w-80">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                <Input
+                  placeholder="Пошук за кодом деталі або назвою..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 bg-zinc-900/50 border-zinc-800 text-white placeholder:text-zinc-500"
+                />
+                {productsLoading && (
+                  <Loader2 className="absolute right-10 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500 animate-spin" />
                 )}
-                {canDelete && (
+                {searchTerm && !productsLoading && (
                   <Button
-                    variant="destructive"
-                    onClick={() => setBulkDeleteDialogOpen(true)}
-                    className="w-full sm:w-auto"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 text-zinc-500 hover:text-white"
+                    onClick={() => setSearchTerm("")}
                   >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Видалити вибрані ({selectedProductIds.size})
+                    <X className="h-3 w-3" />
                   </Button>
                 )}
               </div>
-            )}
+
+              {/* Category filter */}
+              <Select value={categoryFilter} onValueChange={handleCategoryFilterChange}>
+                <SelectTrigger className="w-full sm:w-48 bg-zinc-900/50 border-zinc-800 text-white">
+                  <Filter className="mr-2 h-4 w-4 text-zinc-500" />
+                  <SelectValue placeholder="Категорія" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-950 border-zinc-800">
+                  <SelectItem
+                    value="all"
+                    className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                  >
+                    Всі категорії
+                  </SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem
+                      key={cat.id}
+                      value={cat.id}
+                      className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                    >
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Status filter */}
+              <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
+                <SelectTrigger className="w-full sm:w-44 bg-zinc-900/50 border-zinc-800 text-white">
+                  <SelectValue placeholder="Статус" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-950 border-zinc-800">
+                  <SelectItem
+                    value="all"
+                    className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                  >
+                    Всі статуси
+                  </SelectItem>
+                  {PRODUCT_STATUSES.map((status) => (
+                    <SelectItem
+                      key={status.value}
+                      value={status.value}
+                      className="text-zinc-400 focus:text-white focus:bg-zinc-900"
+                    >
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Add Product Button */}
             {canCreate && (
               <Button
                 onClick={() => router.push(`/admin/products/new${listPageQuery}`)}
@@ -733,6 +747,83 @@ function ProductsPageContent() {
               </Button>
             )}
           </div>
+
+          {/* Bottom Row: Bulk Actions Console (visible only when items are selected) */}
+          {(canEdit || canDelete) && selectedProductIds.size > 0 && (
+            <div className="flex flex-wrap items-center gap-2 w-full bg-zinc-900/40 border border-zinc-800 p-3 rounded-lg animate-in fade-in slide-in-from-top-1 duration-200">
+              <span className="text-sm font-medium text-zinc-400 mr-2 shrink-0">
+                Обрано <span className="text-white font-semibold">{selectedProductIds.size}</span> товар(ів):
+              </span>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedProductIds(new Set())}
+                className="border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600 h-9"
+              >
+                Зняти виділення
+              </Button>
+              
+              {canEdit && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPendingBulkCategoryId("");
+                      setBulkCategoryDialogOpen(true);
+                    }}
+                    className="border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600 h-9"
+                  >
+                    <FolderTree className="mr-2 h-4 w-4" />
+                    Змінити категорію
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkToggleVisibility(false)}
+                    disabled={bulkVisibilityLoading}
+                    className="border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600 h-9"
+                  >
+                    {bulkVisibilityLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <EyeOff className="mr-2 h-4 w-4" />
+                    )}
+                    Приховати вибрані
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleBulkToggleVisibility(true)}
+                    disabled={bulkVisibilityLoading}
+                    className="border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600 h-9"
+                  >
+                    {bulkVisibilityLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Eye className="mr-2 h-4 w-4" />
+                    )}
+                    Показати вибрані
+                  </Button>
+                </>
+              )}
+              
+              {canDelete && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setBulkDeleteDialogOpen(true)}
+                  className="bg-red-950/40 hover:bg-red-900/60 border border-red-800 text-red-200 hover:text-white transition-colors h-9 ml-auto sm:ml-0"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Видалити вибрані
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Table */}

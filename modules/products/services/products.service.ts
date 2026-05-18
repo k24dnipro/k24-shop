@@ -116,8 +116,9 @@ export async function getProducts(options?: {
   status?: ProductStatus;
   search?: string;
   sortBy?: 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
+  isVisibleOnly?: boolean;
 }) {
-  const { pageSize = 20, lastDoc, categoryId, status, sortBy = 'date_desc' } = options || {};
+  const { pageSize = 20, lastDoc, categoryId, status, sortBy = 'date_desc', isVisibleOnly } = options || {};
 
   // Determine sort field and direction
   let sortField: string;
@@ -154,6 +155,10 @@ export async function getProducts(options?: {
   // Build query with correct order: where filters first, then orderBy, then limit
   // When filtering by category, include products where categoryId OR subcategoryId matches (parent or child category)
   let q = query(collection(db, PRODUCTS_COLLECTION));
+
+  if (isVisibleOnly) {
+    q = query(q, where("isVisible", "==", true));
+  }
 
   if (categoryId) {
     q = query(
@@ -200,10 +205,10 @@ export async function getProducts(options?: {
   } catch (error) {
     // Log Firestore errors (e.g., missing index)
     console.error('Firestore query error:', error);
-    // If it's an index error, try without status filter as fallback
+    // If it's an index error, try without status or visibility filter as fallback
     if (error instanceof Error && error.message.includes('index')) {
-      console.warn('Firestore index missing, trying query without status filter');
-      // Retry without status filter
+      console.warn('Firestore index missing, trying query without status or visibility filter');
+      // Retry without status/visibility filter
       let fallbackQ = query(collection(db, PRODUCTS_COLLECTION));
       if (categoryId) {
         fallbackQ = query(
@@ -224,6 +229,10 @@ export async function getProducts(options?: {
       // Filter by status on client side as fallback
       if (status) {
         fallbackProducts = fallbackProducts.filter(p => p.status === status);
+      }
+      // Filter by visibility on client side as fallback
+      if (isVisibleOnly) {
+        fallbackProducts = fallbackProducts.filter(p => p.isVisible !== false);
       }
       // For name sorting
       if (sortBy === 'name_asc' || sortBy === 'name_desc') {
@@ -258,7 +267,7 @@ function normalizeForSearch(text: string | number | null | undefined): string {
 // Search products with optional filters (returns all results for backward compatibility)
 export async function searchProducts(
   searchTerm: string,
-  options?: { categoryId?: string; status?: ProductStatus }
+  options?: { categoryId?: string; status?: ProductStatus; isVisibleOnly?: boolean }
 ) {
   const result = await searchProductsInternal(searchTerm, options);
   return result.products;
@@ -267,14 +276,14 @@ export async function searchProducts(
 // Internal search function that returns all matching products
 async function searchProductsInternal(
   searchTerm: string,
-  options?: { categoryId?: string; status?: ProductStatus }
+  options?: { categoryId?: string; status?: ProductStatus; isVisibleOnly?: boolean }
 ): Promise<{ products: Product[]; totalCount: number }> {
   // Firestore doesn't support full-text search natively
   // For production, consider using Algolia or Elasticsearch
   // Smart search: normalize both search term and product fields
   const normalizedSearch = normalizeForSearch(searchTerm);
   const searchWords = normalizedSearch.split(" ").filter(Boolean);
-  const { categoryId, status } = options || {};
+  const { categoryId, status, isVisibleOnly } = options || {};
 
   let products: Product[];
   const now = Date.now();
@@ -332,6 +341,11 @@ async function searchProductsInternal(
     products = products.filter((product) => product.status === status);
   }
 
+  // Apply visibility filter
+  if (isVisibleOnly) {
+    products = products.filter((product) => product.isVisible !== false);
+  }
+
   // Sort by createdAt desc
   products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
@@ -347,6 +361,7 @@ export async function searchProductsPaginated(
     pageSize?: number;
     offset?: number;
     sortBy?: 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
+    isVisibleOnly?: boolean;
   }
 ): Promise<{
   products: Product[];
@@ -354,9 +369,9 @@ export async function searchProductsPaginated(
   hasMore: boolean;
   allProducts: Product[]; // Return all products for caching on client
 }> {
-  const { categoryId, status, pageSize = 12, offset = 0, sortBy = 'date_desc' } = options || {};
+  const { categoryId, status, pageSize = 12, offset = 0, sortBy = 'date_desc', isVisibleOnly } = options || {};
 
-  const { products: allProducts } = await searchProductsInternal(searchTerm, { categoryId, status });
+  const { products: allProducts } = await searchProductsInternal(searchTerm, { categoryId, status, isVisibleOnly });
 
   // Sort products based on sortBy option
   const sortedProducts = [...allProducts];
@@ -393,7 +408,7 @@ export async function searchProductsPaginated(
 // Get search results count (for display before loading all results)
 export async function getSearchProductsCount(
   searchTerm: string,
-  options?: { categoryId?: string; status?: ProductStatus }
+  options?: { categoryId?: string; status?: ProductStatus; isVisibleOnly?: boolean }
 ): Promise<number> {
   const { totalCount } = await searchProductsInternal(searchTerm, options);
   return totalCount;
@@ -458,6 +473,7 @@ export async function createProduct(
         sku: finalSku,
         views: 0,
         inquiries: 0,
+        isVisible: productData.isVisible ?? true,
         createdAt: now,
         updatedAt: now,
       });
@@ -1059,21 +1075,27 @@ export async function getProductsForSitemap(): Promise<
   // Reads are still per document, but we avoid additional logic and only return minimal fields.
   const snapshot = await getDocs(collection(db, PRODUCTS_COLLECTION));
 
-  return snapshot.docs.map((doc) => {
-    const data = doc.data() as { updatedAt?: { toDate?: () => Date } | null } | undefined;
-    const updatedAt = data?.updatedAt?.toDate?.() ?? null;
-    return { id: doc.id, updatedAt };
-  });
+  return snapshot.docs
+    .filter((doc) => {
+      const data = doc.data() as { isVisible?: boolean };
+      return data?.isVisible !== false;
+    })
+    .map((doc) => {
+      const data = doc.data() as { updatedAt?: { toDate?: () => Date } | null } | undefined;
+      const updatedAt = data?.updatedAt?.toDate?.() ?? null;
+      return { id: doc.id, updatedAt };
+    });
 }
 
 // Get products count with optional filters (categoryId = parent or child category id)
 export async function getProductsCount(options?: {
   categoryId?: string;
   status?: ProductStatus;
+  isVisibleOnly?: boolean;
 }): Promise<number> {
-  const { categoryId, status } = options || {};
+  const { categoryId, status, isVisibleOnly } = options || {};
 
-  const cacheKey = `${categoryId ?? 'all'}|${status ?? 'all'}`;
+  const cacheKey = `${categoryId ?? 'all'}|${status ?? 'all'}|${isVisibleOnly ? 'visible' : 'all'}`;
   const cached = productsCountCache.get(cacheKey);
   const now = Date.now();
   if (cached && now - cached.fetchedAt < PRODUCTS_COUNT_CACHE_TTL_MS) {
@@ -1081,6 +1103,10 @@ export async function getProductsCount(options?: {
   }
 
   let q = query(collection(db, PRODUCTS_COLLECTION));
+
+  if (isVisibleOnly) {
+    q = query(q, where("isVisible", "==", true));
+  }
 
   if (categoryId) {
     q = query(
@@ -1096,10 +1122,39 @@ export async function getProductsCount(options?: {
     q = query(q, where("status", "==", status));
   }
 
-  const snapshot = await getCountFromServer(q);
-  const value = snapshot.data().count;
-  productsCountCache.set(cacheKey, { value, fetchedAt: now });
-  return value;
+  try {
+    const snapshot = await getCountFromServer(q);
+    const value = snapshot.data().count;
+    productsCountCache.set(cacheKey, { value, fetchedAt: now });
+    return value;
+  } catch (error) {
+    console.error('Firestore getProductsCount error:', error);
+    if (error instanceof Error && error.message.includes('index')) {
+      console.warn('Firestore count index missing, falling back to client-side filter count');
+      let fallbackQ = query(collection(db, PRODUCTS_COLLECTION));
+      if (categoryId) {
+        fallbackQ = query(
+          fallbackQ,
+          or(
+            where("categoryId", "==", categoryId),
+            where("subcategoryId", "==", categoryId)
+          )
+        );
+      }
+      const snap = await getDocs(fallbackQ);
+      let docs = snap.docs;
+      if (status) {
+        docs = docs.filter(d => d.data().status === status);
+      }
+      if (isVisibleOnly) {
+        docs = docs.filter(d => d.data().isVisible !== false);
+      }
+      const value = docs.length;
+      productsCountCache.set(cacheKey, { value, fetchedAt: now });
+      return value;
+    }
+    throw error;
+  }
 }
 
 // Get products by status count

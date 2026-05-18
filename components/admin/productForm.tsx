@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -79,6 +80,7 @@ interface ProductFormData {
   metaDescription: string;
   metaKeywords: string;
   slug: string;
+  isVisible: boolean;
 }
 
 interface ProductFormProps {
@@ -127,6 +129,7 @@ export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductF
       metaDescription: product?.seo?.metaDescription || "",
       metaKeywords: product?.seo?.metaKeywords?.join(", ") || "",
       slug: product?.seo?.slug || "",
+      isVisible: product?.isVisible ?? true,
     },
   });
 
@@ -236,6 +239,7 @@ export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductF
       carBrand: data.carBrand ?? null,
       carModel: data.carModel ?? null,
       images,
+      isVisible: data.isVisible,
       seo: {
         metaTitle: data.metaTitle || data.name,
         metaDescription:
@@ -385,6 +389,26 @@ export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductF
                           ))}
                         </SelectContent>
                       </Select>
+                    )}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/30 p-4">
+                  <div className="space-y-0.5">
+                    <Label className="text-white text-base">Відображати на сайті</Label>
+                    <p className="text-xs text-zinc-500">
+                      Якщо вимкнено, товар не буде показуватись у каталозі та пошуку
+                    </p>
+                  </div>
+                  <Controller
+                    name="isVisible"
+                    control={control}
+                    render={({ field }) => (
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        className="data-[state=checked]:bg-k24-yellow"
+                      />
                     )}
                   />
                 </div>

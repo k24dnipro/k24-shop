@@ -53,10 +53,11 @@ interface UseProductsOptions {
   status?: ProductStatus;
   autoFetch?: boolean;
   sortBy?: 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
+  isVisibleOnly?: boolean;
 }
 
 export function useProducts(options: UseProductsOptions = {}) {
-  const { pageSize = 20, categoryId, status, autoFetch = true, sortBy } = options;
+  const { pageSize = 20, categoryId, status, autoFetch = true, sortBy, isVisibleOnly = true } = options;
   const [products, setProducts] = useState<Product[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
@@ -70,12 +71,13 @@ export function useProducts(options: UseProductsOptions = {}) {
       const count = await getProductsCount({
         categoryId,
         status,
+        isVisibleOnly,
       });
       setTotalCount(count);
     } catch (err) {
       console.error("Error fetching product count:", err);
     }
-  }, [categoryId, status]);
+  }, [categoryId, status, isVisibleOnly]);
 
   const fetchProducts = useCallback(
     async (reset = false) => {
@@ -87,6 +89,7 @@ export function useProducts(options: UseProductsOptions = {}) {
           categoryId,
           status,
           sortBy,
+          isVisibleOnly,
           lastDoc: reset ? undefined : lastDocRef.current || undefined,
         });
 
@@ -123,6 +126,7 @@ export function useProducts(options: UseProductsOptions = {}) {
         const results = await searchProducts(searchTerm, {
           categoryId,
           status,
+          isVisibleOnly,
         });
         setProducts(results);
         setHasMore(false);
@@ -346,10 +350,11 @@ interface UseProductsSearchOptions {
   categoryId?: string;
   status?: ProductStatus;
   sortBy?: 'date_desc' | 'date_asc' | 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc';
+  isVisibleOnly?: boolean;
 }
 
 export function useProductsSearch(options: UseProductsSearchOptions = {}) {
-  const { pageSize = 12, categoryId, status, sortBy = 'date_desc' } = options;
+  const { pageSize = 12, categoryId, status, sortBy = 'date_desc', isVisibleOnly = true } = options;
   
   const [searchTerm, setSearchTerm] = useState('');
   const [displayedProducts, setDisplayedProducts] = useState<Product[]>([]);
@@ -437,6 +442,7 @@ export function useProductsSearch(options: UseProductsSearchOptions = {}) {
         pageSize: 10000, // Get all results
         offset: 0,
         sortBy,
+        isVisibleOnly, // Pass it!
       });
       
       // Store all search results
@@ -503,6 +509,11 @@ export function useProductsSearch(options: UseProductsSearchOptions = {}) {
       // Apply status filter
       if (status) {
         products = products.filter(p => p.status === status);
+      }
+      
+      // Apply visibility filter
+      if (isVisibleOnly) {
+        products = products.filter(p => p.isVisible !== false);
       }
       
       // Apply category filter (check both categoryId and subcategoryId)

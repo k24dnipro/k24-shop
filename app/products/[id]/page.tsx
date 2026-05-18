@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   try {
     const product = await getProductById(id);
 
-    if (!product) {
+    if (!product || product.isVisible === false) {
       return {
         title: 'Товар не знайдено',
         description: 'Запитуваний товар не знайдено на сайті K24 Parts',
@@ -108,7 +108,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   
   const product = await getProductById(id);
   
-  if (!product) {
+  if (!product || product.isVisible === false) {
     notFound();
   }
 

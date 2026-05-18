@@ -36,6 +36,8 @@ export async function GET() {
 
     snapshot.forEach((doc) => {
       const data = doc.data() as Partial<Product>;
+      if (data.isVisible === false) return;
+      
       const sku = typeof data.sku === 'string' ? data.sku.trim() : '';
       
       const status = data.status;

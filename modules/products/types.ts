@@ -57,6 +57,7 @@ export interface Product {
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
+  isVisible?: boolean;
 }
 
 export interface CSVProductRow {

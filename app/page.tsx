@@ -1,34 +1,23 @@
-"use client";
-
-import { useState } from 'react';
 import {
   ArrowRight,
   CheckCircle2,
-  Search,
   ShieldCheck,
-  ShoppingCart,
   Truck,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { Search } from 'lucide-react';
 import { ShopFooter } from '@/components/shop/footer';
 import { ShopHeader } from '@/components/shop/header';
 import { UsdToUahPrice } from '@/components/shop/usd-to-uah-price';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ProductImage } from '@/components/ui/product-image';
-import { Skeleton } from '@/components/ui/skeleton';
 import { hasDisplayableUsdPrice } from '@/lib/currency/format';
-import { useCart } from '@/lib/hooks/useCart';
 import { generateOrganizationStructuredData } from '@/lib/seo/utils';
-import { useCategories } from '@/modules/categories/hooks/use-categories';
-import { useProducts } from '@/modules/products/hooks/use-products';
-import { Product } from '@/modules/products/types';
+import { getCategories } from '@/modules/categories/services/categories.service';
+import { getProducts } from '@/modules/products/services/products.service';
+import { HomeAddToCart } from '@/components/shop/home-add-to-cart';
 
 const statusColors: Record<string, string> = {
   in_stock: 'text-emerald-400',
@@ -37,48 +26,17 @@ const statusColors: Record<string, string> = {
   discontinued: 'text-zinc-400',
 };
 
-export default function Home() {
-  const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState('');
-  const { categories, loading: categoriesLoading } = useCategories();
-  const { products: newProducts, loading: productsLoading } = useProducts({
+export default async function Home() {
+  const categories = await getCategories();
+  const { products: newProducts } = await getProducts({
     pageSize: 4,
-    sortBy: 'date_desc'
+    sortBy: 'date_desc',
+    isVisibleOnly: true,
   });
-  const { addItem } = useCart();
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/catalog?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
-  const handleHeaderSearch = (query: string) => {
-    if (query.trim()) {
-      router.push(`/catalog?q=${encodeURIComponent(query.trim())}`);
-    }
-  };
-
-  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (product.status === 'discontinued' || product.status === 'on_order') {
-      toast.error('Цей товар недоступний для додавання до кошика.');
-      return;
-    }
-
-    addItem(product);
-    toast.success('Товар додано до корзини!', {
-      description: product.name,
-    });
-  };
 
   // Filter root categories for the main grid
   const rootCategories = categories.filter(c => !c.parentId).slice(0, 8);
 
-  // Use a constant to avoid hydration mismatch
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
   const organizationData = generateOrganizationStructuredData(siteUrl);
 
@@ -93,7 +51,7 @@ export default function Home() {
         }}
       />
       
-      <ShopHeader onSearch={handleHeaderSearch} />
+      <ShopHeader />
 
       <main className="flex-1">
         {/* Hero Section */}
@@ -116,8 +74,8 @@ export default function Home() {
                 Більше 4 років досвіду. Оригінальні запчастини та якісні аналоги для вашого авто.
               </p>
 
-              {/* Main Search */}
-              <form onSubmit={handleSearch} className="relative max-w-2xl mx-auto">
+              {/* Main Search - pure HTML form with action='/catalog' for instant, JavaScript-free execution */}
+              <form action="/catalog" method="GET" className="relative max-w-2xl mx-auto">
                 <div className="relative group">
                   <div className="absolute bg-linear-to-r from-k24-yellow to-yellow-600 rounded-lg blur opacity-25 group-hover:opacity-50 transition duration-200"></div>
                   <div className="relative flex">
@@ -128,8 +86,6 @@ export default function Home() {
                       placeholder="Назва, бренд, код, OEM, марка або модель авто..."
                       autoComplete="off"
                       className="h-14 pl-12 pr-28 rounded-lg border-none text-lg shadow-xl focus-visible:ring-k24-yellow transition-all placeholder:text-sm bg-k24-yellow/50 backdrop-blur-md text-white placeholder:text-white/90"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
                     />
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-6 w-6 text-white/90 pointer-events-none" />
                     <Button
@@ -152,7 +108,6 @@ export default function Home() {
             </div>
           </div>
         </div>
-
 
         {/* Features Section */}
         <section className="py-12 bg-zinc-900/50 border-y border-zinc-800">
@@ -201,33 +156,26 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {categoriesLoading ? (
-                Array.from({ length: 8 }).map((_, i) => (
-                  <Skeleton key={i} className="h-32 bg-zinc-900 rounded-xl" />
-                ))
-              ) : (
-                rootCategories.map((category) => (
-                  <Link
-                    key={category.id}
-                    href={`/catalog?category=${category.id}`}
-                    className="group relative overflow-hidden rounded-xl bg-zinc-900 border border-zinc-800 p-6 hover:border-k24-yellow/50 transition-all duration-300"
-                  >
-                    <div className="relative z-10 h-full flex flex-col items-center justify-center text-center gap-3">
-                      <span className="text-lg font-medium text-zinc-200 group-hover:text-k24-yellow transition-colors">
-                        {category.name}
-                      </span>
-                      <span className="text-xs text-zinc-500 bg-zinc-800/50 px-2 py-1 rounded-full">
-                        {category.productCount} товарів
-                      </span>
-                    </div>
-                    <div className="absolute inset-0 bg-linear-to-br from-k24-yellow/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </Link>
-                ))
-              )}
+              {rootCategories.map((category) => (
+                <Link
+                  key={category.id}
+                  href={`/catalog?category=${category.id}`}
+                  className="group relative overflow-hidden rounded-xl bg-zinc-900 border border-zinc-800 p-6 hover:border-k24-yellow/50 transition-all duration-300"
+                >
+                  <div className="relative z-10 h-full flex flex-col items-center justify-center text-center gap-3">
+                    <span className="text-lg font-medium text-zinc-200 group-hover:text-k24-yellow transition-colors">
+                      {category.name}
+                    </span>
+                    <span className="text-xs text-zinc-500 bg-zinc-800/50 px-2 py-1 rounded-full">
+                      {category.productCount} товарів
+                    </span>
+                  </div>
+                  <div className="absolute inset-0 bg-linear-to-br from-k24-yellow/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+              ))}
             </div>
           </div>
         </section>
-
 
         {/* New Arrivals Section */}
         <section className="py-16 bg-zinc-950">
@@ -241,88 +189,76 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-              {productsLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-[300px] bg-zinc-900 rounded-xl" />
-                ))
-              ) : (
-                newProducts.map((product) => (
-                  <Link key={product.id} href={`/products/${product.id}`} className="group h-full">
-                    <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col hover:border-k24-yellow/40 transition-colors cursor-pointer h-full pt-0 pb-0">
-                      <div className="relative aspect-4/3 bg-zinc-950 shrink-0">
-                        {product.images?.[0]?.url ? (
-                          <ProductImage
-                            src={product.images[0].url}
-                            alt={product.name}
-                            fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center text-zinc-600 text-sm">
-                            Немає фото
+              {newProducts.map((product) => (
+                <Link key={product.id} href={`/products/${product.id}`} className="group h-full">
+                  <Card className="bg-zinc-900/60 border-zinc-800 overflow-hidden flex flex-col hover:border-k24-yellow/40 transition-colors cursor-pointer h-full pt-0 pb-0">
+                    <div className="relative aspect-4/3 bg-zinc-950 shrink-0">
+                      {product.images?.[0]?.url ? (
+                        <ProductImage
+                          src={product.images[0].url}
+                          alt={product.name}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-zinc-600 text-sm">
+                          Немає фото
+                        </div>
+                      )}
+                    </div>
+                    <CardContent className="pt-0 px-4 pb-4 flex-1 flex flex-col gap-3 min-h-0">
+                      <div className="flex-1 flex flex-col min-h-0 gap-2">
+                        <h3 className="text-[15px] sm:text-base font-semibold leading-snug text-white line-clamp-2 w-full">
+                          {product.name}
+                        </h3>
+                        <span
+                          className={`text-[12px] sm:text-xs ${statusColors[product.status] || statusColors.discontinued}`}
+                        >
+                          {product.status === 'in_stock'
+                            ? 'В наявності'
+                            : product.status === 'on_order'
+                              ? 'Під замовлення'
+                              : product.status === 'out_of_stock'
+                                ? 'Немає в наявності'
+                                : 'Знято з виробництва'}
+                        </span>
+                        <div className="flex items-start justify-between gap-2 sm:gap-3">
+                          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] sm:text-xs text-zinc-400 flex-1 min-w-0">
+                            <span className="truncate">
+                              <span className="sm:hidden font-mono text-zinc-300">{product.partNumber || '—'}</span>
+                              <span className="hidden sm:inline">
+                                <span className="text-zinc-500">Код деталі:</span>{' '}
+                                <span className="font-mono text-zinc-300">{product.partNumber || '—'}</span>
+                              </span>
+                            </span>
+                            <span className="truncate">
+                              <span className="sm:hidden text-zinc-300">{product.brand || '—'}</span>
+                              <span className="hidden sm:inline">
+                                <span className="text-zinc-500">Виробник:</span>{' '}
+                                <span className="text-zinc-300">{product.brand || '—'}</span>
+                              </span>
+                            </span>
                           </div>
-                        )}
-                      </div>
-                      <CardContent className="pt-0 px-4 pb-4 flex-1 flex flex-col gap-3 min-h-0">
-                        <div className="flex-1 flex flex-col min-h-0 gap-2">
-                          <h3 className="text-[15px] sm:text-base font-semibold leading-snug text-white line-clamp-2 w-full">
-                            {product.name}
-                          </h3>
-                          <span
-                            className={`text-[12px] sm:text-xs ${statusColors[product.status] || statusColors.discontinued}`}
-                          >
-                            {product.status === 'in_stock'
-                              ? 'В наявності'
-                              : product.status === 'on_order'
-                                ? 'Під замовлення'
-                                : product.status === 'out_of_stock'
-                                  ? 'Немає в наявності'
-                                  : 'Знято з виробництва'}
-                          </span>
-                          <div className="flex items-start justify-between gap-2 sm:gap-3">
-                            <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-[13px] sm:text-xs text-zinc-400 flex-1 min-w-0">
-                              <span className="truncate">
-                                <span className="sm:hidden font-mono text-zinc-300">{product.partNumber || '—'}</span>
-                                <span className="hidden sm:inline">
-                                  <span className="text-zinc-500">Код деталі:</span>{' '}
-                                  <span className="font-mono text-zinc-300">{product.partNumber || '—'}</span>
-                                </span>
+                          <div className="text-right shrink-0">
+                            <span className="text-base sm:text-lg text-k24-yellow font-bold block">
+                              <UsdToUahPrice usd={product.price} />
+                            </span>
+                            {hasDisplayableUsdPrice(product.originalPrice) && (
+                              <span className="text-[13px] sm:text-sm text-zinc-500 line-through block">
+                                <UsdToUahPrice usd={product.originalPrice!} />
                               </span>
-                              <span className="truncate">
-                                <span className="sm:hidden text-zinc-300">{product.brand || '—'}</span>
-                                <span className="hidden sm:inline">
-                                  <span className="text-zinc-500">Виробник:</span>{' '}
-                                  <span className="text-zinc-300">{product.brand || '—'}</span>
-                                </span>
-                              </span>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <span className="text-base sm:text-lg text-k24-yellow font-bold block">
-                                <UsdToUahPrice usd={product.price} />
-                              </span>
-                              {hasDisplayableUsdPrice(product.originalPrice) && (
-                                <span className="text-[13px] sm:text-sm text-zinc-500 line-through block">
-                                  <UsdToUahPrice usd={product.originalPrice!} />
-                                </span>
-                              )}
-                            </div>
+                            )}
                           </div>
                         </div>
-                        {product.status === 'in_stock' && (
-                          <Button
-                            onClick={(e) => handleAddToCart(e, product)}
-                            className="w-full bg-k24-yellow hover:bg-k24-yellow text-black font-medium text-[13px] sm:text-sm h-10 shrink-0 rounded-lg"
-                          >
-                            <ShoppingCart className="mr-2 h-4 w-4 shrink-0" />
-                            В корзину
-                          </Button>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))
-              )}
+                      </div>
+                      {product.status === 'in_stock' && (
+                        <HomeAddToCart product={product} />
+                      )}
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
             </div>
           </div>
         </section>

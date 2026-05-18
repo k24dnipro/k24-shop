@@ -1,5 +1,4 @@
-"use client";
-
+import { Metadata } from 'next';
 import {
   Clock,
   MapPin,
@@ -10,10 +9,39 @@ import {
   SITE_PHONE_PRIMARY_TEL,
 } from '@/lib/constants/contact';
 import { ShopHeader } from '@/components/shop/header';
+import { generateLocalBusinessStructuredData } from '@/lib/seo/utils';
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
+
+export const metadata: Metadata = {
+  title: 'Контакти — K24 Parts | Автозапчастини в Дніпрі',
+  description:
+    'Зв’яжіться з K24 Parts: адреса, телефон, графік роботи. Підгороднє, Дніпропетровська область. доставка автозапчастин по всій Україні.',
+  alternates: {
+    canonical: `${siteUrl}/contacts`,
+  },
+  openGraph: {
+    type: 'website',
+    url: `${siteUrl}/contacts`,
+    title: 'Контакти — K24 Parts | Автозапчастини в Дніпрі',
+    description:
+      'Зв’яжіться з K24 Parts: адреса, телефон, графік роботи. Підгороднє, Дніпропетровська область.',
+    siteName: 'K24 Parts',
+  },
+};
 
 export default function ContactsPage() {
+  const localBusinessData = generateLocalBusinessStructuredData(siteUrl);
+
   return (
     <div className="min-h-screen flex flex-col bg-zinc-950">
+      {/* Structured Data for Local Business */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(localBusinessData).replace(/</g, '\\u003c'),
+        }}
+      />
       <ShopHeader />
       <main className="flex-1 container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-white mb-8">Контакти</h1>

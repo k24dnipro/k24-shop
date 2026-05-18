@@ -1,20 +1,16 @@
 import { MetadataRoute } from 'next';
 import {
-  getCategories,
-} from '@/modules/categories/services/categories.service';
-import {
   getProductsForSitemap,
 } from '@/modules/products/services/products.service';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
 
-// ISR для sitemap
-// Довший revalidate + додатковий кеш нижче => менше шансів на повторні важкі reads
-export const revalidate = 86800; // 24 години
+// ISR для sitemap: ревалідація кожні 24 годи
+export const revalidate = 86400;
 
-// Додатковий вбудований кеш на рівні процесу (на випадок, якщо ISR не встигає/не кешує як очікується).
+// Додатковий вбудований кеш на рівні процесу
 let sitemapCache: { routes: MetadataRoute.Sitemap; fetchedAt: number } | null = null;
-const SITEMAP_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 23 години
+const SITEMAP_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 годи
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = Date.now();
@@ -23,9 +19,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const generatedAt = new Date();
+
+  // Основні статичні сторінки
   const routes: MetadataRoute.Sitemap = [
     {
-      url: siteUrl,
+      url: `${siteUrl}/`,
       lastModified: generatedAt,
       changeFrequency: 'daily',
       priority: 1,
@@ -57,29 +55,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    // Add category pages (тільки активні категорії)
-    const categories = await getCategories();
-    categories
-      .filter(cat => cat.isActive)
-      .forEach((category) => {
+    // Додаємо сторінки товарів (виключаємо discontinued)
+    const products = await getProductsForSitemap();
+    products
+      .filter((p) => p.status !== 'discontinued')
+      .forEach((product) => {
         routes.push({
-          url: `${siteUrl}/catalog?category=${category.id}`,
-          lastModified: generatedAt,
+          url: `${siteUrl}/products/${product.id}`,
+          // Не використовуємо generatedAt як fallback — Google не повинен думати що кожен товар змінювався щодня
+          lastModified: product.updatedAt ?? new Date('2025-01-01'),
           changeFrequency: 'weekly',
           priority: 0.8,
         });
       });
-
-    // Додаємо всі товари (всі статуси включно з discontinued)
-    const products = await getProductsForSitemap();
-    products.forEach((product) => {
-      routes.push({
-        url: `${siteUrl}/products/${product.id}`,
-        lastModified: product.updatedAt || generatedAt,
-        changeFrequency: 'weekly',
-        priority: 0.8,
-      });
-    });
 
     sitemapCache = {
       routes,

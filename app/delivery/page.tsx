@@ -1,5 +1,4 @@
-"use client";
-
+import { Metadata } from 'next';
 import {
   ClipboardList,
   CreditCard,
@@ -8,6 +7,25 @@ import {
 } from "lucide-react";
 import { ShopFooter } from "@/components/shop/footer";
 import { ShopHeader } from "@/components/shop/header";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
+
+export const metadata: Metadata = {
+  title: 'Доставка та оплата — K24 Parts | Автозапчастини',
+  description:
+    'Умови доставки автозапчастин K24 Parts: Нова Пошта, Delivery, самовивіз. Способи оплати: накладений платіж, банківські реквізити. Повернення товару протягом 14 днів.',
+  alternates: {
+    canonical: `${siteUrl}/delivery`,
+  },
+  openGraph: {
+    type: 'website',
+    url: `${siteUrl}/delivery`,
+    title: 'Доставка та оплата — K24 Parts | Автозапчастини',
+    description:
+      'Умови доставки автозапчастин K24 Parts: Нова Пошта, Delivery, самовивіз.',
+    siteName: 'K24 Parts',
+  },
+};
 
 export default function DeliveryPage() {
   return (

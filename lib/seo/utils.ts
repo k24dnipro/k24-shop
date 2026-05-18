@@ -66,11 +66,6 @@ export function generateProductStructuredData(
       value: string;
     }>;
     mpn?: string;
-    aggregateRating?: {
-      '@type': string;
-      ratingValue: string;
-      reviewCount: number;
-    };
   } = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -109,15 +104,6 @@ export function generateProductStructuredData(
   // Add MPN if available
   if (product.partNumber) {
     structuredData.mpn = product.partNumber;
-  }
-
-  // Add aggregate rating if views > 0
-  if (product.views > 0) {
-    structuredData.aggregateRating = {
-      '@type': 'AggregateRating',
-      ratingValue: '4.5',
-      reviewCount: product.views,
-    };
   }
 
   // Add additional properties
@@ -164,6 +150,13 @@ export function generateOrganizationStructuredData(siteUrl: string) {
     name: 'K24 Parts',
     url: siteUrl,
     logo: `${siteUrl}/logo.png`,
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: '+380939590505',
+      contactType: 'customer service',
+      areaServed: 'UA',
+      availableLanguage: 'Ukrainian',
+    },
     address: {
       '@type': 'PostalAddress',
       addressLocality: 'Підгороднє',
@@ -176,6 +169,52 @@ export function generateOrganizationStructuredData(siteUrl: string) {
       // 'https://www.facebook.com/k24shop',
       // 'https://www.instagram.com/k24shop',
     ],
+  };
+}
+
+export function generateLocalBusinessStructuredData(siteUrl: string) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'AutoPartsStore',
+    name: 'K24 Parts',
+    url: siteUrl,
+    logo: `${siteUrl}/logo.png`,
+    image: `${siteUrl}/logo.png`,
+    telephone: '+380939590505',
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Підгороднє',
+      addressRegion: 'Дніпропетровська область',
+      postalCode: '52001',
+      addressCountry: 'UA',
+    },
+    geo: {
+      '@type': 'GeoCoordinates',
+      latitude: 48.530915,
+      longitude: 35.03727,
+    },
+    openingHoursSpecification: [
+      {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: [
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+        ],
+        opens: '09:00',
+        closes: '18:00',
+      },
+    ],
+    priceRange: '$$',
+    servesCuisine: undefined,
+    currenciesAccepted: 'UAH',
+    paymentAccepted: 'готівка, банківський переказ',
+    areaServed: {
+      '@type': 'Country',
+      name: 'Ukraine',
+    },
   };
 }
 

@@ -1,7 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import Head from 'next/head';
 import { Providers } from '@/components/providers';
 import { CookieConsent } from '@/components/shop/cookie-consent';
 import { FloatingCart } from '@/components/shop/floating-cart';
@@ -80,7 +79,7 @@ export const metadata: Metadata = {
     google: "TrrnDqll6G1oks140SW-vvCO1MZy-U09YiEBVgJEeoM",
   },
   alternates: {
-    canonical: siteUrl,
+    canonical: `${siteUrl}/`,
   },
   category: "Automotive Parts",
 };
@@ -92,19 +91,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="uk" className="dark" suppressHydrationWarning>
-      <Head>
-        {/* Preconnect to external domains */}
+      <head>
+        {/* Preconnect to Google Fonts — must be in <head>, not metadata */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-
-        {/* DNS prefetch for performance */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* DNS prefetch for analytics */}
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
         <link rel="dns-prefetch" href="//www.googletagmanager.com" />
-      </Head>
+      </head>
       <body className={`${inter.variable} font-sans antialiased`} suppressHydrationWarning>
         <Providers>
           {children}

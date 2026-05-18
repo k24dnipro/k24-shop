@@ -1069,7 +1069,7 @@ export async function exportProductsToCSV(): Promise<
 // Minimal data read for sitemap generation.
 // We only need `id` and `updatedAt` per product.
 export async function getProductsForSitemap(): Promise<
-  Array<{ id: string; updatedAt: Date | null }>
+  Array<{ id: string; updatedAt: Date | null; status?: string }>
 > {
   // NOTE: we don't use Firestore `select()` here because it's not available in the current SDK version.
   // Reads are still per document, but we avoid additional logic and only return minimal fields.
@@ -1081,9 +1081,9 @@ export async function getProductsForSitemap(): Promise<
       return data?.isVisible !== false;
     })
     .map((doc) => {
-      const data = doc.data() as { updatedAt?: { toDate?: () => Date } | null } | undefined;
+      const data = doc.data() as { updatedAt?: { toDate?: () => Date } | null; status?: string } | undefined;
       const updatedAt = data?.updatedAt?.toDate?.() ?? null;
-      return { id: doc.id, updatedAt };
+      return { id: doc.id, updatedAt, status: data?.status };
     });
 }
 

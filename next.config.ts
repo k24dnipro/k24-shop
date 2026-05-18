@@ -1,6 +1,22 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  // Enforce non-www canonical: redirect www → k24.parts (308 Permanent Redirect)
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.k24.parts',
+          },
+        ],
+        destination: 'https://k24.parts/:path*',
+        permanent: true,
+      },
+    ];
+  },
   images: {
     // Allow quality prop used by next/image (e.g. ProductImage default 85)
     qualities: [75, 85, 90],

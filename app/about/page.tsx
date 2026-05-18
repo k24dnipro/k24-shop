@@ -1,7 +1,25 @@
-"use client";
-
+import { Metadata } from 'next';
 import { ShopFooter } from "@/components/shop/footer";
 import { ShopHeader } from "@/components/shop/header";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
+
+export const metadata: Metadata = {
+  title: 'Про нас — K24 Parts | Автозапчастини в Дніпрі',
+  description:
+    'K24 Parts — магазин автозапчастин у Дніпрі. Оригінальні запчастини, якісні аналоги, б/в деталі. Підбір за VIN-кодом, швидка доставка по Україні.',
+  alternates: {
+    canonical: `${siteUrl}/about`,
+  },
+  openGraph: {
+    type: 'website',
+    url: `${siteUrl}/about`,
+    title: 'Про нас — K24 Parts | Автозапчастини в Дніпрі',
+    description:
+      'K24 Parts — магазин автозапчастин у Дніпрі. Оригінальні запчастини, якісні аналоги, б/в деталі. Підбір за VIN-кодом, швидка доставка по Україні.',
+    siteName: 'K24 Parts',
+  },
+};
 
 export default function AboutPage() {
   return (

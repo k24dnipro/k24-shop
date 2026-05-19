@@ -20,7 +20,7 @@ import {
 import {
   db,
   storage,
-} from '@/firebase';
+} from '@/firebase/index';
 import {
   Category,
 } from '@/lib/types'; // Using lib/types for now as they are re-exported

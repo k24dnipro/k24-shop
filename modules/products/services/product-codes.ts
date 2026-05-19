@@ -4,7 +4,7 @@ import {
   runTransaction,
   Transaction,
 } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { db } from '@/firebase/index';
 import {
   generateSku,
   normalizeSku,

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { auth } from '@/firebase';
+import { auth } from '@/firebase/index';
 import { Order } from '@/lib/types';
 import { getOrdersForCustomer } from '@/modules/orders/services/orders.service';
 import {

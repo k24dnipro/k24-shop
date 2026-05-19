@@ -11,7 +11,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { db } from '@/firebase/index';
 import { Inquiry } from '@/lib/types'; // Using lib/types for now
 
 const INQUIRIES_COLLECTION = 'inquiries';

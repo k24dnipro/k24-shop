@@ -7,7 +7,7 @@ import {
   User as FirebaseUser,
 } from 'firebase/auth';
 import { Timestamp } from 'firebase/firestore';
-import { auth } from '@/firebase';
+import { auth } from '@/firebase/index';
 import {
   DEFAULT_PERMISSIONS,
   User,

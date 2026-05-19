@@ -45,7 +45,7 @@ import { ProductImage } from '@/components/ui/product-image';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { SITE_PHONE_PRIMARY_TEL } from '@/lib/constants/contact';
-import { auth } from '@/firebase';
+import { auth } from '@/firebase/index';
 import { useCart } from '@/lib/hooks/useCart';
 import { sendTelegramInquiry } from '@/lib/services/telegram';
 import { createInquiry } from '@/modules/inquiries/services/inquiries.service';

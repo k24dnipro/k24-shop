@@ -11,7 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   db,
   storage,
-} from '@/firebase';
+} from '@/firebase/index';
 import { Category } from '@/lib/types';
 import {
   batchUpdateCategoryCounts,

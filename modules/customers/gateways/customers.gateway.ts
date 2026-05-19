@@ -5,7 +5,7 @@ import {
   setDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { db } from '@/firebase/index';
 import { CustomerProfile } from '@/lib/types';
 
 const CUSTOMERS_COLLECTION = 'customers';
@@ -58,11 +58,13 @@ export const upsertCustomerProfileDoc = async (
   const now = Timestamp.now();
   const ref = doc(collection(db, getCustomersPath()), customerId);
 
-  const payload: FirestoreCustomerData = {
+  const payload: Partial<FirestoreCustomerData> & {
+    name: string;
+    email: string;
+    createdAt: Timestamp;
+    updatedAt: Timestamp;
+  } = {
     name: profile.name,
-    phone: profile.phone,
-    city: profile.city,
-    address: profile.address,
     email: profile.email,
     createdAt: existing
       ? Timestamp.fromDate(existing.createdAt)
@@ -70,8 +72,21 @@ export const upsertCustomerProfileDoc = async (
     updatedAt: now,
   };
 
+  if (profile.phone !== undefined) payload.phone = profile.phone;
+  if (profile.city !== undefined) payload.city = profile.city;
+  if (profile.address !== undefined) payload.address = profile.address;
+
   await setDoc(ref, payload, { merge: true });
 
-  return convertToCustomerProfile(customerId, payload);
+  return {
+    id: customerId,
+    name: profile.name,
+    phone: profile.phone !== undefined ? profile.phone : existing?.phone,
+    city: profile.city !== undefined ? profile.city : existing?.city,
+    address: profile.address !== undefined ? profile.address : existing?.address,
+    email: profile.email,
+    createdAt: existing?.createdAt || now.toDate(),
+    updatedAt: now.toDate(),
+  };
 };
 

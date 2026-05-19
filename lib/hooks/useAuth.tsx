@@ -13,7 +13,7 @@ import {
   signOut,
   User as FirebaseUser,
 } from 'firebase/auth';
-import { auth } from '@/firebase';
+import { auth } from '@/firebase/index';
 import {
   createUserProfile,
   getUserById,

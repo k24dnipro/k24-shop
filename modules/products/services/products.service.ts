@@ -31,7 +31,7 @@ import {
 import {
   db,
   storage,
-} from '@/firebase';
+} from '@/firebase/index';
 import {
   recalculateCategoryProductCounts,
 } from '@/modules/categories/services/categories.service';

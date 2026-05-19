@@ -20,7 +20,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
-import { auth } from '@/firebase';
+import { auth } from '@/firebase/index';
 import { useCart } from '@/lib/hooks/useCart';
 import { sendTelegramOrder } from '@/lib/services/telegram';
 import { createOrderFromCart } from '@/modules/orders/services/orders.service';

@@ -464,12 +464,16 @@ export async function createProduct(
   const baseSku = requestedSku || generateSku({ partNumber: productData.partNumber });
   const finalSku = await reserveUniqueSku({ productId: newDocRef.id, base: baseSku });
 
+  const cleanProductData = Object.fromEntries(
+    Object.entries(productData).filter(([, v]) => v !== undefined)
+  );
+
   try {
     await runTransaction(db, async (tx) => {
       // Подвійна перевірка: переконатись, що мітка все ще наша.
       await claimSkuInTransaction(tx, finalSku, newDocRef.id);
       tx.set(newDocRef, {
-        ...productData,
+        ...cleanProductData,
         sku: finalSku,
         views: 0,
         inquiries: 0,
@@ -571,8 +575,11 @@ export async function updateProduct(
           await releaseSkuInTransaction(tx, oldSku, id);
         }
       }
+      const cleanUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([, v]) => v !== undefined)
+      );
       tx.update(docRef, {
-        ...updates,
+        ...cleanUpdates,
         ...(finalSku !== undefined ? { sku: finalSku } : {}),
         updatedAt: Timestamp.now(),
       });

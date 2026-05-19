@@ -59,8 +59,11 @@ export const createInquiryDoc = async (
   inquiryData: Omit<Inquiry, 'id' | 'createdAt' | 'updatedAt'>
 ): Promise<string> => {
   const now = Timestamp.now();
+  const cleanData = Object.fromEntries(
+    Object.entries(inquiryData).filter(([, v]) => v !== undefined)
+  );
   const docRef = await addDoc(collection(db, getInquiriesPath()), {
-    ...inquiryData,
+    ...cleanData,
     createdAt: now,
     updatedAt: now,
   });

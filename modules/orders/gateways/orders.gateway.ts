@@ -46,8 +46,11 @@ export const createOrderDoc = async (
   orderData: Omit<Order, 'id' | 'createdAt'>
 ): Promise<string> => {
   const now = Timestamp.now();
+  const cleanData = Object.fromEntries(
+    Object.entries(orderData).filter(([, v]) => v !== undefined)
+  );
   const docRef = await addDoc(collection(db, ORDERS_COLLECTION), {
-    ...orderData,
+    ...cleanData,
     createdAt: now,
   });
   return docRef.id;

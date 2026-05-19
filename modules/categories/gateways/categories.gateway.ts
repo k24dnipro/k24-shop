@@ -107,8 +107,11 @@ export const createCategoryDoc = async (
   categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'productCount'>
 ): Promise<string> => {
   const now = Timestamp.now();
+  const cleanData = Object.fromEntries(
+    Object.entries(categoryData).filter(([, v]) => v !== undefined)
+  );
   const docRef = await addDoc(collection(db, getCategoriesPath()), {
-    ...categoryData,
+    ...cleanData,
     productCount: 0,
     createdAt: now,
     updatedAt: now,
@@ -118,8 +121,11 @@ export const createCategoryDoc = async (
 
 export const updateCategoryDoc = async (id: string, updates: Partial<Category>): Promise<void> => {
   const docRef = doc(db, getCategoryPath(id));
+  const cleanUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([, v]) => v !== undefined)
+  );
   await updateDoc(docRef, {
-    ...updates,
+    ...cleanUpdates,
     updatedAt: Timestamp.now(),
   });
 };
@@ -158,8 +164,11 @@ export const ensureCategoryExists = async (id: string, data: Omit<Category, 'id'
 
   if (!docSnap.exists()) {
     const now = Timestamp.now();
+    const cleanData = Object.fromEntries(
+      Object.entries(data).filter(([, v]) => v !== undefined)
+    );
     await setDoc(docRef, {
-      ...data,
+      ...cleanData,
       createdAt: now,
       updatedAt: now,
     });

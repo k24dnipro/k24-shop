@@ -312,7 +312,9 @@ export function ProductClient({ product, categoryName, usdToUahRate }: ProductCl
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
                 <div className="space-y-2">
-                  <CardTitle className="text-2xl text-white">{product.name}</CardTitle>
+                  <h1 className="text-2xl font-semibold leading-none text-white">
+                    {product.name}
+                  </h1>
                   <CardDescription className="text-zinc-400 space-y-0.5">
                     {product.sku && (
                       <div>

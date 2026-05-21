@@ -132,7 +132,12 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
   const breadcrumbStructuredData = generateBreadcrumbStructuredData([
     { name: 'Головна', url: siteUrl },
     { name: 'Каталог', url: `${siteUrl}/catalog` },
-    { name: categoryName, url: `${siteUrl}/catalog?category=${product.categoryId}` },
+    {
+      name: categoryName,
+      url: category?.slug
+        ? `${siteUrl}/catalog/${category.slug}`
+        : `${siteUrl}/catalog`,
+    },
     { name: product.name, url: `${siteUrl}/products/${product.id}` },
   ]);
 

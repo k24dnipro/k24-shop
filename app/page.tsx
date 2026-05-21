@@ -35,7 +35,9 @@ export default async function Home() {
   });
 
   // Filter root categories for the main grid
-  const rootCategories = categories.filter(c => !c.parentId).slice(0, 8);
+  const rootCategories = categories
+    .filter((c) => !c.parentId && c.isActive !== false)
+    .slice(0, 8);
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
   const organizationData = generateOrganizationStructuredData(siteUrl);
@@ -159,7 +161,7 @@ export default async function Home() {
               {rootCategories.map((category) => (
                 <Link
                   key={category.id}
-                  href={`/catalog?category=${category.id}`}
+                  href={`/catalog/${category.slug}`}
                   className="group relative overflow-hidden rounded-xl bg-zinc-900 border border-zinc-800 p-6 hover:border-k24-yellow/50 transition-all duration-300"
                 >
                   <div className="relative z-10 h-full flex flex-col items-center justify-center text-center gap-3">

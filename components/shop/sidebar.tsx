@@ -14,6 +14,10 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Category } from '@/lib/types';
+import {
+  CATALOG_BASE_PATH,
+  getCategoryCatalogPath,
+} from '@/lib/shop/catalog-urls';
 import { SITE_PHONE_PRIMARY_TEL } from '@/lib/constants/contact';
 import { cn } from '@/lib/utils';
 
@@ -66,12 +70,12 @@ export function ShopSidebar({
 
     // Build tree structure
     return rootCategories
-      .filter(cat => cat.isActive)
+      .filter((cat) => cat.isActive !== false)
       .sort((a, b) => a.order - b.order)
       .map(cat => ({
         ...cat,
         children: (categoryMap.get(cat.id) || [])
-          .filter(c => c.isActive)
+          .filter((c) => c.isActive !== false)
           .sort((a, b) => a.order - b.order),
       }));
   };
@@ -99,9 +103,14 @@ export function ShopSidebar({
     } else {
       // Сторінки без локального стану каталогу (наприклад, картка товару): перехід у каталог
       if (categoryId === 'all') {
-        router.push('/catalog');
+        router.push(CATALOG_BASE_PATH);
       } else {
-        router.push(`/catalog?category=${encodeURIComponent(categoryId)}`);
+        const category = categories.find((c) => c.id === categoryId);
+        if (category?.slug) {
+          router.push(getCategoryCatalogPath(category));
+        } else {
+          router.push(`${CATALOG_BASE_PATH}?category=${encodeURIComponent(categoryId)}`);
+        }
       }
     }
     if (isMobile && onClose) {

@@ -1,4 +1,6 @@
 import { MetadataRoute } from 'next';
+import { isCategoryPubliclyVisible } from '@/lib/shop/catalog-urls';
+import { getCategories } from '@/modules/categories/services/categories.service';
 import {
   getProductsForSitemap,
 } from '@/modules/products/services/products.service';
@@ -55,6 +57,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
+    const categories = await getCategories();
+    categories
+      .filter((c) => isCategoryPubliclyVisible(c) && c.slug)
+      .forEach((category) => {
+        routes.push({
+          url: `${siteUrl}/catalog/${category.slug}`,
+          lastModified: category.updatedAt ?? generatedAt,
+          changeFrequency: 'daily',
+          priority: 0.85,
+        });
+      });
+
     // Додаємо сторінки товарів (виключаємо discontinued)
     const products = await getProductsForSitemap();
     products

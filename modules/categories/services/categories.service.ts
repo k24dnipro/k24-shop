@@ -40,7 +40,6 @@ export async function ensureUncategorizedCategoryExists(): Promise<void> {
   await ensureCategoryExists(UNCATEGORIZED_CATEGORY_ID, {
     name: UNCATEGORIZED_CATEGORY_NAME,
     slug: 'bez-kategorii',
-    description: 'Товари без визначеної категорії',
     parentId: null,
     order: 9999, // Put at the end
     isActive: true,
@@ -152,12 +151,25 @@ export async function getCategoriesCount(): Promise<number> {
   return countCategories();
 }
 
-// Generate slug from name
-export function generateSlug(name: string): string {
-  return name
+/** Latin URL segment: a-z, 0-9, hyphens (no Cyrillic). */
+export const CATEGORY_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+/** Strip non-Latin characters from slug input (Cyrillic etc. are removed). */
+export function sanitizeSlug(input: string): string {
+  return input
     .toLowerCase()
-    .replace(/[^a-z0-9\u0400-\u04FF]+/g, '-')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
+}
+
+export function isValidCategorySlug(slug: string): boolean {
+  return CATEGORY_SLUG_PATTERN.test(slug);
+}
+
+/** Build slug from name; non-Latin letters are dropped (use manual slug for UA names). */
+export function generateSlug(name: string): string {
+  return sanitizeSlug(name);
 }
 
 // Recalculate product counts for all categories

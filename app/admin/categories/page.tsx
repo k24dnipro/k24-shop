@@ -55,7 +55,9 @@ import {
 } from '@/modules/categories/hooks/use-categories';
 import {
   generateSlug,
+  isValidCategorySlug,
   recalculateCategoryProductCounts,
+  sanitizeSlug,
   UNCATEGORIZED_CATEGORY_ID,
 } from '@/modules/categories/services/categories.service';
 
@@ -74,7 +76,6 @@ export default function CategoriesPage() {
   // Form state
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
     slug: '',
     isActive: true,
     metaTitle: '',
@@ -104,8 +105,7 @@ export default function CategoriesPage() {
       setParentId(category.parentId);
       setFormData({
         name: category.name,
-        description: category.description,
-        slug: category.slug,
+        slug: sanitizeSlug(category.slug),
         isActive: category.isActive,
         metaTitle: category.seo.metaTitle,
         metaDescription: category.seo.metaDescription,
@@ -116,7 +116,6 @@ export default function CategoriesPage() {
       setParentId(parent || null);
       setFormData({
         name: '',
-        description: '',
         slug: '',
         isActive: true,
         metaTitle: '',
@@ -133,17 +132,24 @@ export default function CategoriesPage() {
       return;
     }
 
+    const slug = sanitizeSlug(formData.slug) || sanitizeSlug(generateSlug(formData.name));
+    if (!slug || !isValidCategorySlug(slug)) {
+      toast.error(
+        'URL (slug): лише латиниця (a-z), цифри та дефіс. Для української назви вкажіть slug вручну, напр. bmw або audi-e-tron'
+      );
+      return;
+    }
+
     try {
       const categoryData = {
         name: formData.name,
-        description: formData.description,
-        slug: formData.slug || generateSlug(formData.name),
+        slug,
         isActive: formData.isActive,
         parentId,
         order: categoriesTree.length,
         seo: {
           metaTitle: formData.metaTitle || formData.name,
-          metaDescription: formData.metaDescription || formData.description,
+          metaDescription: formData.metaDescription,
           metaKeywords: formData.metaKeywords
             ? formData.metaKeywords.split(',').map((s) => s.trim()).filter(Boolean)
             : [],
@@ -363,23 +369,24 @@ export default function CategoriesPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-zinc-400">Опис</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                className="bg-zinc-900 border-zinc-800 text-white wrap-break-word"
-                placeholder="Короткий опис категорії"
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label className="text-zinc-400">URL (slug)</Label>
               <Input
                 value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                className="bg-zinc-900 border-zinc-800 text-white"
-                placeholder="auto-generated-slug"
+                onChange={(e) =>
+                  setFormData({ ...formData, slug: sanitizeSlug(e.target.value) })
+                }
+                className="bg-zinc-900 border-zinc-800 text-white font-mono"
+                placeholder="bmw, audi-e-tron"
+                spellCheck={false}
+                autoCapitalize="off"
+                autoCorrect="off"
               />
+              <p className="text-xs text-zinc-500">
+                Тільки a-z, 0-9 та дефіс (без кирилиці). Сторінка:{' '}
+                <span className="font-mono text-zinc-400">
+                  /catalog/{formData.slug || 'slug'}
+                </span>
+              </p>
             </div>
 
             <div className="flex items-center justify-between">
@@ -391,7 +398,10 @@ export default function CategoriesPage() {
             </div>
 
             <div className="border-t border-zinc-800 pt-4 mt-4">
-              <p className="text-sm font-medium text-zinc-400 mb-3">SEO налаштування</p>
+              <p className="text-sm font-medium text-zinc-400 mb-1">SEO для сторінки категорії</p>
+              <p className="text-xs text-zinc-500 mb-3">
+                Використовується на маршруті /catalog/[slug]. Якщо порожньо — підставляються назва та опис категорії.
+              </p>
               
               <div className="space-y-3">
                 <div className="space-y-2">
@@ -400,7 +410,7 @@ export default function CategoriesPage() {
                     value={formData.metaTitle}
                     onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
                     className="bg-zinc-900 border-zinc-800 text-white"
-                    placeholder="SEO заголовок"
+                    placeholder="Запчастини BMW – Купити автозапчастини | K24 Parts"
                   />
                 </div>
 
@@ -410,8 +420,8 @@ export default function CategoriesPage() {
                     value={formData.metaDescription}
                     onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
                     className="bg-zinc-900 border-zinc-800 text-white wrap-break-word"
-                    placeholder="SEO опис"
-                    rows={2}
+                    placeholder="Купити запчастини BMW у Дніпрі та по Україні. Оригінальні деталі та аналоги..."
+                    rows={3}
                   />
                 </div>
 

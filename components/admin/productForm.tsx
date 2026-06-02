@@ -76,8 +76,6 @@ interface ProductFormData {
   condition: "new" | "used" | "refurbished";
   carBrand: string | null;
   carModel: string | null;
-  metaTitle: string;
-  metaDescription: string;
   metaKeywords: string;
   slug: string;
   isVisible: boolean;
@@ -125,8 +123,6 @@ export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductF
       condition: product?.condition || "used",
       carBrand: product?.carBrand ?? null,
       carModel: product?.carModel ?? null,
-      metaTitle: product?.seo?.metaTitle || "",
-      metaDescription: product?.seo?.metaDescription || "",
       metaKeywords: product?.seo?.metaKeywords?.join(", ") || "",
       slug: product?.seo?.slug || "",
       isVisible: product?.isVisible ?? true,
@@ -134,8 +130,6 @@ export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductF
   });
 
   const watchCategoryId = watch("categoryId");
-  const watchMetaTitle = watch("metaTitle");
-  const watchMetaDescription = watch("metaDescription");
 
   const selectedCategory = categories.find((c) => c.id === watchCategoryId);
 
@@ -241,18 +235,16 @@ export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductF
       images,
       isVisible: data.isVisible,
       seo: {
-        metaTitle: data.metaTitle || data.name,
-        metaDescription:
-          data.metaDescription || data.description?.substring(0, 160) || "",
+        metaTitle: "",
+        metaDescription: "",
         metaKeywords: data.metaKeywords
           ? data.metaKeywords
             .split(",")
             .map((s) => s.trim())
             .filter(Boolean)
           : [],
-        ogTitle: data.metaTitle || data.name,
-        ogDescription:
-          data.metaDescription || data.description?.substring(0, 160) || "",
+        ogTitle: "",
+        ogDescription: "",
         ogImage: images[0]?.url || "",
         canonicalUrl: "",
         slug: data.slug || (data.partNumber ? data.partNumber.toLowerCase().replace(/[^a-z0-9]+/g, "_") : ""),
@@ -711,31 +703,7 @@ export function ProductForm({ product, onSubmit, loading, cancelHref }: ProductF
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-zinc-400">Meta Title</Label>
-                <Input
-                  {...register("metaTitle")}
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                  placeholder="SEO заголовок (50-60 символів)"
-                  maxLength={60}
-                />
-                <p className="text-xs text-zinc-500">
-                  {watchMetaTitle.length}/60 символів
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                <Label className="text-zinc-400">Meta Description</Label>
-                <Textarea
-                  {...register("metaDescription")}
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                  placeholder="SEO опис (150-160 символів)"
-                  maxLength={160}
-                />
-                <p className="text-xs text-zinc-500">
-                  {watchMetaDescription.length}/160 символів
-                </p>
-              </div>
 
               <div className="space-y-2">
                 <Label className="text-zinc-400">Meta Keywords</Label>

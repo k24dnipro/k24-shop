@@ -2,7 +2,6 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ShopHeader } from '@/components/shop/header';
 import { ProductWrapper } from '@/components/shop/product-wrapper';
-import { formatUAH } from '@/lib/currency/format';
 import { getUsdToUahRate } from '@/lib/currency/nbu.server';
 import {
   generateBreadcrumbStructuredData,
@@ -20,7 +19,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  
+
   try {
     const product = await getProductById(id);
 
@@ -35,12 +34,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     const category = categories.find(c => c.id === product.categoryId);
     const categoryName = category?.name || 'Автозапчастини';
 
-    const metaTitle = product.seo?.metaTitle || `${product.name} - ${categoryName} | K24 Parts Дніпро`;
-    const { rate: usdToUahRate } = await getUsdToUahRate();
-    const priceLabel = formatUAH(product.price * usdToUahRate);
-    const metaDescription = product.seo?.metaDescription || 
-      `${product.name} ${product.brand ? `(${product.brand})` : ''}. Код деталі: ${product.partNumber || 'N/A'}. ` +
-      `Ціна: ${priceLabel} Доставка по Україні. Купити в K24 Parts Дніпро.`;
+    const metaTitle = `Купити ${product.name} | K24 Parts`;
+    const metaDescription = `${product.name}. Вигідна ціна. Широкий асортимент запчастин. Доставка по Україні. Купити в K24 Parts Дніпро.`;
 
     const imageUrl = product.images?.[0]?.url || `${siteUrl}/logo.png`;
     const productUrl = `${siteUrl}/products/${product.id}`;
@@ -105,9 +100,9 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  
+
   const product = await getProductById(id);
-  
+
   if (!product || product.isVisible === false) {
     notFound();
   }
@@ -157,9 +152,9 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           __html: JSON.stringify(breadcrumbStructuredData).replace(/</g, '\\u003c'),
         }}
       />
-      
+
       <ShopHeader />
-      
+
       <ProductWrapper
         product={product}
         categoryName={categoryName}

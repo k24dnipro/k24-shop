@@ -14,18 +14,20 @@ import { generateLocalBusinessStructuredData } from '@/lib/seo/utils';
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
 
 export const metadata: Metadata = {
-  title: 'Контакти — K24 Parts | Автозапчастини в Дніпрі',
+  title: {
+    absolute: 'Контакти K24 Parts – Автозапчастини в Дніпрі',
+  },
   description:
-    'Зв’яжіться з K24 Parts: адреса, телефон, графік роботи. Підгороднє, Дніпропетровська область. доставка автозапчастин по всій Україні.',
+    'Контакти магазину K24 Parts у Дніпрі. Телефонуйте або пишіть для підбору автозапчастин. Консультації, швидке оформлення замовлення та доставка по Україні.',
   alternates: {
     canonical: `${siteUrl}/contacts`,
   },
   openGraph: {
     type: 'website',
     url: `${siteUrl}/contacts`,
-    title: 'Контакти — K24 Parts | Автозапчастини в Дніпрі',
+    title: 'Контакти K24 Parts – Автозапчастини в Дніпрі',
     description:
-      'Зв’яжіться з K24 Parts: адреса, телефон, графік роботи. Підгороднє, Дніпропетровська область.',
+      'Контакти магазину K24 Parts у Дніпрі. Телефонуйте або пишіть для підбору автозапчастин. Консультації, швидке оформлення замовлення та доставка по Україні.',
     siteName: 'K24 Parts',
   },
 };

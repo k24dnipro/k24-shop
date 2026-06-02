@@ -11,18 +11,20 @@ import { ShopHeader } from "@/components/shop/header";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://k24.parts';
 
 export const metadata: Metadata = {
-  title: 'Доставка та оплата — K24 Parts | Автозапчастини',
+  title: {
+    absolute: 'Доставка автозапчастин по Україні | K24 Parts Дніпро',
+  },
   description:
-    'Умови доставки автозапчастин K24 Parts: Нова Пошта, Delivery, самовивіз. Способи оплати: накладений платіж, банківські реквізити. Повернення товару протягом 14 днів.',
+    'Швидка доставка автозапчастин по Україні та в Дніпрі. Вигідні умови, надійні служби доставки та зручна оплата. K24 Parts – оперативно доставимо потрібні деталі.',
   alternates: {
     canonical: `${siteUrl}/delivery`,
   },
   openGraph: {
     type: 'website',
     url: `${siteUrl}/delivery`,
-    title: 'Доставка та оплата — K24 Parts | Автозапчастини',
+    title: 'Доставка автозапчастин по Україні | K24 Parts Дніпро',
     description:
-      'Умови доставки автозапчастин K24 Parts: Нова Пошта, Delivery, самовивіз.',
+      'Швидка доставка автозапчастин по Україні та в Дніпрі. Вигідні умови, надійні служби доставки та зручна оплата. K24 Parts – оперативно доставимо потрібні деталі.',
     siteName: 'K24 Parts',
   },
 };

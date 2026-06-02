@@ -1,5 +1,4 @@
 import { Category } from '@/lib/types';
-import { UNCATEGORIZED_CATEGORY_ID } from '@/modules/categories/services/categories.service';
 
 export const CATALOG_BASE_PATH = '/catalog';
 
@@ -7,9 +6,7 @@ export const CATALOG_BASE_PATH = '/catalog';
 export function isCategoryPubliclyVisible(
   category: Pick<Category, 'id' | 'isActive'>
 ): boolean {
-  return (
-    category.id !== UNCATEGORIZED_CATEGORY_ID && category.isActive !== false
-  );
+  return category.isActive !== false;
 }
 
 export function getCategoryCatalogPath(category: Pick<Category, 'slug'>): string {

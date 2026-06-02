@@ -17,7 +17,15 @@ import { hasDisplayableUsdPrice } from '@/lib/currency/format';
 import { generateOrganizationStructuredData } from '@/lib/seo/utils';
 import { getCategories } from '@/modules/categories/services/categories.service';
 import { getProducts } from '@/modules/products/services/products.service';
+import { Metadata } from 'next';
 import { HomeAddToCart } from '@/components/shop/home-add-to-cart';
+
+export const metadata: Metadata = {
+  title: {
+    absolute: 'K24 Parts – Автозапчастини в Дніпрі | Купити запчастини для авто',
+  },
+  description: 'Купити автозапчастини в Дніпрі та по Україні. Оригінальні запчастини та якісні аналоги для всіх марок авто. Швидка доставка. K24 Parts – надійний магазин автозапчастин.',
+};
 
 const statusColors: Record<string, string> = {
   in_stock: 'text-emerald-400',

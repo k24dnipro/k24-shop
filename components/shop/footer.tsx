@@ -75,6 +75,11 @@ export function ShopFooter() {
                 </Link>
               </li>
               <li>
+                <Link href="/blog" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
+                  Блог
+                </Link>
+              </li>
+              <li>
                 <Link href="/contacts" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
                   Контакти
                 </Link>

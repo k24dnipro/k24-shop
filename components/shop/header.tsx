@@ -142,6 +142,15 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
               Про нас
             </Link>
             <Link
+              href="/blog"
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-k24-yellow",
+                pathname.startsWith("/blog") ? "text-k24-yellow" : "text-zinc-400"
+              )}
+            >
+              Блог
+            </Link>
+            <Link
               href="/contacts"
               className={cn(
                 "text-sm font-medium transition-colors hover:text-k24-yellow",
@@ -262,6 +271,16 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
               )}
             >
               Про нас
+            </Link>
+            <Link
+              href="/blog"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className={cn(
+                "text-lg font-medium transition-colors hover:text-k24-yellow",
+                pathname.startsWith("/blog") ? "text-k24-yellow" : "text-zinc-400"
+              )}
+            >
+              Блог
             </Link>
             <Link
               href="/contacts"

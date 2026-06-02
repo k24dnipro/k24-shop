@@ -124,3 +124,18 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .blog-content-wrapper p {
+    @apply text-zinc-300 leading-relaxed mb-6 text-[15px] sm:text-base;
+  }
+  .blog-content-wrapper h2 {
+    @apply text-xl sm:text-2xl font-bold text-white mt-8 mb-4 tracking-tight;
+  }
+  .blog-content-wrapper ul {
+    @apply list-disc pl-6 mb-6 space-y-2 text-zinc-300 text-[15px] sm:text-base;
+  }
+  .blog-content-wrapper li {
+    @apply leading-relaxed;
+  }
+}

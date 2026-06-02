@@ -12,6 +12,7 @@ import {
   Package,
   Settings,
   Users,
+  BookOpen,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -40,6 +41,12 @@ const navigation = [
     href: '/admin/categories',
     icon: FolderTree,
     permission: 'canManageCategories',
+  },
+  {
+    name: 'Блог',
+    href: '/admin/blog',
+    icon: BookOpen,
+    permission: null,
   },
   {
     name: 'Імпорт',

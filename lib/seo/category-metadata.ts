@@ -32,5 +32,16 @@ export function buildCategoryMetadata(category: Category): Metadata {
     alternates: {
       canonical: categoryUrl,
     },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
   };
 }
+

@@ -16,10 +16,10 @@ export function NoIndexFilter() {
       key => key !== 'category' && key !== 'q' && searchParams.get(key)
     );
 
+    let metaRobots = document.querySelector('meta[name="robots"]');
+
     // Якщо є фільтри - додаємо noindex
     if (hasFilters) {
-      let metaRobots = document.querySelector('meta[name="robots"]');
-      
       if (!metaRobots) {
         metaRobots = document.createElement('meta');
         metaRobots.setAttribute('name', 'robots');
@@ -27,6 +27,11 @@ export function NoIndexFilter() {
       }
       
       metaRobots.setAttribute('content', 'noindex, follow');
+    } else {
+      // Якщо фільтрів немає, дозволяємо індексувати сторінку
+      if (metaRobots) {
+        metaRobots.setAttribute('content', 'index, follow');
+      }
     }
   }, [searchParams]);
 

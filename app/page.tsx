@@ -60,7 +60,7 @@ export default async function Home() {
           __html: JSON.stringify(organizationData).replace(/</g, '\\u003c'),
         }}
       />
-      
+
       <ShopHeader />
 
       <main className="flex-1">
@@ -273,26 +273,139 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* About Section Snippet */}
-        <section className="py-16 bg-zinc-900 border-t border-zinc-800">
+        {/* About Section */}
+        <section className="py-16 bg-zinc-900/40 border-t border-zinc-800">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto text-center space-y-6">
-              <h2 className="text-3xl font-bold text-white">Про магазин K24 Parts</h2>
-              <p className="text-zinc-400 leading-relaxed">
-                Наш магазин спеціалізується на продажу автозапчастин для будь-яких марок автомобілів.
-                Ми пропонуємо широкий асортимент оригінальних деталей та якісних аналогів.
-                Завдяки власному складу в Дніпрі та налагодженій логістиці, ми забезпечуємо швидку доставку
-                замовлень по всій Україні. Наші фахівці завжди готові надати професійну консультацію
-                та допомогти з вибором необхідних запчастин.
-              </p>
-              <div className="flex justify-center gap-4 pt-4">
-                <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:text-white hover:border-k24-yellow" asChild>
-                  <Link href="/about">Дізнатись більше</Link>
-                </Button>
-                <Button className="bg-k24-yellow hover:bg-k24-yellow text-black font-semibold" asChild>
-                  <Link href="/contacts">Зв&apos;язатись з нами</Link>
-                </Button>
+            <div className="max-w-5xl mx-auto space-y-12">
+
+              {/* Introduction Card */}
+              <div className="relative rounded-2xl bg-zinc-900/70 border border-zinc-800 p-8 md:p-10 overflow-hidden">
+                <div className="relative z-10 space-y-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-k24-yellow/10 text-k24-yellow text-xs font-semibold uppercase tracking-wider">
+                    Про компанію
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-bold text-white tracking-tight">
+                    K24 Parts — Ваш надійний магазин автозапчастин
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-zinc-400 text-sm md:text-[15px] leading-relaxed">
+                    <p>
+                      K24 Parts — це інтернет-магазин автозапчастин, який спеціалізується на постачанні комплектуючих для легкових автомобілів різних марок і моделей. Ми працюємо для того, щоб кожен автовласник міг швидко знайти потрібні деталі для ремонту, обслуговування або відновлення свого автомобіля.
+                    </p>
+                    <p>
+                      Наша мета — зробити підбір автозапчастин максимально простим, точним і зручним. Ми пропонуємо як оригінальні деталі, так і перевірені аналоги від надійних виробників, що дозволяє підібрати оптимальне рішення під будь-який бюджет і технічні вимоги.
+                    </p>
+                    <p>
+                      Завдяки власному складу в Дніпрі ми підтримуємо широкий асортимент товарів у наявності. Це дозволяє оперативно комплектувати замовлення та відправляти їх у найкоротші терміни. Налагоджена логістика забезпечує швидку доставку по всій Україні, включаючи великі міста та невеликі населені пункти.
+                    </p>
+                  </div>
+                </div>
               </div>
+
+              {/* Two Column Detailed Breakdown */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+                {/* Column 1: Wide Selection */}
+                <div className="flex flex-col justify-between p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700/80 transition-all duration-300">
+                  <div className="space-y-6">
+                    <div className="p-3 w-fit rounded-lg bg-k24-yellow/10 text-k24-yellow">
+                      <ShieldCheck className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white">
+                      Широкий вибір автозапчастин для будь-яких потреб
+                    </h3>
+                    <div className="space-y-4 text-sm text-zinc-400 leading-relaxed">
+                      <p>
+                        У каталозі K24 Parts представлені автозапчастини для різних систем автомобіля: підвіски, гальмівної системи, двигуна, кузова, охолодження та електроніки. Ми постійно оновлюємо асортимент, щоб відповідати потребам сучасного ринку та запитам клієнтів.
+                      </p>
+                      <p>
+                        Кожна деталь проходить перевірку якості та підбирається з урахуванням надійності та сумісності. Це дозволяє зменшити ризик помилок під час встановлення та забезпечити стабільну роботу автомобіля після ремонту.
+                      </p>
+                    </div>
+
+                    {/* List Items */}
+                    <ul className="space-y-2.5 pt-2">
+                      {[
+                        "оригінальні автозапчастини;",
+                        "якісні аналоги від перевірених брендів;",
+                        "наявність товарів на складі;",
+                        "широкий асортимент для різних марок авто;",
+                        "швидке оновлення каталогу."
+                      ].map((item, idx) => (
+                        <li key={idx} className="flex items-center gap-2.5 text-sm text-zinc-300">
+                          <CheckCircle2 className="h-4 w-4 text-k24-yellow shrink-0" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="pt-6 border-t border-zinc-800/60 mt-6 text-xs text-zinc-500 italic">
+                    Ми розуміємо, що правильний вибір автозапчастин напряму впливає на безпеку та комфорт водіння. Саме тому в нашому каталозі зібрані лише перевірені рішення, які відповідають сучасним вимогам якості.
+                  </div>
+                </div>
+
+                {/* Column 2: Support & Delivery */}
+                <div className="flex flex-col justify-between p-8 rounded-2xl bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-700/80 transition-all duration-300">
+                  <div className="space-y-6">
+                    <div className="p-3 w-fit rounded-lg bg-k24-yellow/10 text-k24-yellow">
+                      <Truck className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white">
+                      Професійна підтримка та швидка доставка по Україні
+                    </h3>
+                    <div className="space-y-4 text-sm text-zinc-400 leading-relaxed">
+                      <p>
+                        Команда K24 Parts складається з фахівців, які мають практичний досвід у сфері автозапчастин. Ми допомагаємо клієнтам з підбором деталей, консультуємо щодо сумісності та надаємо рекомендації щодо оптимальних рішень.
+                      </p>
+                      <p>
+                        Наша підтримка дозволяє швидко знайти потрібну деталь навіть у складних випадках, коли потрібна точна ідентифікація за параметрами або VIN-кодом. Це економить час і зменшує ризик помилкового замовлення.
+                      </p>
+                    </div>
+
+                    {/* List Items */}
+                    <ul className="space-y-2.5 pt-2">
+                      {[
+                        "професійна консультація спеціалістів;",
+                        "допомога у підборі запчастин;",
+                        "оперативне оформлення замовлень;",
+                        "швидка доставка по Україні;",
+                        "зручні умови співпраці."
+                      ].map((item, idx) => (
+                        <li key={idx} className="flex items-center gap-2.5 text-sm text-zinc-300">
+                          <CheckCircle2 className="h-4 w-4 text-k24-yellow shrink-0" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="pt-6 border-t border-zinc-800/60 mt-6 text-xs text-zinc-500 italic">
+                    Ми прагнемо зробити покупку автозапчастин простою та доступною для кожного клієнта. Завдяки поєднанню великого асортименту, швидкої логістики та професійної підтримки K24 Parts є надійним партнером для автовласників по всій Україні.
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Banner/Footer within About Section */}
+              <div className="relative rounded-2xl bg-zinc-900/70 border border-zinc-800 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="space-y-2 text-center md:text-left">
+                  <p className="text-k24-yellow font-bold text-lg md:text-xl">
+                    K24 Parts — це якість, швидкість і впевненість у кожній деталі.
+                  </p>
+                  <p className="text-xs text-zinc-400">
+                    Обирайте найкращі запчастини для свого авто вже сьогодні
+                  </p>
+                </div>
+                <div className="flex gap-3 shrink-0">
+                  <Button variant="outline" className="border-zinc-700 bg-zinc-900/80 text-zinc-300 hover:text-white hover:border-k24-yellow" asChild>
+                    <Link href="/about">Дізнатись більше</Link>
+                  </Button>
+                  <Button className="bg-k24-yellow hover:bg-k24-yellow/95 text-black font-semibold transition-all" asChild>
+                    <Link href="/contacts">Зв&apos;язатись з нами</Link>
+                  </Button>
+                </div>
+              </div>
+
             </div>
           </div>
         </section>

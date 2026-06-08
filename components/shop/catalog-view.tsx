@@ -69,6 +69,7 @@ import {
   PRODUCT_STATUSES,
   ProductStatus,
 } from '@/modules/products/types';
+import { CATEGORY_SEO_DATA } from '@/lib/seo/category-content';
 
 const statusColors: Record<string, string> = {
   in_stock: 'text-emerald-400',
@@ -924,6 +925,16 @@ function CatalogContent({
                   </Card>
                 )}
               </div>
+            )}
+
+            {/* SEO Description Content */}
+            {!isSearchActive && categorySlug && CATEGORY_SEO_DATA[categorySlug] && (
+              <Card className="bg-zinc-900/40 border-zinc-800 p-6 sm:p-8 mt-10">
+                <CardContent 
+                  className="p-0 max-w-4xl mx-auto text-zinc-300 leading-relaxed text-sm sm:text-[15px] blog-content-wrapper"
+                  dangerouslySetInnerHTML={{ __html: CATEGORY_SEO_DATA[categorySlug].content }}
+                />
+              </Card>
             )}
           </div>
         </main>

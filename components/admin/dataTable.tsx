@@ -87,12 +87,12 @@ export function DataTable<TData, TValue>({
       sorting,
       columnFilters,
       rowSelection,
-      pagination: serverSidePagination
-        ? {
-            pageIndex: serverSidePagination.currentPage,
-            pageSize: serverSidePagination.pageSize,
-          }
-        : undefined,
+      ...(serverSidePagination && {
+        pagination: {
+          pageIndex: serverSidePagination.currentPage,
+          pageSize: serverSidePagination.pageSize,
+        },
+      }),
     },
   });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Edit2, Plus, Trash2, Eye, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -25,10 +25,17 @@ import Image from 'next/image';
 
 export default function BlogAdminPage() {
   const router = useRouter();
-  const { posts, loading, refresh } = useBlogPosts();
+  const { posts, loading, refresh, error } = useBlogPosts();
   const { remove } = useBlogMutations();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Log error to console for debugging
+  useEffect(() => {
+    if (error) {
+      console.error('Error fetching blog posts in admin:', error);
+    }
+  }, [error]);
 
   const handleDelete = async () => {
     if (!deleteId) return;
@@ -162,17 +169,23 @@ export default function BlogAdminPage() {
           </Button>
         </div>
 
+        {error && (
+          <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            Помилка завантаження статей: {error}
+          </div>
+        )}
+
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 text-k24-yellow animate-spin" />
           </div>
-        ) : (
+        ) : !error ? (
           <DataTable
             columns={columns}
             data={posts}
             onRowClick={(row) => router.push(`/admin/blog/${row.id}/edit`)}
           />
-        )}
+        ) : null}
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>

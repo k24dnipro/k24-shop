@@ -1,6 +1,6 @@
 "use client";
 
-import { use, Suspense } from 'react';
+import { use, Suspense, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Header } from '@/components/admin/header';
@@ -26,8 +26,20 @@ export default function EditBlogPostPage({ params }: { params: Promise<{ id: str
 function EditBlogPostPageInner({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const { post, loading: postLoading } = useBlog(id);
-  const { update, loading: mutationLoading } = useBlogMutations();
+  const { post, loading: postLoading, error: postError } = useBlog(id);
+  const { update, loading: mutationLoading, error: mutationError } = useBlogMutations();
+
+  useEffect(() => {
+    if (postError) {
+      console.error('Error fetching blog post:', postError);
+    }
+  }, [postError]);
+
+  useEffect(() => {
+    if (mutationError) {
+      console.error('Error updating blog post:', mutationError);
+    }
+  }, [mutationError]);
 
   const handleSubmit = async (
     data: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt' | 'views'>
@@ -53,6 +65,19 @@ function EditBlogPostPageInner({ params }: { params: Promise<{ id: string }> }) 
     );
   }
 
+  if (postError) {
+    return (
+      <div className="flex flex-col">
+        <Header title="Помилка завантаження" />
+        <div className="p-6">
+          <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            Помилка завантаження статті: {postError}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!post) {
     return (
       <div className="flex flex-col">
@@ -67,7 +92,12 @@ function EditBlogPostPageInner({ params }: { params: Promise<{ id: string }> }) 
   return (
     <div className="flex flex-col">
       <Header title={`Редагування статті: ${post.title}`} />
-      <div className="p-6">
+      <div className="p-6 space-y-6">
+        {mutationError && (
+          <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+            Помилка оновлення статті: {mutationError}
+          </div>
+        )}
         <BlogForm
           post={post}
           onSubmit={handleSubmit}

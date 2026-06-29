@@ -139,7 +139,7 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
                 pathname === "/about" ? "text-k24-yellow" : "text-zinc-400"
               )}
             >
-              Про нас
+              Про компанію
             </Link>
             <Link
               href="/blog"
@@ -270,7 +270,7 @@ export function ShopHeader({ onSearch, searchValue = '', onMobileMenuToggle }: H
                 pathname === "/about" ? "text-k24-yellow" : "text-zinc-400"
               )}
             >
-              Про нас
+              Про компанію
             </Link>
             <Link
               href="/blog"

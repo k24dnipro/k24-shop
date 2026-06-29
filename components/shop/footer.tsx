@@ -14,7 +14,7 @@ export function ShopFooter() {
   return (
     <footer className="bg-zinc-900 border-t border-zinc-800 pt-16 pb-8">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
           {/* Company Info */}
           <div className="space-y-4">
             <Link href="/" className="flex items-center gap-2">
@@ -66,12 +66,17 @@ export function ShopFooter() {
             <ul className="space-y-3">
               <li>
                 <Link href="/about" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
-                  Про нас
+                  Про компанію
                 </Link>
               </li>
               <li>
                 <Link href="/delivery" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
                   Доставка та оплата
+                </Link>
+              </li>
+              <li>
+                <Link href="/return-policy" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
+                  Повернення та обмін
                 </Link>
               </li>
               <li>
@@ -84,7 +89,23 @@ export function ShopFooter() {
                   Контакти
                 </Link>
               </li>
+            </ul>
+          </div>
 
+          {/* Legal Info */}
+          <div>
+            <h3 className="text-white font-semibold mb-6">Інформація</h3>
+            <ul className="space-y-3">
+              <li>
+                <Link href="/privacy-policy" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
+                  Політика конфіденційності
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="text-zinc-400 hover:text-k24-yellow text-sm transition-colors">
+                  Умови використання сайту
+                </Link>
+              </li>
             </ul>
           </div>
 
